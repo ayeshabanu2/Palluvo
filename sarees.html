@@ -3,65 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sarees Catalog — PALLUVO | Contemporary Handloom & Pure Silk Sarees</title>
-  <meta name="description" content="Explore the complete PALLUVO collection of contemporary Indian drapes. Woven in pure Kanjivaram silk, Banarasi, Chanderi, organza, and artisanal handlooms.">
+  <title>Sarees Catalog — SAREE.COM | Handcrafted Pure Silk & Regional Sarees</title>
+  <meta name="description" content="Explore the complete SAREE.COM collection of handwoven Indian sarees: Banarasi, Kanjivaram, Paithani, Mysore Silk, Chanderi, Tussar, Organza, and more. 100% certified authentic weaves.">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥻</text></svg>">
 </head>
 <body>
 
-  <!-- MODERN SLEEK SITE HEADER (Saree.com Reference Layout) -->
+  <!-- STICKY SITE HEADER (SAREE.COM) -->
   <header class="site-header-clean" id="siteHeader">
     <div class="header-row-clean">
       
-      <!-- Left: Clean Brand Logo -->
-      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
-        PALLUVO
+      <!-- Left: Logo -->
+      <a href="index.html" class="brand-logo-clean" aria-label="SAREE.COM Home">
+        SAREE.COM
       </a>
 
-      <!-- Center: Modern Uppercase Category Navigation -->
+      <!-- Center: 9 Navigation Links -->
       <nav class="header-nav-center" aria-label="Main Categories">
         <div class="nav-item-clean">
-          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW</a>
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
         </div>
         <div class="nav-item-clean">
-          <a href="index.html#collections" class="nav-link-clean">CURATED EDITS</a>
+          <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html" class="nav-link-clean is-active">SAREE</a>
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?category=Chanderi" class="nav-link-clean">SALWAR SUITS</a>
+          <a href="sarees.html?fabric=Silk" class="nav-link-clean">SILK SAREES</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">LEHENGAS</a>
+          <a href="sarees.html?category=Handloom" class="nav-link-clean">HANDLOOM</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?collection=Contemporary" class="nav-link-clean">KURTI</a>
+          <a href="sarees.html?fabric=Cotton" class="nav-link-clean">COTTON</a>
         </div>
         <div class="nav-item-clean">
-          <a href="about.html" class="nav-link-clean">MEN'S</a>
+          <a href="sarees.html?occasion=Party+Wear" class="nav-link-clean">PARTY WEAR</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?occasion=Festive" class="nav-link-clean" style="color: #E65100; font-weight: 700;">NAVRATRI</a>
+          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">WEDDING</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean is-active">ALL SAREES</a>
         </div>
       </nav>
 
-      <!-- Right: Minimalist Outline Action Icons -->
+      <!-- Right: Action Icons -->
       <div class="header-actions-clean">
-        <a href="account.html" class="header-action-icon" aria-label="Account">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </a>
-
         <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
+
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
 
         <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -95,24 +98,25 @@
   <!-- MOBILE NAVIGATION DRAWER -->
   <div class="mobile-drawer" id="mobileMenuDrawer">
     <div class="mobile-drawer-header">
-      <span class="brand-logo-clean" style="font-size: 1.5rem;">PALLUVO</span>
+      <span class="brand-logo-clean" style="font-size: 1.5rem;">SAREE.COM</span>
       <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
     </div>
     <div class="mobile-drawer-nav">
       <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
-      <a href="index.html#collections" class="mobile-nav-link">CURATED EDITS <span>&rarr;</span></a>
-      <a href="sarees.html" class="mobile-nav-link">SAREES <span>&rarr;</span></a>
-      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">SALWAR SUITS <span>&rarr;</span></a>
-      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">LEHENGAS <span>&rarr;</span></a>
-      <a href="sarees.html?collection=Contemporary" class="mobile-nav-link">KURTI & FUSION <span>&rarr;</span></a>
-      <a href="sarees.html?occasion=Festive" class="mobile-nav-link" style="color: #E65100; font-weight: 700;">NAVRATRI SPECIAL <span>&rarr;</span></a>
-      <a href="about.html" class="mobile-nav-link">OUR STORY <span>&rarr;</span></a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">BANARASI SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">KANJIVARAM SILK <span>&rarr;</span></a>
+      <a href="sarees.html?fabric=Silk" class="mobile-nav-link">PURE SILK SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Handloom" class="mobile-nav-link">HANDLOOM WEAVES <span>&rarr;</span></a>
+      <a href="sarees.html?fabric=Cotton" class="mobile-nav-link">COTTON SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Party+Wear" class="mobile-nav-link">PARTY WEAR <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">WEDDING & BRIDAL <span>&rarr;</span></a>
+      <a href="sarees.html" class="mobile-nav-link is-active">ALL SAREES <span>&rarr;</span></a>
       <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
       <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
     </div>
     <div class="mobile-drawer-footer">
       <p>🇮🇳 India &bull; INR (₹)</p>
-      <p style="margin-top: 0.3rem;">Every drape, a little magic.</p>
+      <p style="margin-top: 0.3rem;">The Art of the Saree.</p>
     </div>
   </div>
   <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
@@ -125,8 +129,10 @@
         <span>/</span>
         <span>Sarees</span>
       </nav>
-      <h1 class="plp-title" id="plpPageTitle">Sarees</h1>
-      <p class="plp-desc">Discover the PALLUVO collection of contemporary Indian drapes. Woven from certified pure silks, sheer organzas, and natural handlooms for effortless everyday grace and celebratory splendor.</p>
+      <h1 class="plp-title" id="plpPageTitle">All Sarees</h1>
+      <p class="plp-desc">
+        Discover SAREE.COM's complete collection of handwoven Indian sarees. Certified pure mulberry silks, Varanasi kadhwa brocades, Kanchipuram temple weaves, and gossamer organzas crafted for timeless elegance.
+      </p>
     </div>
   </section>
 
@@ -137,18 +143,19 @@
       <!-- Controls Bar -->
       <div class="plp-controls-bar">
         <div class="plp-count-info" id="plpCountInfo">
-          Showing <strong>10</strong> Drapes
+          Showing <strong>12</strong> Sarees
         </div>
 
         <!-- Sort Select -->
         <div class="plp-sort-wrap">
           <label for="sortSelect" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);">Sort by:</label>
           <select id="sortSelect" class="plp-sort-select">
-            <option value="featured">Featured Drapes</option>
+            <option value="featured">Featured Sarees</option>
             <option value="price-asc">Price: Low to High</option>
             <option value="price-desc">Price: High to Low</option>
-            <option value="rating-desc">Customer Rating</option>
+            <option value="rating-desc">Highest Rated</option>
             <option value="newest">New Arrivals</option>
+            <option value="discount">Highest Discount</option>
           </select>
         </div>
       </div>
@@ -162,33 +169,92 @@
         <!-- Left Filter Sidebar -->
         <aside class="filter-sidebar" id="filterSidebar">
           
-          <!-- Category -->
+          <!-- Saree Type -->
           <div class="filter-group">
-            <h4 class="filter-group-title">Category</h4>
+            <h4 class="filter-group-title">Saree Type</h4>
             <div class="filter-options-list">
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Silk" onchange="applyFilters()">
-                Silk Stories
+                <input type="checkbox" name="filter_type" value="Banarasi" onchange="applyFilters()">
+                Banarasi Saree
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Organza" onchange="applyFilters()">
-                Sheer Organza
+                <input type="checkbox" name="filter_type" value="Kanjivaram" onchange="applyFilters()">
+                Kanjivaram Saree
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Chanderi" onchange="applyFilters()">
-                Chanderi Handloom
+                <input type="checkbox" name="filter_type" value="Paithani" onchange="applyFilters()">
+                Paithani Saree
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Tissue" onchange="applyFilters()">
-                Metallic Tissue
+                <input type="checkbox" name="filter_type" value="Mysore Silk" onchange="applyFilters()">
+                Mysore Silk Saree
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Handloom" onchange="applyFilters()">
-                Handloom Linen
+                <input type="checkbox" name="filter_type" value="Pochampally" onchange="applyFilters()">
+                Pochampally Ikat Saree
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_category" value="Georgette" onchange="applyFilters()">
-                Crepe Georgette
+                <input type="checkbox" name="filter_type" value="Chanderi" onchange="applyFilters()">
+                Chanderi Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Bandhani" onchange="applyFilters()">
+                Bandhani Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Tussar" onchange="applyFilters()">
+                Tussar Silk Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Uppada" onchange="applyFilters()">
+                Uppada Jamdani Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Organza" onchange="applyFilters()">
+                Organza Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Kalamkari" onchange="applyFilters()">
+                Kalamkari Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Georgette" onchange="applyFilters()">
+                Georgette Saree
+              </label>
+            </div>
+          </div>
+
+          <!-- Fabric -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Fabric</h4>
+            <div class="filter-options-list">
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Pure Silk" onchange="applyFilters()">
+                Pure Silk
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Katan Silk" onchange="applyFilters()">
+                Katan Silk
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Mulberry Silk" onchange="applyFilters()">
+                Mulberry Silk
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Silk Cotton" onchange="applyFilters()">
+                Silk Cotton Handloom
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Organza" onchange="applyFilters()">
+                Silk Organza
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Tussar" onchange="applyFilters()">
+                Wild Tussar Silk
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Georgette" onchange="applyFilters()">
+                Shimmer Georgette
               </label>
             </div>
           </div>
@@ -198,32 +264,17 @@
             <h4 class="filter-group-title">Price (₹)</h4>
             <div class="filter-options-list">
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_price" value="under-4000" onchange="applyFilters()">
-                Under ₹4,000
+                <input type="checkbox" name="filter_price" value="under-4500" onchange="applyFilters()">
+                Under ₹4,500
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_price" value="4000-5500" onchange="applyFilters()">
-                ₹4,000 – ₹5,500
+                <input type="checkbox" name="filter_price" value="4500-6500" onchange="applyFilters()">
+                ₹4,500 – ₹6,500
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_price" value="above-5500" onchange="applyFilters()">
-                Above ₹5,500
+                <input type="checkbox" name="filter_price" value="above-6500" onchange="applyFilters()">
+                Above ₹6,500
               </label>
-            </div>
-          </div>
-
-          <!-- Color Swatches -->
-          <div class="filter-group">
-            <h4 class="filter-group-title">Color Palette</h4>
-            <div class="filter-color-palette">
-              <span class="filter-color-swatch" data-color="Emerald Green" style="background:#1C3B2E;" title="Emerald Green" onclick="toggleColorFilter(this, 'Emerald Green')"></span>
-              <span class="filter-color-swatch" data-color="Royal Wine" style="background:#4A1824;" title="Royal Wine" onclick="toggleColorFilter(this, 'Royal Wine')"></span>
-              <span class="filter-color-swatch" data-color="Powder Blush" style="background:#E5B9BA;" title="Powder Blush" onclick="toggleColorFilter(this, 'Powder Blush')"></span>
-              <span class="filter-color-swatch" data-color="Liquid Gold" style="background:#C9AA74;" title="Liquid Gold" onclick="toggleColorFilter(this, 'Liquid Gold')"></span>
-              <span class="filter-color-swatch" data-color="Champagne Sand" style="background:#D8C7B0;" title="Champagne Sand" onclick="toggleColorFilter(this, 'Champagne Sand')"></span>
-              <span class="filter-color-swatch" data-color="Olive Sage" style="background:#6B7559;" title="Olive Sage" onclick="toggleColorFilter(this, 'Olive Sage')"></span>
-              <span class="filter-color-swatch" data-color="Midnight Peacock" style="background:#102F3F;" title="Midnight Peacock" onclick="toggleColorFilter(this, 'Midnight Peacock')"></span>
-              <span class="filter-color-swatch" data-color="Ochre Mustard" style="background:#C19245;" title="Ochre Mustard" onclick="toggleColorFilter(this, 'Ochre Mustard')"></span>
             </div>
           </div>
 
@@ -240,34 +291,53 @@
                 Festive Celebrations
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_occasion" value="Everyday" onchange="applyFilters()">
-                Everyday Elegance
+                <input type="checkbox" name="filter_occasion" value="Party Wear" onchange="applyFilters()">
+                Party & Evening Soirée
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_occasion" value="Party" onchange="applyFilters()">
-                Evening Cocktail
+                <input type="checkbox" name="filter_occasion" value="Traditional" onchange="applyFilters()">
+                Traditional Rituals
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Office Wear" onchange="applyFilters()">
+                Office & Everyday
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Reception" onchange="applyFilters()">
+                Reception Elegance
               </label>
             </div>
           </div>
 
-          <!-- Reset Button -->
-          <div>
-            <button class="btn btn-outline btn-block btn-xs" onclick="resetAllFilters()">Reset All Filters</button>
+          <!-- Color Swatches -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Color Palette</h4>
+            <div class="filter-color-palette">
+              <span class="filter-color-swatch" data-color="Deep Crimson" style="background:#8B1E2B;" title="Deep Crimson" onclick="toggleColorFilter(this, 'Deep Crimson')"></span>
+              <span class="filter-color-swatch" data-color="Emerald Green" style="background:#1C3B2E;" title="Emerald Green" onclick="toggleColorFilter(this, 'Emerald Green')"></span>
+              <span class="filter-color-swatch" data-color="Royal Violet" style="background:#4C2258;" title="Royal Violet" onclick="toggleColorFilter(this, 'Royal Violet')"></span>
+              <span class="filter-color-swatch" data-color="Sapphire Blue" style="background:#133E68;" title="Sapphire Blue" onclick="toggleColorFilter(this, 'Sapphire Blue')"></span>
+              <span class="filter-color-swatch" data-color="Ruby Red" style="background:#A31621;" title="Ruby Red" onclick="toggleColorFilter(this, 'Ruby Red')"></span>
+              <span class="filter-color-swatch" data-color="Ivory & Warm Gold" style="background:#F2EADB;" title="Ivory" onclick="toggleColorFilter(this, 'Ivory & Warm Gold')"></span>
+              <span class="filter-color-swatch" data-color="Sage Green" style="background:#8A9A86;" title="Sage Green" onclick="toggleColorFilter(this, 'Sage Green')"></span>
+              <span class="filter-color-swatch" data-color="Coral Peach" style="background:#E58E77;" title="Coral Peach" onclick="toggleColorFilter(this, 'Coral Peach')"></span>
+            </div>
           </div>
 
         </aside>
 
-        <!-- Right Product Grid Area -->
-        <main>
+        <!-- Right Product Grid Section -->
+        <main class="plp-products-content">
           <div class="product-grid" id="plpProductGrid">
-            <!-- Populated via applyFilters() -->
+            <!-- Rendered dynamically -->
           </div>
 
-          <!-- Empty Filter Results -->
-          <div id="plpEmptyState" class="cart-empty-state hidden">
-            <h3 class="empty-title">No matching drapes found</h3>
-            <p class="empty-sub">Try broadening your filter criteria or explore our curated collections.</p>
-            <button class="btn btn-primary btn-sm" onclick="resetAllFilters()">Clear All Filters</button>
+          <!-- Empty State -->
+          <div class="empty-state-wrap hidden" id="plpEmptyState">
+            <div class="empty-state-icon">🥻</div>
+            <h3 class="empty-state-title">No Sarees Found</h3>
+            <p class="empty-state-desc">We couldn't find any sarees matching your active filters. Try adjusting your selections or exploring our complete collection.</p>
+            <button class="btn btn-outline" onclick="resetAllFilters()">Reset All Filters</button>
           </div>
         </main>
 
@@ -279,108 +349,103 @@
   <footer class="site-footer">
     <div class="container">
       <div class="footer-top-grid">
-        <div>
-          <div class="footer-brand-title">PALLUVO</div>
-          <p class="footer-tagline">“Every drape, a little magic.”</p>
-          <p class="footer-about-text">A contemporary Indian fashion label celebrating sarees, slow craftsmanship, femininity, and effortless luxury for the modern woman.</p>
+        <div class="footer-col-brand">
+          <a href="index.html" class="brand-logo-clean" style="font-size: 1.5rem; margin-bottom: 1rem;">SAREE.COM</a>
+          <p class="footer-tagline">“The Art of the Saree — Timeless weaves. Modern elegance.”</p>
+          <div class="footer-badges">
+            <span class="footer-badge">🌿 100% Handloom Saree Guild</span>
+            <span class="footer-badge">🎗️ Silk Mark Certified Pure Silk</span>
+          </div>
         </div>
-        <div>
-          <h4 class="footer-col-title">Shop</h4>
+        <div class="footer-col">
+          <h4 class="footer-col-title">SHOP</h4>
           <ul class="footer-links-list">
+            <li><a href="sarees.html?sort=newest">New Arrivals</a></li>
+            <li><a href="sarees.html?fabric=Silk">Silk Sarees</a></li>
+            <li><a href="sarees.html?category=Handloom">Handloom Sarees</a></li>
+            <li><a href="sarees.html?fabric=Cotton">Cotton Sarees</a></li>
+            <li><a href="sarees.html?occasion=Wedding">Wedding Sarees</a></li>
             <li><a href="sarees.html">All Sarees</a></li>
-            <li><a href="sarees.html?category=Silk">Silk Stories</a></li>
-            <li><a href="sarees.html?category=Organza">Contemporary Organza</a></li>
-            <li><a href="sarees.html?occasion=Wedding">Wedding Edit</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="footer-col-title">Help</h4>
+        <div class="footer-col">
+          <h4 class="footer-col-title">HELP</h4>
           <ul class="footer-links-list">
             <li><a href="about.html">Contact Us</a></li>
-            <li><a href="#sizeguide" onclick="SizeGuideModal.open()">Size Guide</a></li>
             <li><a href="account.html">Track Order</a></li>
+            <li><a href="about.html#shipping">Shipping Policy</a></li>
+            <li><a href="about.html#returns">Returns & Exchanges</a></li>
           </ul>
         </div>
-        <div>
-          <h4 class="footer-col-title">Currency & Shipping</h4>
-          <p style="font-size: 0.85rem; color: #B5ACA1; line-height: 1.6;">Complimentary shipping on orders above ₹2,999 across India. Handcrafted and insured.</p>
-          <p style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500; margin-top: 0.6rem;">Currency: <strong>INR (₹)</strong></p>
+        <div class="footer-col">
+          <h4 class="footer-col-title">ABOUT</h4>
+          <ul class="footer-links-list">
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="index.html#handloom-edit">Craft & Weaves</a></li>
+            <li><a href="about.html#artisans">Master Artisans</a></li>
+          </ul>
         </div>
       </div>
       <div class="footer-bottom">
-        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
-        <div class="footer-payment-badges">
-          <span class="payment-pill">UPI / QR</span>
-          <span class="payment-pill">RuPay</span>
-          <span class="payment-pill">Visa</span>
-          <span class="payment-pill">Mastercard</span>
-        </div>
+        <p>&copy; 2026 SAREE.COM. All rights reserved. Strictly Saree-Only Merchandising.</p>
       </div>
     </div>
   </footer>
 
-  <!-- SHARED CART DRAWER -->
-  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
-    <div class="cart-drawer-header">
-      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
-      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
-    </div>
-    <div class="cart-shipping-indicator">
-      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
-      <div class="shipping-progress-track">
-        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
-      </div>
-    </div>
-    <div class="cart-drawer-items" id="cartDrawerItems"></div>
-    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
-  </div>
-  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
-
-  <!-- SHARED SEARCH OVERLAY -->
-  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
-    <div class="search-overlay-header">
-      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
-      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
-    </div>
-    <div class="search-input-wrap">
-      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
-    </div>
-    <div class="search-suggestions-wrap">
-      <div id="searchResultsContainer"></div>
-    </div>
-  </div>
-
-  <!-- QUICK VIEW MODAL -->
-  <div class="modal-wrapper" id="quickViewModal" role="dialog" aria-modal="true">
-    <div id="quickViewContent"></div>
-  </div>
-  <div class="modal-backdrop" id="quickViewBackdrop"></div>
-
-  <!-- SIZE GUIDE MODAL -->
-  <div class="modal-wrapper" id="sizeGuideModal" role="dialog" aria-modal="true">
-    <div class="sizeguide-dialog">
-      <button class="modal-close-btn" id="sizeGuideClose">&times;</button>
-      <span class="section-tag" style="text-align: left;">Concierge Tailoring</span>
-      <h2 style="font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.6rem;">Blouse Size Guide</h2>
-      <table class="sizeguide-table">
-        <thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Shoulder</th><th>Armhole</th></tr></thead>
-        <tbody>
-          <tr><td>XS</td><td>32″</td><td>26″</td><td>13.5″</td><td>14″</td></tr>
-          <tr><td>S</td><td>34″</td><td>28″</td><td>14.0″</td><td>15″</td></tr>
-          <tr><td>M</td><td>36″</td><td>30″</td><td>14.5″</td><td>16″</td></tr>
-          <tr><td>L</td><td>38″</td><td>32″</td><td>15.0″</td><td>17″</td></tr>
-          <tr><td>XL</td><td>40″</td><td>34″</td><td>15.5″</td><td>18″</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-  <div class="modal-backdrop" id="sizeGuideBackdrop"></div>
+  <!-- FLOATING WHATSAPP CONCIERGE -->
+  <a href="https://wa.me/919876543210?text=Hello%20SAREE.COM%20Concierge,%20I%20would%20like%20assistance%20with%20selecting%20a%20saree" 
+     class="whatsapp-floating-btn" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     aria-label="Chat with our Saree Stylist on WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
+    </svg>
+  </a>
 
   <!-- SCRIPTS -->
   <script src="js/products.js"></script>
   <script src="js/store.js"></script>
   <script>
     let activeColorFilter = null;
+
+    function renderSareeCard(p) {
+      const isWishlisted = WishlistStore.has(p.id);
+      return `
+        <div class="saree-product-card" data-product-id="${p.id}">
+          <div class="saree-card-img-wrap">
+            <img src="${p.images[0]}" alt="${p.name}" class="saree-card-img" loading="lazy" onerror="this.src='images/hero_saree_art.jpg'">
+            <span class="saree-badge ${p.discount ? 'discount' : ''}">${p.badge || p.discount}</span>
+            <button class="saree-wishlist-btn ${isWishlisted ? 'is-active' : ''}" onclick="WishlistStore.toggle('${p.id}', this)" aria-label="Add to wishlist">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+              </svg>
+            </button>
+            <button class="saree-quickview-overlay-btn" onclick="QuickViewModal.open('${p.id}')">QUICK VIEW</button>
+          </div>
+          <div class="saree-card-details">
+            <span class="saree-card-type">${p.sareeType} &bull; ${p.fabric}</span>
+            <a href="product.html?id=${p.slug}" class="saree-card-name">${p.name}</a>
+            <div class="saree-card-rating">
+              ★ ★ ★ ★ ★ <span>${p.rating} (${p.reviewsCount})</span>
+            </div>
+            <div class="saree-card-pricing">
+              <span class="saree-price-current">${formatINR(p.price)}</span>
+              ${p.compareAtPrice ? `<span class="saree-price-original">${formatINR(p.compareAtPrice)}</span>` : ''}
+              ${p.discount ? `<span class="saree-price-off">${p.discount}</span>` : ''}
+            </div>
+            <button class="saree-add-btn" onclick="CartStore.addItem('${p.id}', 1)">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+              ADD TO BAG
+            </button>
+          </div>
+        </div>
+      `;
+    }
 
     function toggleColorFilter(element, colorName) {
       if (activeColorFilter === colorName) {
@@ -395,61 +460,80 @@
     }
 
     function resetAllFilters() {
-      document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+      document.querySelectorAll('#filterSidebar input[type="checkbox"]').forEach(c => c.checked = false);
       document.querySelectorAll('.filter-color-swatch').forEach(s => s.classList.remove('is-active'));
       activeColorFilter = null;
       document.getElementById('sortSelect').value = 'featured';
-      
-      // Clean query params
       window.history.pushState({}, '', window.location.pathname);
       applyFilters();
     }
 
     function applyFilters() {
-      let filtered = [...PALLUVO_PRODUCTS];
+      let filtered = [...SAREE_PRODUCTS];
 
-      // 1. Categories
-      const selectedCategories = Array.from(document.querySelectorAll('input[name="filter_category"]:checked')).map(c => c.value);
-      if (selectedCategories.length > 0) {
-        filtered = filtered.filter(p => selectedCategories.includes(p.category));
+      // 1. Saree Type
+      const selectedTypes = Array.from(document.querySelectorAll('input[name="filter_type"]:checked')).map(c => c.value);
+      if (selectedTypes.length > 0) {
+        filtered = filtered.filter(p => selectedTypes.some(t => p.sareeType.toLowerCase().includes(t.toLowerCase()) || p.category.toLowerCase().includes(t.toLowerCase())));
       }
 
-      // 2. Price ranges
+      // 2. Fabric
+      const selectedFabrics = Array.from(document.querySelectorAll('input[name="filter_fabric"]:checked')).map(c => c.value);
+      if (selectedFabrics.length > 0) {
+        filtered = filtered.filter(p => selectedFabrics.some(f => p.fabric.toLowerCase().includes(f.toLowerCase())));
+      }
+
+      // 3. Price
       const selectedPrices = Array.from(document.querySelectorAll('input[name="filter_price"]:checked')).map(c => c.value);
       if (selectedPrices.length > 0) {
         filtered = filtered.filter(p => {
           return selectedPrices.some(range => {
-            if (range === 'under-4000') return p.price < 4000;
-            if (range === '4000-5500') return p.price >= 4000 && p.price <= 5500;
-            if (range === 'above-5500') return p.price > 5500;
+            if (range === 'under-4500') return p.price < 4500;
+            if (range === '4500-6500') return p.price >= 4500 && p.price <= 6500;
+            if (range === 'above-6500') return p.price > 6500;
             return true;
           });
         });
       }
 
-      // 3. Color
+      // 4. Occasion
+      const selectedOccasions = Array.from(document.querySelectorAll('input[name="filter_occasion"]:checked')).map(c => c.value);
+      if (selectedOccasions.length > 0) {
+        filtered = filtered.filter(p => selectedOccasions.some(occ => p.occasion.toLowerCase().includes(occ.toLowerCase())));
+      }
+
+      // 5. Color
       if (activeColorFilter) {
         filtered = filtered.filter(p => p.color === activeColorFilter || p.swatches.some(s => s.name === activeColorFilter));
       }
 
-      // 4. Occasion
-      const selectedOccasions = Array.from(document.querySelectorAll('input[name="filter_occasion"]:checked')).map(c => c.value);
-      if (selectedOccasions.length > 0) {
-        filtered = filtered.filter(p => selectedOccasions.includes(p.occasion));
-      }
-
-      // 5. URL query params filter check (collection / mood)
+      // 6. URL Search Params (e.g. ?category=Banarasi, ?occasion=Wedding, ?search=...)
       const urlParams = new URLSearchParams(window.location.search);
-      const urlCollection = urlParams.get('collection');
-      const urlMood = urlParams.get('mood');
-      if (urlCollection) {
-        filtered = filtered.filter(p => p.collection.toLowerCase().includes(urlCollection.toLowerCase()));
+      const urlCat = urlParams.get('category');
+      const urlOcc = urlParams.get('occasion');
+      const urlFabric = urlParams.get('fabric');
+      const urlSearch = urlParams.get('search');
+
+      if (urlCat && selectedTypes.length === 0) {
+        filtered = filtered.filter(p => p.category.toLowerCase().includes(urlCat.toLowerCase()) || p.sareeType.toLowerCase().includes(urlCat.toLowerCase()));
       }
-      if (urlMood) {
-        filtered = filtered.filter(p => p.mood.toLowerCase() === urlMood.toLowerCase());
+      if (urlOcc && selectedOccasions.length === 0) {
+        filtered = filtered.filter(p => p.occasion.toLowerCase().includes(urlOcc.toLowerCase()));
+      }
+      if (urlFabric && selectedFabrics.length === 0) {
+        filtered = filtered.filter(p => p.fabric.toLowerCase().includes(urlFabric.toLowerCase()));
+      }
+      if (urlSearch) {
+        const q = urlSearch.toLowerCase();
+        filtered = filtered.filter(p => 
+          p.name.toLowerCase().includes(q) ||
+          p.sareeType.toLowerCase().includes(q) ||
+          p.category.toLowerCase().includes(q) ||
+          p.fabric.toLowerCase().includes(q)
+        );
       }
 
-      // 6. Sorting
+      // 7. Sorting
       const sortVal = document.getElementById('sortSelect').value;
       if (sortVal === 'price-asc') {
         filtered.sort((a, b) => a.price - b.price);
@@ -457,35 +541,32 @@
         filtered.sort((a, b) => b.price - a.price);
       } else if (sortVal === 'rating-desc') {
         filtered.sort((a, b) => b.rating - a.rating);
+      } else if (sortVal === 'discount') {
+        filtered.sort((a, b) => (parseInt(b.discount) || 0) - (parseInt(a.discount) || 0));
       } else if (sortVal === 'newest') {
-        filtered.sort((a, b) => (b.newArrival ? 1 : 0) - (a.newArrival ? 1 : 0));
+        filtered.sort((a, b) => b.price - a.price);
       }
 
-      // Render Active Filter Pills
+      // Active Filter Pills
       const pillsContainer = document.getElementById('activeFilterTags');
       let pillsHtml = '';
-      selectedCategories.forEach(cat => {
-        pillsHtml += `<span class="filter-pill">${cat}</span>`;
-      });
-      selectedPrices.forEach(pr => {
-        pillsHtml += `<span class="filter-pill">${pr.replace('-', ' ')}</span>`;
-      });
-      if (activeColorFilter) {
-        pillsHtml += `<span class="filter-pill">${activeColorFilter}</span>`;
-      }
-      if (urlCollection) {
-        pillsHtml += `<span class="filter-pill">Collection: ${urlCollection}</span>`;
-      }
-      if (urlMood) {
-        pillsHtml += `<span class="filter-pill">Mood: ${urlMood}</span>`;
-      }
+      selectedTypes.forEach(t => { pillsHtml += `<span class="filter-pill">${t}</span>`; });
+      selectedFabrics.forEach(f => { pillsHtml += `<span class="filter-pill">${f}</span>`; });
+      selectedPrices.forEach(p => { pillsHtml += `<span class="filter-pill">${p.replace('-', ' ')}</span>`; });
+      selectedOccasions.forEach(o => { pillsHtml += `<span class="filter-pill">${o}</span>`; });
+      if (activeColorFilter) { pillsHtml += `<span class="filter-pill">${activeColorFilter}</span>`; }
+      if (urlCat) { pillsHtml += `<span class="filter-pill">Category: ${urlCat}</span>`; }
+      if (urlOcc) { pillsHtml += `<span class="filter-pill">Occasion: ${urlOcc}</span>`; }
+      if (urlFabric) { pillsHtml += `<span class="filter-pill">Fabric: ${urlFabric}</span>`; }
+      if (urlSearch) { pillsHtml += `<span class="filter-pill">Search: "${urlSearch}"</span>`; }
+
       if (pillsHtml) {
         pillsHtml += `<button class="btn-text-link btn-xs" style="margin-left:0.5rem;" onclick="resetAllFilters()">Clear All</button>`;
       }
       pillsContainer.innerHTML = pillsHtml;
 
       // Update Count
-      document.getElementById('plpCountInfo').innerHTML = `Showing <strong>${filtered.length}</strong> ${filtered.length === 1 ? 'Drape' : 'Drapes'}`;
+      document.getElementById('plpCountInfo').innerHTML = `Showing <strong>${filtered.length}</strong> ${filtered.length === 1 ? 'Saree' : 'Sarees'}`;
 
       // Render Grid
       const grid = document.getElementById('plpProductGrid');
@@ -496,50 +577,35 @@
         emptyState.classList.remove('hidden');
       } else {
         emptyState.classList.add('hidden');
-        grid.innerHTML = filtered.map(renderProductCard).join('');
+        grid.innerHTML = filtered.map(renderSareeCard).join('');
       }
 
       WishlistStore.updateHeartIcons();
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      // Check URL parameters for pre-selected filters
       const urlParams = new URLSearchParams(window.location.search);
-      const categoryParam = urlParams.get('category');
-      const occasionParam = urlParams.get('occasion');
-      const collectionParam = urlParams.get('collection');
+      const catParam = urlParams.get('category');
+      const occParam = urlParams.get('occasion');
+      const sortParam = urlParams.get('sort');
 
-      if (categoryParam) {
-        const catBox = document.querySelector(`input[name="filter_category"][value="${categoryParam}"]`);
+      if (catParam) {
+        const catBox = document.querySelector(`input[name="filter_type"][value="${catParam}"]`);
         if (catBox) catBox.checked = true;
-        document.getElementById('plpPageTitle').textContent = `${categoryParam} Sarees`;
+        document.getElementById('plpPageTitle').textContent = `${catParam} Sarees`;
       }
-
-      if (occasionParam) {
-        const occBox = document.querySelector(`input[name="filter_occasion"][value="${occasionParam}"]`);
+      if (occParam) {
+        const occBox = document.querySelector(`input[name="filter_occasion"][value="${occParam}"]`);
         if (occBox) occBox.checked = true;
-        document.getElementById('plpPageTitle').textContent = `${occasionParam} Sarees Edit`;
+        document.getElementById('plpPageTitle').textContent = `${occParam} Sarees`;
       }
-
-      if (collectionParam) {
-        document.getElementById('plpPageTitle').textContent = `${collectionParam} Edit`;
+      if (sortParam) {
+        document.getElementById('sortSelect').value = sortParam;
       }
 
       document.getElementById('sortSelect').addEventListener('change', applyFilters);
-
       applyFilters();
     });
   </script>
-  <!-- FLOATING WHATSAPP CONCIERGE BUTTON (Singhania style) -->
-  <a href="https://wa.me/919876543210?text=Hello%20Palluvo%2C%20I%20would%20like%20assistance%20with%20selecting%20a%20saree" 
-     class="whatsapp-floating-btn" 
-     target="_blank" 
-     rel="noopener noreferrer" 
-     aria-label="Chat with our Saree Stylist on WhatsApp"
-     title="Stylist Concierge on WhatsApp">
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
-      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
-    </svg>
-  </a>
 </body>
 </html>

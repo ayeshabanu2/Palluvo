@@ -3,65 +3,68 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>The Story Behind the Drape — PALLUVO | Luxury Contemporary Sarees</title>
-  <meta name="description" content="Discover the philosophy, master weavers, and artisanal heritage behind PALLUVO. Modern Indian luxury sarees crafted with unhurried reverence.">
+  <title>The Story Behind the Drape — SAREE.COM | The Art of the Saree</title>
+  <meta name="description" content="Discover the philosophy, master weavers, and artisanal heritage behind SAREE.COM. Handcrafted Indian sarees crafted with unhurried reverence.">
   <link rel="stylesheet" href="css/style.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥻</text></svg>">
 </head>
 <body>
 
-  <!-- MODERN SLEEK SITE HEADER (Saree.com Reference Layout) -->
+  <!-- STICKY SITE HEADER (SAREE.COM) -->
   <header class="site-header-clean" id="siteHeader">
     <div class="header-row-clean">
       
-      <!-- Left: Clean Brand Logo -->
-      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
-        PALLUVO
+      <!-- Left: Logo -->
+      <a href="index.html" class="brand-logo-clean" aria-label="SAREE.COM Home">
+        SAREE.COM
       </a>
 
-      <!-- Center: Modern Uppercase Category Navigation -->
+      <!-- Center: 9 Navigation Links -->
       <nav class="header-nav-center" aria-label="Main Categories">
         <div class="nav-item-clean">
-          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW</a>
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
         </div>
         <div class="nav-item-clean">
-          <a href="index.html#collections" class="nav-link-clean">CURATED EDITS</a>
+          <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html" class="nav-link-clean">SAREE</a>
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?category=Chanderi" class="nav-link-clean">SALWAR SUITS</a>
+          <a href="sarees.html?fabric=Silk" class="nav-link-clean">SILK SAREES</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">LEHENGAS</a>
+          <a href="sarees.html?category=Handloom" class="nav-link-clean">HANDLOOM</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?collection=Contemporary" class="nav-link-clean">KURTI</a>
+          <a href="sarees.html?fabric=Cotton" class="nav-link-clean">COTTON</a>
         </div>
         <div class="nav-item-clean">
-          <a href="about.html" class="nav-link-clean is-active">MEN'S</a>
+          <a href="sarees.html?occasion=Party+Wear" class="nav-link-clean">PARTY WEAR</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?occasion=Festive" class="nav-link-clean" style="color: #E65100; font-weight: 700;">NAVRATRI</a>
+          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">WEDDING</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean">ALL SAREES</a>
         </div>
       </nav>
 
-      <!-- Right: Minimalist Outline Action Icons -->
+      <!-- Right: Action Icons -->
       <div class="header-actions-clean">
-        <a href="account.html" class="header-action-icon" aria-label="Account">
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
-        </a>
-
         <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
         </button>
+
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
 
         <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -95,24 +98,26 @@
   <!-- MOBILE NAVIGATION DRAWER -->
   <div class="mobile-drawer" id="mobileMenuDrawer">
     <div class="mobile-drawer-header">
-      <span class="brand-logo-clean" style="font-size: 1.5rem;">PALLUVO</span>
+      <span class="brand-logo-clean" style="font-size: 1.5rem;">SAREE.COM</span>
       <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
     </div>
     <div class="mobile-drawer-nav">
       <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
-      <a href="index.html#collections" class="mobile-nav-link">CURATED EDITS <span>&rarr;</span></a>
-      <a href="sarees.html" class="mobile-nav-link">SAREES <span>&rarr;</span></a>
-      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">SALWAR SUITS <span>&rarr;</span></a>
-      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">LEHENGAS <span>&rarr;</span></a>
-      <a href="sarees.html?collection=Contemporary" class="mobile-nav-link">KURTI & FUSION <span>&rarr;</span></a>
-      <a href="sarees.html?occasion=Festive" class="mobile-nav-link" style="color: #E65100; font-weight: 700;">NAVRATRI SPECIAL <span>&rarr;</span></a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">BANARASI SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">KANJIVARAM SILK <span>&rarr;</span></a>
+      <a href="sarees.html?fabric=Silk" class="mobile-nav-link">PURE SILK SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Handloom" class="mobile-nav-link">HANDLOOM WEAVES <span>&rarr;</span></a>
+      <a href="sarees.html?fabric=Cotton" class="mobile-nav-link">COTTON SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Party+Wear" class="mobile-nav-link">PARTY WEAR <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">WEDDING & BRIDAL <span>&rarr;</span></a>
+      <a href="sarees.html" class="mobile-nav-link">ALL SAREES <span>&rarr;</span></a>
       <a href="about.html" class="mobile-nav-link is-active">OUR STORY <span>&rarr;</span></a>
       <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
       <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
     </div>
     <div class="mobile-drawer-footer">
       <p>🇮🇳 India &bull; INR (₹)</p>
-      <p style="margin-top: 0.3rem;">Every drape, a little magic.</p>
+      <p style="margin-top: 0.3rem;">The Art of the Saree.</p>
     </div>
   </div>
   <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
