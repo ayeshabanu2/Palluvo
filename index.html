@@ -3,52 +3,54 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PALLUVO — Every drape, a little magic. | Curated Luxury Indian Sarees</title>
-  <meta name="description" content="PALLUVO: Every drape, a little magic. Discover our handpicked signature saree models — Royal Kanjivaram, Heirloom Banarasi, Whispering Chanderi, Imperial Paithani, Ethereal Organza, and 1-Minute Ready Drape. 100% certified authentic weaves.">
+  <title>PALLUVO — Every drape, a little magic. | Contemporary Luxury Sarees</title>
+  <meta name="description" content="PALLUVO: Every drape, a little magic. Contemporary luxury Indian sarees handcrafted across premier weaver clusters: Banarasi, Kanjivaram, Paithani, Chanderi, Pochampally, and more. 100% certified authentic silks.">
   <link rel="stylesheet" href="css/style.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥻</text></svg>">
 </head>
 <body>
 
-  <!-- 1. STICKY RESPONSIVE HEADER (PALLUVO) -->
+  <!-- ========================================================================
+       1. STICKY RESPONSIVE HEADER
+       ======================================================================== -->
   <header class="site-header-clean" id="siteHeader">
     <div class="header-row-clean">
       
-      <!-- Left: Logo & Tagline -->
+      <!-- Left: Brand Logo & Tagline -->
       <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
         PALLUVO
         <span class="brand-tagline-sub">Every drape, a little magic.</span>
       </a>
 
-      <!-- Center: Navigation (Curated Top Saree Models) -->
-      <nav class="header-nav-center" aria-label="Signature Models Navigation">
+      <!-- Center: Navigation Links -->
+      <nav class="header-nav-center" aria-label="Main Navigation">
         <div class="nav-item-clean">
           <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
-        </div>
-        <div class="nav-item-clean">
-          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
         </div>
         <div class="nav-item-clean">
           <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?category=Chanderi" class="nav-link-clean">CHANDERI</a>
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Pochampally" class="nav-link-clean">POCHAMPALLY</a>
         </div>
         <div class="nav-item-clean">
           <a href="sarees.html?category=Paithani" class="nav-link-clean">PAITHANI</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?category=Organza" class="nav-link-clean">ORGANZA</a>
+          <a href="sarees.html?category=Chanderi" class="nav-link-clean">CHANDERI</a>
         </div>
         <div class="nav-item-clean">
-          <a href="sarees.html?category=Ready-to-Wear" class="nav-link-clean">READY-TO-WEAR</a>
+          <a href="sarees.html?category=Organza" class="nav-link-clean">ORGANZA</a>
         </div>
         <div class="nav-item-clean">
           <a href="sarees.html" class="nav-link-clean is-active">ALL SAREES</a>
         </div>
       </nav>
 
-      <!-- Right: Action Icons (Search, Account, Wishlist, Cart) -->
+      <!-- Right: Action Icons (Search, Account, Wishlist, Bag) -->
       <div class="header-actions-clean">
         <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -80,7 +82,7 @@
           <span class="header-action-badge cart-badge hidden">0</span>
         </button>
 
-        <!-- Mobile Menu Toggle -->
+        <!-- Mobile Menu Toggle Button -->
         <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu" style="display: none;">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -104,12 +106,12 @@
     </div>
     <div class="mobile-drawer-nav">
       <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
-      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">ROYAL KANJIVARAM <span>&rarr;</span></a>
-      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">HEIRLOOM BANARASI <span>&rarr;</span></a>
-      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">WHISPERING CHANDERI <span>&rarr;</span></a>
-      <a href="sarees.html?category=Paithani" class="mobile-nav-link">IMPERIAL PAITHANI <span>&rarr;</span></a>
-      <a href="sarees.html?category=Organza" class="mobile-nav-link">ETHEREAL ORGANZA <span>&rarr;</span></a>
-      <a href="sarees.html?category=Ready-to-Wear" class="mobile-nav-link">1-MINUTE READY DRAPE <span>&rarr;</span></a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">BANARASI SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">KANJIVARAM SILK <span>&rarr;</span></a>
+      <a href="sarees.html?category=Pochampally" class="mobile-nav-link">POCHAMPALLY IKAT <span>&rarr;</span></a>
+      <a href="sarees.html?category=Paithani" class="mobile-nav-link">PAITHANI SILK <span>&rarr;</span></a>
+      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">CHANDERI HANDLOOM <span>&rarr;</span></a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">ORGANZA SILK <span>&rarr;</span></a>
       <a href="sarees.html" class="mobile-nav-link">ALL SAREES <span>&rarr;</span></a>
       <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
       <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
@@ -123,7 +125,9 @@
 
   <main id="mainContent">
 
-    <!-- 2. FULL-WIDTH HERO SECTION (PALLUVO) -->
+    <!-- ========================================================================
+         2. FULL-WIDTH HERO SECTION
+         ======================================================================== -->
     <section class="hero-art-section" id="heroSaree">
       <div class="hero-art-scrim"></div>
       
@@ -136,50 +140,59 @@
             Discover our handpicked signature saree models, crafted by master artisans for celebrations, traditions, and the modern muse. Pure certified silks, tested real zari, and timeless elegance in every fold.
           </p>
           <div class="hero-art-actions">
-            <a href="#signature-models" class="btn-hero-primary">EXPLORE TOP MODELS</a>
-            <a href="sarees.html" class="btn-hero-secondary">SHOP ALL SAREES</a>
+            <a href="sarees.html" class="btn btn-primary" style="padding: 1rem 2.5rem;">EXPLORE SAREES</a>
+            <a href="#handloom-edit" class="btn btn-outline" style="padding: 1rem 2.5rem; background: rgba(248, 245, 239, 0.9);">THE HANDLOOM EDIT</a>
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 3. PROMOTIONAL BANNER ("THE FESTIVE EDIT") -->
-    <div class="container" style="margin-top: -1.5rem; position: relative; z-index: 5;">
-      <div class="promo-festive-strip">
-        <span class="promo-festive-tag">FESTIVE SEASON EXCLUSIVE</span>
-        <h2 class="promo-festive-heading">THE FESTIVE EDIT</h2>
-        <p class="promo-festive-offer">UP TO 25% OFF &bull; FREE SHIPPING ON ORDERS ABOVE ₹999</p>
-        <a href="sarees.html?sort=discount" class="btn btn-primary" style="padding: 0.8rem 2rem; font-size: 0.82rem; background: #FFFFFF; color: #111;">SHOP NOW</a>
-      </div>
-    </div>
-
-    <!-- 4. THE TOP SAREE MODELS (Curated 6 Signature Models) -->
-    <section class="section-spacing" id="signature-models">
+    <!-- ========================================================================
+         3. SHOP BY SAREE TYPE (Category Cards with 4:5 Ratio & One-Liners)
+         ======================================================================== -->
+    <section class="section-spacing" id="saree-types">
       <div class="container">
         <div class="saree-section-header">
-          <span class="saree-section-eyebrow">CURATED SIGNATURE ATELIER</span>
-          <h2 class="saree-section-title">The Top Saree Models</h2>
+          <span class="saree-section-eyebrow">HERITAGE DIRECTORY</span>
+          <h2 class="saree-section-title">Shop by Saree Type</h2>
           <p class="saree-section-subtitle">
-            Instead of overwhelming variety, we curate perfection. Discover our 6 signature drapes, each celebrating India's greatest weaving traditions.
+            Explore iconic regional and fabric sarees handcrafted across India's master weaving clusters. Each drape is an authentic testament to Indian weaving mastery.
           </p>
         </div>
 
-        <!-- Filter tabs for model selection -->
-        <div class="saree-filter-tabs" id="categoryFilterTabs">
-          <button class="saree-tab-btn is-active" data-filter="all">All Top Models (6)</button>
-          <button class="saree-tab-btn" data-filter="bridal">Heirloom & Bridal Silks</button>
-          <button class="saree-tab-btn" data-filter="modern">Ethereal & Modern Drapes</button>
-        </div>
-
-        <!-- Curated 6 Top Models Grid -->
-        <div class="saree-categories-grid top-models-grid" id="sareeCategoriesGrid">
+        <div class="saree-categories-grid" id="sareeCategoriesGrid">
           <!-- Rendered via JS from PALLUVO_TOP_MODELS -->
         </div>
       </div>
     </section>
 
-    <!-- 5. SHOP BY OCCASION (Saree-Only Curations) -->
-    <section class="section-spacing" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+    <!-- ========================================================================
+         4. NEW ARRIVALS (Fresh from the Pit-Looms)
+         ======================================================================== -->
+    <section class="section-spacing" id="new-arrivals" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+      <div class="container">
+        <div class="saree-section-header">
+          <span class="saree-section-eyebrow">FRESH FROM THE LOOMS</span>
+          <h2 class="saree-section-title">New Arrivals</h2>
+          <p class="saree-section-subtitle">
+            Recently off the pit-looms: luminous silks and ethereal gossamer weaves in rich vibrant hues.
+          </p>
+        </div>
+
+        <div class="saree-products-grid" id="newArrivalsGrid">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div style="text-align: center; margin-top: 3.5rem;">
+          <a href="sarees.html?sort=newest" class="btn btn-outline">VIEW ALL NEW ARRIVALS</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         5. SHOP BY OCCASION (Saree-Only Curations)
+         ======================================================================== -->
+    <section class="section-spacing" id="saree-occasions">
       <div class="container">
         <div class="saree-section-header">
           <span class="saree-section-eyebrow">MOMENTS & CELEBRATIONS</span>
@@ -195,28 +208,32 @@
       </div>
     </section>
 
-    <!-- 6. TRENDING SAREES ("TRENDING NOW" - Signature Pieces) -->
-    <section class="section-spacing" id="trending-now">
+    <!-- ========================================================================
+         6. TRENDING SAREES (Customer Favorites)
+         ======================================================================== -->
+    <section class="section-spacing" id="trending-sarees" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
       <div class="container">
         <div class="saree-section-header">
           <span class="saree-section-eyebrow">CURATED BESTSELLERS</span>
-          <h2 class="saree-section-title">Trending Now</h2>
+          <h2 class="saree-section-title">Trending Sarees</h2>
           <p class="saree-section-subtitle">
             Handpicked pure sarees crafted for celebrations, cherished by patrons worldwide.
           </p>
         </div>
 
         <div class="saree-products-grid" id="trendingProductsGrid">
-          <!-- Rendered via JS from SAREE_PRODUCTS -->
+          <!-- Rendered via JS -->
         </div>
 
         <div style="text-align: center; margin-top: 3.5rem;">
-          <a href="sarees.html" class="btn btn-outline" style="padding: 1rem 3rem;">EXPLORE ALL SAREES</a>
+          <a href="sarees.html" class="btn btn-outline">EXPLORE ALL SAREES</a>
         </div>
       </div>
     </section>
 
-    <!-- 7. THE HANDLOOM EDIT (Regional Artisan Showcase) -->
+    <!-- ========================================================================
+         7. THE HANDLOOM EDIT (Warm Ivory Background with Gold Details)
+         ======================================================================== -->
     <section class="section-spacing" id="handloom-edit">
       <div class="container">
         <div class="handloom-edit-box">
@@ -227,37 +244,87 @@
             <p class="handloom-edit-desc">
               We partner directly with traditional weaving clusters across Telangana, Andhra Pradesh, Uttar Pradesh, Tamil Nadu, and Maharashtra. Every handloom saree is woven with unhurried patience on wooden pit-looms using pure certified silk yarns and authentic tested zari.
             </p>
-            <a href="sarees.html?category=Handloom" class="btn btn-primary" style="background: #FFFFFF; color: #111; padding: 0.9rem 2.2rem; font-size: 0.82rem;">SHOP HANDLOOMS</a>
+            <a href="sarees.html?category=Handloom" class="btn btn-primary">SHOP HANDLOOMS</a>
           </div>
 
           <!-- Regional Handloom Clusters Scroll Cards -->
           <div class="handloom-regions-scroll" id="handloomRegionsScroll">
-            <!-- Rendered via JS -->
+            <!-- Rendered via JS (Pochampally, Gadwal, Uppada, Chanderi, Paithani, Banarasi, Kanjivaram, Ilkal, Bomkai, Muga Silk) -->
           </div>
         </div>
       </div>
     </section>
 
-    <!-- 8. FESTIVE / NAVRATRI SECTION ("NAVRATRI IN MOTION") -->
-    <section class="container">
-      <div class="festive-navratri-banner">
-        <div class="festive-navratri-left">
-          <h2 class="festive-navratri-title">NAVRATRI IN MOTION</h2>
-          <p class="festive-navratri-sub">Celebrate every twirl.</p>
-          <p class="festive-navratri-body">
-            Festive sarees crafted for every celebration. Pure silk Bandhanis, opulent Patolas, and vibrantly woven Paithanis designed to dance with you through every Garba evening and sacred Aarti.
+    <!-- ========================================================================
+         8. THE FESTIVE EDIT (Rich Deep Burgundy Background)
+         ======================================================================== -->
+    <section class="container" id="festive-edit">
+      <div class="festive-edit-section">
+        <div class="festive-edit-left">
+          <span class="festive-edit-eyebrow">FESTIVE SEASON EXCLUSIVE</span>
+          <h2 class="festive-edit-title">The Festive Edit</h2>
+          <p class="festive-edit-subtitle">Celebrate every twirl.</p>
+          <p class="festive-edit-body">
+            Festive sarees crafted for every celebration. Pure silk Bandhanis, opulent Patolas, and vibrantly woven Paithanis designed to dance with you through every Garba evening, Diwali celebration, and sacred Aarti.
           </p>
-          <a href="sarees.html?occasion=Festive" class="btn btn-primary" style="background: #FFFFFF; color: #111; padding: 0.85rem 2.2rem; font-size: 0.82rem;">SHOP FESTIVE SAREES</a>
+          <div class="festive-saree-tags">
+            <span class="festive-saree-tag-pill">Bandhani</span>
+            <span class="festive-saree-tag-pill">Patola</span>
+            <span class="festive-saree-tag-pill">Paithani</span>
+            <span class="festive-saree-tag-pill">Banarasi</span>
+            <span class="festive-saree-tag-pill">Kanjivaram</span>
+            <span class="festive-saree-tag-pill">Pochampally</span>
+          </div>
+          <a href="sarees.html?occasion=Festive" class="btn" style="background: #FFFFFF; color: var(--color-burgundy); font-weight: 700;">EXPLORE FESTIVE SAREES</a>
         </div>
-        <div class="festive-navratri-right">
-          <div class="festive-pill-tag">✨ PALLUVO FESTIVE SPECIAL</div>
+
+        <div style="flex: 1; max-width: 480px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem;">
+          <a href="sarees.html?category=Bandhani" style="text-decoration: none; color: inherit; text-align: center;">
+            <img src="images/categories/bandhani.jpg" alt="Bandhani Saree" style="width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.2);">
+            <span style="display: block; font-family: var(--font-serif); font-size: 1.05rem; color: #FFF; margin-top: 0.4rem;">Bandhani</span>
+          </a>
+          <a href="sarees.html?category=Patola" style="text-decoration: none; color: inherit; text-align: center;">
+            <img src="images/categories/patola.jpg" alt="Patola Saree" style="width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius-xs); border: 1px solid rgba(255,255,255,0.2);">
+            <span style="display: block; font-family: var(--font-serif); font-size: 1.05rem; color: #FFF; margin-top: 0.4rem;">Patola</span>
+          </a>
         </div>
       </div>
     </section>
 
-    <!-- 9. 5 CORE TRUST PILLARS -->
-    <section class="section-spacing" style="border-top: 1px solid var(--border-subtle); margin-top: 4rem;">
+    <!-- ========================================================================
+         9. BESTSELLERS (Loved by Her)
+         ======================================================================== -->
+    <section class="section-spacing" id="bestsellers">
       <div class="container">
+        <div class="saree-section-header">
+          <span class="saree-section-eyebrow">LOVED BY HER</span>
+          <h2 class="saree-section-title">Bestsellers</h2>
+          <p class="saree-section-subtitle">
+            Our most revered pure silk drapes, rated 4.9+ stars by patrons across the globe.
+          </p>
+        </div>
+
+        <div class="saree-products-grid" id="bestsellersGrid">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div style="text-align: center; margin-top: 3.5rem;">
+          <a href="sarees.html" class="btn btn-outline">SHOP ALL BESTSELLERS</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========================================================================
+         10. WHY SHOP WITH US (5 Core Trust Pillars)
+         ======================================================================== -->
+    <section class="section-spacing" style="border-top: 1px solid var(--border-subtle); background-color: var(--bg-card);">
+      <div class="container">
+        <div class="saree-section-header" style="margin-bottom: 3rem;">
+          <span class="saree-section-eyebrow">OUR COMMITMENT</span>
+          <h2 class="saree-section-title">Why Shop with Us</h2>
+          <p class="saree-section-subtitle">Purity, authenticity, and unhurried artistry delivered to your door.</p>
+        </div>
+
         <div class="trust-grid-5">
           <div class="trust-item-saree">
             <div class="trust-icon-wrap">
@@ -268,7 +335,7 @@
               </svg>
             </div>
             <h3 class="trust-title">AUTHENTIC WEAVES</h3>
-            <p class="trust-subtitle">Directly sourced from master artisan clusters across Kanchipuram, Varanasi & Paithan.</p>
+            <p class="trust-subtitle">Directly sourced from certified weaver guilds in Kanchipuram, Varanasi & Paithan.</p>
           </div>
 
           <div class="trust-item-saree">
@@ -279,7 +346,7 @@
               </svg>
             </div>
             <h3 class="trust-title">QUALITY ASSURED</h3>
-            <p class="trust-subtitle">100% Silk Mark certified natural silk and lab-tested gold & silver zari purity.</p>
+            <p class="trust-subtitle">100% Silk Mark certified natural silk and certified tested gold zari purity.</p>
           </div>
 
           <div class="trust-item-saree">
@@ -320,9 +387,31 @@
       </div>
     </section>
 
+    <!-- ========================================================================
+         11. NEWSLETTER ("Join the PALLUVO Circle")
+         ======================================================================== -->
+    <section class="newsletter-dedicated-section" id="newsletter">
+      <div class="container">
+        <div class="newsletter-dedicated-wrap">
+          <span style="font-family: var(--font-sans); font-size: 0.78rem; font-weight: 700; letter-spacing: 0.18em; text-transform: uppercase; color: var(--color-gold-antique); display: block; margin-bottom: 0.5rem;">EXCLUSIVE ACCESS</span>
+          <h2 class="newsletter-dedicated-title">Join the PALLUVO Circle</h2>
+          <p class="newsletter-dedicated-subtitle">A little magic, delivered.</p>
+          <p class="newsletter-dedicated-text">
+            Receive curated stories on historic looms, rare regional drapes, and private access to our limited festive releases.
+          </p>
+          <form class="newsletter-dedicated-form" onsubmit="event.preventDefault(); Toast.show('Welcome to the PALLUVO Circle! Use code FIRSTDRAPE for ₹500 off.', 'success'); this.reset();">
+            <input type="email" class="newsletter-dedicated-input" placeholder="Enter your email address" required>
+            <button type="submit" class="newsletter-dedicated-btn">SUBSCRIBE</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <!-- 10. LUXURY SAREE FOOTER (PALLUVO) -->
+  <!-- ========================================================================
+       12. LUXURY FOOTER
+       ======================================================================== -->
   <footer class="site-footer">
     <div class="container">
       <div class="footer-top-grid">
@@ -330,9 +419,9 @@
         <!-- Col 1: Brand Info -->
         <div class="footer-col-brand">
           <a href="index.html" class="brand-logo-clean" style="font-size: 1.5rem; margin-bottom: 0.4rem;">PALLUVO</a>
-          <p class="footer-tagline" style="font-style: italic; font-family: var(--font-serif); color: var(--color-gold); margin-bottom: 0.8rem;">“Every drape, a little magic.”</p>
+          <p class="footer-tagline" style="font-style: italic; font-family: var(--font-serif); color: var(--color-burgundy); margin-bottom: 0.8rem;">“Every drape, a little magic.”</p>
           <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
-            A contemporary luxury saree house dedicated exclusively to pure Indian sarees. Handcrafted by master artisans for celebrations, traditions, and the modern muse.
+            A contemporary luxury saree house dedicated exclusively to pure Indian sarees. Celebrating heritage weavers, certified pure silk fabrics, and modern women across the world.
           </p>
           <div class="footer-badges">
             <span class="footer-badge">🌿 100% Handloom Saree Guild</span>
@@ -340,16 +429,16 @@
           </div>
         </div>
 
-        <!-- Col 2: Top Models -->
+        <!-- Col 2: Saree Types -->
         <div class="footer-col">
-          <h4 class="footer-col-title">TOP MODELS</h4>
+          <h4 class="footer-col-title">SAREE TYPES</h4>
           <ul class="footer-links-list">
-            <li><a href="sarees.html?category=Kanjivaram">Royal Kanjivaram</a></li>
-            <li><a href="sarees.html?category=Banarasi">Heirloom Banarasi</a></li>
-            <li><a href="sarees.html?category=Chanderi">Whispering Chanderi</a></li>
-            <li><a href="sarees.html?category=Paithani">Imperial Paithani</a></li>
-            <li><a href="sarees.html?category=Organza">Ethereal Organza</a></li>
-            <li><a href="sarees.html?category=Ready-to-Wear">1-Minute Ready Drape</a></li>
+            <li><a href="sarees.html?category=Banarasi">Banarasi Brocade</a></li>
+            <li><a href="sarees.html?category=Kanjivaram">Kanjivaram Silk</a></li>
+            <li><a href="sarees.html?category=Pochampally">Pochampally Ikat</a></li>
+            <li><a href="sarees.html?category=Paithani">Paithani Silk</a></li>
+            <li><a href="sarees.html?category=Chanderi">Chanderi Tissue</a></li>
+            <li><a href="sarees.html?category=Organza">Organza Silk</a></li>
             <li><a href="sarees.html">All Sarees</a></li>
           </ul>
         </div>
@@ -379,21 +468,19 @@
           </ul>
         </div>
 
-        <!-- Col 5: Newsletter ("Join the PALLUVO Circle") -->
-        <div class="footer-col footer-col-newsletter">
-          <h4 class="footer-col-title">JOIN THE PALLUVO CIRCLE</h4>
-          <p class="footer-newsletter-text">Receive curated stories on historic looms, rare signature drapes, and private access to new festive releases.</p>
-          <form class="footer-newsletter-form" onsubmit="event.preventDefault(); Toast.show('Welcome to the PALLUVO Circle! Use code FIRSTDRAPE for ₹500 off.', 'success'); this.reset();">
-            <input type="email" class="footer-newsletter-input" placeholder="Enter your email" required>
-            <button type="submit" class="footer-newsletter-btn">SUBSCRIBE</button>
-          </form>
-          <div style="margin-top: 1.5rem;">
-            <span style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">FOLLOW OUR JOURNEY</span>
-            <div style="display: flex; gap: 1rem; color: var(--text-secondary);">
-              <a href="#" aria-label="Instagram" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
-              <a href="#" aria-label="Facebook" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
-              <a href="#" aria-label="Pinterest" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="4" x2="12" y2="20"></line><circle cx="12" cy="12" r="8"></circle></svg></a>
-            </div>
+        <!-- Col 5: Connect -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">CONNECT</h4>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 1rem;">
+            Concierge Stylist Assistance available Mon–Sat, 10am–7pm IST.
+          </p>
+          <div style="display: flex; gap: 1rem; color: var(--color-burgundy); margin-bottom: 1.5rem;">
+            <a href="#" aria-label="Instagram" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg></a>
+            <a href="#" aria-label="Facebook" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg></a>
+            <a href="#" aria-label="Pinterest" style="color: inherit;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="4" x2="12" y2="20"></line><circle cx="12" cy="12" r="8"></circle></svg></a>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            📍 Made with heritage pride in India
           </div>
         </div>
 
@@ -421,47 +508,26 @@
   <script src="js/products.js"></script>
   <script src="js/store.js"></script>
   <script>
-    // 1. Render Top Saree Models (Curated 6 Signature Models)
+    // 1. Render Saree Category Cards (4:5 Ratio, Uppercase small label, 1-line description, EXPLORE ->)
     function renderCategoryCard(cat) {
       return `
-        <a href="sarees.html?category=${encodeURIComponent(cat.filterType)}" class="saree-cat-card top-model-card" data-category-type="${cat.id}">
+        <a href="sarees.html?category=${encodeURIComponent(cat.filterType)}" class="saree-cat-card" data-category-type="${cat.id}">
           <div class="saree-cat-img-box">
-            <img src="${cat.image}" alt="${cat.name}" class="saree-cat-img" loading="lazy" onerror="this.src='images/hero_saree_art.jpg'">
+            <img src="${cat.image}" alt="${cat.name} Saree" class="saree-cat-img" loading="lazy" onerror="this.src='images/hero_saree_art.jpg'">
             <span class="saree-cat-tag">${cat.tag}</span>
-            <span class="top-model-hours-badge">${cat.artisanHours}</span>
           </div>
           <div class="saree-cat-body">
             <span class="saree-cat-region">📍 ${cat.region}</span>
             <h3 class="saree-cat-title">${cat.name}</h3>
-            <p class="top-model-subtitle">${cat.subtitle}</p>
-            <p class="saree-cat-desc">${cat.desc}</p>
-            <div class="top-model-footer-row">
-              <span class="top-model-silkmark">✓ Silk Mark Certified</span>
-              <span class="saree-cat-action">EXPLORE MODEL &rarr;</span>
-            </div>
+            <p class="saree-cat-desc">${cat.oneLiner || cat.desc}</p>
+            <span class="saree-cat-action">EXPLORE &rarr;</span>
           </div>
         </a>
       `;
     }
 
-    // 2. Render Occasions
-    function renderOccasionCard(occ) {
-      return `
-        <a href="sarees.html?occasion=${encodeURIComponent(occ.filterParam)}" class="saree-occ-card">
-          <img src="${occ.image}" alt="${occ.name} Sarees" class="saree-occ-bg" loading="lazy" onerror="this.src='images/hero_saree_art.jpg'">
-          <div class="saree-occ-scrim"></div>
-          <div class="saree-occ-content">
-            <span class="saree-occ-tag">${occ.sareeType}</span>
-            <h3 class="saree-occ-name">${occ.name}</h3>
-            <p class="saree-occ-sub">${occ.subtitle}</p>
-            <span class="saree-occ-link">EXPLORE SAREES &rarr;</span>
-          </div>
-        </a>
-      `;
-    }
-
-    // 3. Render Product Card (Trending Sarees)
-    function renderTrendingProductCard(product) {
+    // 2. Render Product Card (4:5 Ratio, Live Color Swatches, INR Pricing, Quick View)
+    function renderProductCard(product) {
       const isWishlisted = WishlistStore.has(product.id);
       return `
         <div class="saree-product-card" data-product-id="${product.id}">
@@ -499,6 +565,22 @@
       `;
     }
 
+    // 3. Render Occasion Card
+    function renderOccasionCard(occ) {
+      return `
+        <a href="sarees.html?occasion=${encodeURIComponent(occ.filterParam)}" class="saree-occ-card">
+          <img src="${occ.image}" alt="${occ.name} Sarees" class="saree-occ-bg" loading="lazy" onerror="this.src='images/hero_saree_art.jpg'">
+          <div class="saree-occ-scrim"></div>
+          <div class="saree-occ-content">
+            <span class="saree-occ-tag">${occ.sareeType}</span>
+            <h3 class="saree-occ-name">${occ.name}</h3>
+            <p class="saree-occ-sub">${occ.subtitle}</p>
+            <span class="saree-occ-link">EXPLORE SAREES &rarr;</span>
+          </div>
+        </a>
+      `;
+    }
+
     // 4. Render Handloom Region Chips
     function renderHandloomChip(reg) {
       return `
@@ -513,54 +595,58 @@
 
     // Initialization on DOMContentLoaded
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. Render Top Models (Curated 6 Signature Models)
+      // 1. Render Shop By Saree Type (Top Models with One-Liners)
       const catContainer = document.getElementById('sareeCategoriesGrid');
-      const modelsData = (typeof PALLUVO_TOP_MODELS !== 'undefined') ? PALLUVO_TOP_MODELS : (typeof SAREE_CATEGORIES !== 'undefined' ? SAREE_CATEGORIES : []);
-      if (catContainer && modelsData.length > 0) {
-        catContainer.innerHTML = modelsData.map(renderCategoryCard).join('');
+      const categoriesData = (typeof PALLUVO_TOP_MODELS !== 'undefined') ? PALLUVO_TOP_MODELS : (typeof SAREE_CATEGORIES !== 'undefined' ? SAREE_CATEGORIES : []);
+      if (catContainer && categoriesData.length > 0) {
+        catContainer.innerHTML = categoriesData.map(renderCategoryCard).join('');
       }
 
-      // 2. Setup Filter Tabs for Top Models
-      const tabButtons = document.querySelectorAll('#categoryFilterTabs .saree-tab-btn');
-      tabButtons.forEach(btn => {
-        btn.addEventListener('click', () => {
-          tabButtons.forEach(b => b.classList.remove('is-active'));
-          btn.classList.add('is-active');
-          const filter = btn.dataset.filter;
+      // 2. Render New Arrivals (4 products)
+      const newArrivalsContainer = document.getElementById('newArrivalsGrid');
+      if (newArrivalsContainer && typeof SAREE_PRODUCTS !== 'undefined') {
+        const newItems = [SAREE_PRODUCTS[3], SAREE_PRODUCTS[4], SAREE_PRODUCTS[7], SAREE_PRODUCTS[10]].filter(Boolean);
+        newArrivalsContainer.innerHTML = newItems.map(renderProductCard).join('');
+      }
 
-          let filtered = modelsData;
-          if (filter === 'bridal') {
-            filtered = modelsData.filter(c => ['kanjivaram', 'banarasi', 'paithani'].includes(c.id));
-          } else if (filter === 'modern') {
-            filtered = modelsData.filter(c => ['chanderi', 'organza', 'ready-to-wear'].includes(c.id));
-          }
-
-          if (catContainer) {
-            catContainer.innerHTML = filtered.map(renderCategoryCard).join('');
-          }
-        });
-      });
-
-      // 3. Render Occasions
+      // 3. Render Shop By Occasion (8 occasions)
       const occContainer = document.getElementById('sareeOccasionsGrid');
       if (occContainer && typeof SAREE_OCCASIONS !== 'undefined') {
         occContainer.innerHTML = SAREE_OCCASIONS.map(renderOccasionCard).join('');
       }
 
-      // 4. Render Trending Saree Products
+      // 4. Render Trending Sarees (4 products)
       const trendingContainer = document.getElementById('trendingProductsGrid');
       if (trendingContainer && typeof SAREE_PRODUCTS !== 'undefined') {
-        trendingContainer.innerHTML = SAREE_PRODUCTS.map(renderTrendingProductCard).join('');
+        const trendingItems = [SAREE_PRODUCTS[0], SAREE_PRODUCTS[1], SAREE_PRODUCTS[2], SAREE_PRODUCTS[8]].filter(Boolean);
+        trendingContainer.innerHTML = trendingItems.map(renderProductCard).join('');
       }
 
-      // 5. Render Handloom Regions
+      // 5. Render Handloom Edit Regions (10 regions)
       const handloomContainer = document.getElementById('handloomRegionsScroll');
       if (handloomContainer && typeof HANDLOOM_REGIONS !== 'undefined') {
         handloomContainer.innerHTML = HANDLOOM_REGIONS.map(renderHandloomChip).join('');
       }
 
+      // 6. Render Bestsellers (4 products)
+      const bestsellersContainer = document.getElementById('bestsellersGrid');
+      if (bestsellersContainer && typeof SAREE_PRODUCTS !== 'undefined') {
+        const bestsellerItems = [SAREE_PRODUCTS[5], SAREE_PRODUCTS[6], SAREE_PRODUCTS[9], SAREE_PRODUCTS[11]].filter(Boolean);
+        bestsellersContainer.innerHTML = bestsellerItems.map(renderProductCard).join('');
+      }
+
       // Update wishlist badges & state
       WishlistStore.updateHeartIcons();
+
+      // Handle hash navigation / snap scroll
+      const urlParams = new URLSearchParams(window.location.search);
+      const scrollToId = urlParams.get('snap') || (window.location.hash ? window.location.hash.substring(1) : '');
+      if (scrollToId) {
+        const targetEl = document.getElementById(scrollToId);
+        if (targetEl) {
+          targetEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+        }
+      }
     });
   </script>
 </body>

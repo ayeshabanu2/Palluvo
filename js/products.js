@@ -7,70 +7,90 @@
 // Curated Top 6 Signature Saree Models for PALLUVO
 const PALLUVO_TOP_MODELS = [
   {
-    id: "kanjivaram",
-    slug: "kanjivaram",
-    name: "The Royal Kanjivaram",
-    shortName: "Kanjivaram Silk",
-    region: "Kanchipuram, Tamil Nadu",
-    tag: "Silk Mark Certified",
-    subtitle: "Pure Mulberry Silk & Korvai Gold Temple Zari",
-    desc: "Woven with heavy three-ply twisted silk yarns and interlocking Korvai temple borders, this iconic bridal model radiates regal heritage and heirloom permanence.",
-    image: "images/categories/kanjivaram.jpg",
-    filterType: "Kanjivaram",
-    artisanHours: "180+ Weaving Hours",
-    pureSilkMark: true
-  },
-  {
     id: "banarasi",
     slug: "banarasi",
-    name: "The Heirloom Banarasi",
+    name: "Banarasi",
     shortName: "Katan Banarasi",
     region: "Varanasi, Uttar Pradesh",
-    tag: "Kadhwa Handloom",
+    tag: "Kadhwa Brocade",
+    oneLiner: "Timeless zari woven in Varanasi",
     subtitle: "Pure Katan Silk with Real Zari Jaal",
-    desc: "Masterfully handwoven in Varanasi using unhurried Kadhwa techniques, featuring intricate floral jaals and tested gold zari that drapes like timeless royal poetry.",
+    desc: "Masterfully handwoven in Varanasi using unhurried Kadhwa techniques, featuring intricate floral jaals and tested gold zari.",
     image: "images/categories/banarasi.jpg",
     filterType: "Banarasi",
     artisanHours: "210+ Weaving Hours",
     pureSilkMark: true
   },
   {
-    id: "chanderi",
-    slug: "chanderi",
-    name: "The Whispering Chanderi",
-    shortName: "Chanderi Tissue",
-    region: "Chanderi, Madhya Pradesh",
-    tag: "Gossamer Handloom",
-    subtitle: "Silk-Cotton Tissue with Gold Bootis",
-    desc: "A gossamer, featherlight drape woven from pure silk warp and delicate cotton weft, shimmering with traditional hand-embroidered bootis for ethereal daytime grace.",
-    image: "images/categories/chanderi.jpg",
-    filterType: "Chanderi",
-    artisanHours: "95+ Weaving Hours",
+    id: "kanjivaram",
+    slug: "kanjivaram",
+    name: "Kanjivaram",
+    shortName: "Kanjivaram Silk",
+    region: "Kanchipuram, Tamil Nadu",
+    tag: "Temple Zari",
+    oneLiner: "Rich silk and heritage temple borders",
+    subtitle: "Pure Mulberry Silk & Korvai Gold Temple Zari",
+    desc: "Heavy three-ply twisted silk yarns with contrast interlocking Korvai temple borders, radiating royal heirloom majesty.",
+    image: "images/categories/kanjivaram.jpg",
+    filterType: "Kanjivaram",
+    artisanHours: "180+ Weaving Hours",
+    pureSilkMark: true
+  },
+  {
+    id: "pochampally",
+    slug: "pochampally",
+    name: "Pochampally",
+    shortName: "Double Ikat",
+    region: "Bhoodan Pochampally, Telangana",
+    tag: "Geometric Ikat",
+    oneLiner: "Iconic geometric Ikat from Telangana",
+    subtitle: "Pure Handloom Silk Double Ikat Weave",
+    desc: "Iconic geometric precision handwoven using tie-dye resist techniques on pure natural silk with vibrant heritage borders.",
+    image: "images/categories/pochampally.jpg",
+    filterType: "Pochampally",
+    artisanHours: "140+ Weaving Hours",
     pureSilkMark: true
   },
   {
     id: "paithani",
     slug: "paithani",
-    name: "The Imperial Paithani",
+    name: "Paithani",
     shortName: "Pure Paithani",
     region: "Paithan & Yeola, Maharashtra",
     tag: "Peacock Pallu",
+    oneLiner: "Handwoven silk with signature motifs",
     subtitle: "Kaleidoscopic Pure Silk with Zari Borders",
-    desc: "The celebrated queen of Maharashtra silks, crowned with radiant oblique square borders and a kaleidoscopic hand-woven peacock (Mor Bangdi) tissue pallu.",
+    desc: "Celebrated queen of Maharashtra silks, crowned with oblique square borders and a kaleidoscopic hand-woven peacock pallu.",
     image: "images/categories/paithani.jpg",
     filterType: "Paithani",
     artisanHours: "160+ Weaving Hours",
     pureSilkMark: true
   },
   {
+    id: "chanderi",
+    slug: "chanderi",
+    name: "Chanderi",
+    shortName: "Chanderi Tissue",
+    region: "Chanderi, Madhya Pradesh",
+    tag: "Gossamer Handloom",
+    oneLiner: "Gossamer handloom with delicate golden bootis",
+    subtitle: "Silk-Cotton Tissue with Gold Bootis",
+    desc: "A gossamer, featherlight drape woven from pure silk warp and fine cotton weft, shimmering with traditional golden bootis.",
+    image: "images/categories/chanderi.jpg",
+    filterType: "Chanderi",
+    artisanHours: "95+ Weaving Hours",
+    pureSilkMark: true
+  },
+  {
     id: "organza",
     slug: "organza",
-    name: "The Ethereal Organza",
+    name: "Organza",
     shortName: "Embroidered Organza",
     region: "PALLUVO Contemporary Atelier",
     tag: "Couture Sheer",
+    oneLiner: "Crisp sheer luxury with hand-embroidered zardozi",
     subtitle: "Scalloped Hand-Embroidered Zardozi Silk",
-    desc: "Crisp, sheer luxury silk detailed with delicate scalloped borders and hand-applied zardozi floral motifs, designed for contemporary festive evenings and cocktails.",
+    desc: "Crisp, sheer luxury silk detailed with delicate scalloped borders and hand-applied zardozi floral motifs for festive soirées.",
     image: "images/categories/organza.jpg",
     filterType: "Organza",
     artisanHours: "75+ Hand-Embroidery Hours",
@@ -79,21 +99,47 @@ const PALLUVO_TOP_MODELS = [
   {
     id: "ready-to-wear",
     slug: "ready-to-wear",
-    name: "The 1-Minute Ready Drape",
-    shortName: "Pre-Stitched Silk",
+    name: "Ready-to-Wear",
+    shortName: "1-Minute Drape",
     region: "PALLUVO Signature Studio",
     tag: "Effortless Glamour",
+    oneLiner: "Pre-pleated 60-second couture drape",
     subtitle: "Pre-Pleated Tailored Pure Silk Drape",
-    desc: "Expertly tailored with pre-stitched structured pleats and an effortless pallu drape. Slip into immaculate, runway-ready silk luxury in under sixty seconds.",
+    desc: "Expertly tailored with pre-stitched structured pleats and flowing pallu. Slip into runway-ready silk luxury in 60 seconds.",
     image: "images/categories/ready-to-wear.jpg",
     filterType: "Ready-to-Wear",
     artisanHours: "Boutique Tailored",
+    pureSilkMark: true
+  },
+  {
+    id: "mysore-silk",
+    slug: "mysore-silk",
+    name: "Mysore Silk",
+    shortName: "Royal Crepe",
+    region: "Mysuru, Karnataka",
+    tag: "Certified Gold Zari",
+    oneLiner: "Royal crepe silk with certified gold zari",
+    subtitle: "Pure Crepe Silk with 100% Tested Gold Zari",
+    desc: "Buttery soft crepe drape crafted from 100% natural silk threads with certified 24-karat tested gold zari edging.",
+    image: "images/categories/mysore-silk.jpg",
+    filterType: "Mysore Silk",
+    artisanHours: "110+ Weaving Hours",
     pureSilkMark: true
   }
 ];
 
 // Reference the curated top models as the primary saree categories
 const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
+
+// Colorful Festive Sarees for "THE FESTIVE EDIT"
+const FESTIVE_SAREES = [
+  { name: "Bandhani Silk", region: "Gujarat", image: "images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
+  { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
+  { name: "Imperial Paithani", region: "Maharashtra", image: "images/categories/paithani.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
+  { name: "Royal Banarasi", region: "Varanasi, UP", image: "images/categories/banarasi.jpg", desc: "Opulent real gold zari jaal on rich scarlet and crimson katan silk." },
+  { name: "Temple Kanjivaram", region: "Tamil Nadu", image: "images/categories/kanjivaram.jpg", desc: "Three-ply mulberry silk with auspicious gold temple border motifs." },
+  { name: "Pochampally Ikat", region: "Telangana", image: "images/categories/pochampally.jpg", desc: "Dynamic double-ikat silk weave crafted for Garba celebrations and aartis." }
+];
 
 // 8 Occasions (Saree-Only Curations)
 const SAREE_OCCASIONS = [

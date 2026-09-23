@@ -7,27 +7,34 @@
 @import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  /* Color Palette - Singhania's Luxury Inspired */
-  --bg-body: #FAF7F2;         /* Warm Ivory */
+  /* Color Palette - Sophisticated Indian Luxury */
+  --bg-body: #F8F5EF;         /* Warm Ivory */
   --bg-card: #FFFFFF;
-  --bg-secondary: #F4EFE6;    /* Champagne Cream */
-  --bg-sand: #ECE3D4;         /* Soft Sand */
-  --bg-dark: #1A1816;         /* Deep Near-Black Charcoal */
-  --bg-royal-wine: #4A121A;   /* Deep Regal Maroon / Wine */
-  --bg-wine-hover: #5A1721;
+  --bg-secondary: #EDE3D5;    /* Soft Beige */
+  --bg-sand: #EDE3D5;         /* Soft Beige */
+  --bg-dark: #2B211D;         /* Dark Brown */
   
-  --text-primary: #1A1816;
-  --text-secondary: #635C54;
+  --color-burgundy: #641C2D;  /* Deep Burgundy */
+  --color-wine: #7A3043;      /* Wine */
+  --color-dark-brown: #2B211D;/* Dark Brown */
+  --bg-royal-wine: #641C2D;   /* Deep Burgundy */
+  --bg-wine-hover: #4E1422;   /* Darker Burgundy */
+
+  --color-gold: #B08D57;          /* Antique Gold */
+  --color-gold-antique: #B08D57;  /* Antique Gold */
+  --color-gold-champagne: #D6B878;/* Champagne Gold */
+  --color-gold-bright: #D6B878;
+  --color-gold-btn: #B08D57;
+  --color-gold-hover: #8C6A35;
+  --color-gold-soft: #F4EFE6;
+  --color-gold-border: #B08D57;
+  --color-muted-rose: #B98282;    /* Muted Rose */
+
+  --text-primary: #241F1D;    /* Primary Text: Dark Brown */
+  --text-secondary: #6D625D;  /* Secondary Text */
   --text-muted: #8E857B;
   --text-light: #B8B0A5;
-  --text-inverse: #FAF7F2;
-
-  --color-gold: #B38E5D;      /* Muted Warm Gold */
-  --color-gold-bright: #D4AF37; /* Singhania Accent Gold */
-  --color-gold-btn: #C5A059;
-  --color-gold-hover: #967446;
-  --color-gold-soft: #F2E9DC;
-  --color-gold-border: #D8C7B0;
+  --text-inverse: #FFFFFF;
 
   /* Typography */
   --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
@@ -233,27 +240,29 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-primary {
-  background-color: var(--text-primary);
-  color: var(--bg-body);
-  border: 1px solid var(--text-primary);
+  background-color: var(--color-burgundy);
+  color: #FFFFFF;
+  border: 1px solid var(--color-burgundy);
 }
 
 .btn-primary:hover {
-  background-color: var(--color-gold);
-  border-color: var(--color-gold);
+  background-color: #4E1422;
+  border-color: var(--color-gold-antique);
   color: #FFFFFF;
 }
 
-.btn-outline {
+.btn-outline,
+.btn-secondary {
   background-color: transparent;
-  color: var(--text-primary);
-  border: 1px solid var(--border-medium);
+  color: var(--color-burgundy);
+  border: 1px solid var(--color-burgundy);
 }
 
-.btn-outline:hover {
-  border-color: var(--text-primary);
-  background-color: var(--text-primary);
-  color: var(--bg-body);
+.btn-outline:hover,
+.btn-secondary:hover {
+  border-color: var(--color-burgundy);
+  background-color: var(--color-burgundy);
+  color: #FFFFFF;
 }
 
 .btn-gold {
@@ -3913,7 +3922,9 @@ h1, h2, h3, h4, h5, h6 {
 .hero-art-section {
   position: relative;
   width: 100%;
-  min-height: 82vh;
+  min-height: 560px;
+  height: 82vh;
+  max-height: 820px;
   display: flex;
   align-items: center;
   background-image: url('../images/hero_saree_art.jpg');
@@ -4219,14 +4230,14 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #111;
+  color: var(--color-burgundy);
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   transition: color 0.2s ease, gap 0.2s ease;
 }
 .saree-cat-card:hover .saree-cat-action {
-  color: var(--color-gold);
+  color: #4E1422;
   gap: 0.7rem;
 }
 
@@ -4338,25 +4349,25 @@ h1, h2, h3, h4, h5, h6 {
 .saree-card-img-wrap {
   position: relative;
   width: 100%;
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 4 / 5;
   overflow: hidden;
-  background-color: #F5EFE6;
+  background-color: var(--bg-secondary);
 }
 .saree-card-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.5s ease;
+  transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
 }
 .saree-product-card:hover .saree-card-img {
-  transform: scale(1.04);
+  transform: scale(1.05);
 }
 
 .saree-badge {
   position: absolute;
   top: 0.75rem;
   left: 0.75rem;
-  background: #111;
+  background: var(--color-burgundy);
   color: #FFF;
   font-family: var(--font-sans);
   font-size: 0.68rem;
@@ -4364,11 +4375,11 @@ h1, h2, h3, h4, h5, h6 {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 0.25rem 0.6rem;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   z-index: 2;
 }
 .saree-badge.discount {
-  background: #B33927;
+  background: var(--color-wine);
 }
 
 .saree-wishlist-btn {
@@ -4384,17 +4395,17 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #444;
+  color: var(--text-primary);
   transition: all 0.2s ease;
   z-index: 3;
 }
 .saree-wishlist-btn:hover {
   background: #FFF;
-  color: #B33927;
+  color: var(--color-burgundy);
   transform: scale(1.1);
 }
 .saree-wishlist-btn.is-active {
-  color: #B33927;
+  color: var(--color-burgundy);
   background: #FFF;
 }
 
@@ -4404,15 +4415,15 @@ h1, h2, h3, h4, h5, h6 {
   left: 0.75rem;
   right: 0.75rem;
   background: rgba(255, 255, 255, 0.95);
-  color: #111;
+  color: var(--text-primary);
   font-family: var(--font-sans);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   padding: 0.65rem;
-  border: 1px solid rgba(0,0,0,0.1);
-  border-radius: 2px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-xs);
   cursor: pointer;
   opacity: 0;
   transform: translateY(8px);
@@ -4425,8 +4436,9 @@ h1, h2, h3, h4, h5, h6 {
   transform: translateY(0);
 }
 .saree-quickview-overlay-btn:hover {
-  background: #111;
+  background: var(--color-burgundy);
   color: #FFF;
+  border-color: var(--color-burgundy);
 }
 
 .saree-card-details {
@@ -4439,9 +4451,9 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--color-gold);
+  color: var(--color-gold-antique);
   margin-bottom: 0.25rem;
 }
 .saree-card-name {
@@ -4455,7 +4467,7 @@ h1, h2, h3, h4, h5, h6 {
   transition: color 0.2s ease;
 }
 .saree-card-name:hover {
-  color: var(--color-gold);
+  color: var(--color-burgundy);
 }
 
 .saree-card-rating {
@@ -4463,7 +4475,7 @@ h1, h2, h3, h4, h5, h6 {
   align-items: center;
   gap: 0.35rem;
   font-size: 0.8rem;
-  color: #D4AF37;
+  color: var(--color-gold-antique);
   margin-bottom: 0.65rem;
 }
 .saree-card-rating span {
@@ -4494,22 +4506,22 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-sans);
   font-size: 0.72rem;
   font-weight: 700;
-  color: #B33927;
+  color: var(--color-burgundy);
   letter-spacing: 0.04em;
 }
 
 .saree-add-btn {
   width: 100%;
   background: transparent;
-  color: #111;
-  border: 1px solid #111;
+  color: var(--color-burgundy);
+  border: 1px solid var(--color-burgundy);
   padding: 0.75rem;
   font-family: var(--font-sans);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   cursor: pointer;
   transition: all 0.25s ease;
   display: flex;
@@ -4518,18 +4530,21 @@ h1, h2, h3, h4, h5, h6 {
   gap: 0.4rem;
 }
 .saree-add-btn:hover {
-  background: #111;
+  background: var(--color-burgundy);
   color: #FFF;
+  border-color: var(--color-burgundy);
 }
 
-/* 6. "THE HANDLOOM EDIT" */
+/* 6. "THE HANDLOOM EDIT" - Warm Ivory with subtle gold details */
 .handloom-edit-box {
-  background-color: #231C18;
-  color: #FFF;
+  background-color: var(--bg-body);
+  color: var(--text-primary);
+  border: 1px solid var(--color-gold-antique);
   border-radius: var(--radius-sm);
-  padding: 4rem 3rem;
+  padding: 4.5rem 3.5rem;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 4px 20px rgba(176, 141, 87, 0.08);
 }
 .handloom-edit-content {
   max-width: 600px;
@@ -4543,7 +4558,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 700;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #E6C594;
+  color: var(--color-gold-antique);
   margin-bottom: 0.75rem;
   display: block;
 }
@@ -4551,7 +4566,7 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   font-size: clamp(2.2rem, 4vw, 3.2rem);
   font-weight: 500;
-  color: #FFF;
+  color: var(--color-burgundy);
   margin-bottom: 0.6rem;
   line-height: 1.15;
 }
@@ -4559,13 +4574,13 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.35rem;
-  color: #E8D8C3;
+  color: var(--color-wine);
   margin-bottom: 1.25rem;
 }
 .handloom-edit-desc {
   font-family: var(--font-sans);
   font-size: 0.95rem;
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-secondary);
   line-height: 1.65;
   margin-bottom: 1.75rem;
 }
@@ -4578,38 +4593,39 @@ h1, h2, h3, h4, h5, h6 {
 }
 .handloom-region-chip {
   flex: 0 0 220px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: #FFFFFF;
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   padding: 1.25rem;
   scroll-snap-align: start;
   text-decoration: none;
-  color: #FFF;
+  color: var(--text-primary);
   transition: all 0.3s ease;
 }
 .handloom-region-chip:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: #E6C594;
+  background: #FFFFFF;
+  border-color: var(--color-gold-antique);
+  box-shadow: 0 8px 24px rgba(176, 141, 87, 0.15);
   transform: translateY(-3px);
 }
 .region-chip-img {
   width: 100%;
-  height: 130px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
-  border-radius: 2px;
+  border-radius: var(--radius-xs);
   margin-bottom: 0.85rem;
 }
 .region-chip-name {
   font-family: var(--font-serif);
   font-size: 1.15rem;
   font-weight: 600;
-  color: #FFF;
+  color: var(--text-primary);
   margin-bottom: 0.2rem;
 }
 .region-chip-state {
   font-family: var(--font-sans);
   font-size: 0.72rem;
-  color: #E6C594;
+  color: var(--color-gold-antique);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 0.35rem;
@@ -4617,46 +4633,57 @@ h1, h2, h3, h4, h5, h6 {
 .region-chip-weave {
   font-family: var(--font-sans);
   font-size: 0.78rem;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
 }
 
-/* 7. "NAVRATRI IN MOTION" Festive Banner */
-.festive-navratri-banner {
+/* 7. "THE FESTIVE EDIT" - Rich Burgundy Background */
+.festive-edit-section {
   position: relative;
-  background: #3B121C;
+  background: var(--color-burgundy);
   border-radius: var(--radius-sm);
   overflow: hidden;
-  padding: 4rem 3rem;
+  padding: 4.5rem 3.5rem;
   color: #FFFFFF;
-  margin: 3.5rem 0;
+  margin: 4rem 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 2.5rem;
+  border: 1px solid var(--color-gold-antique);
 }
-.festive-navratri-left {
+.festive-edit-left {
   max-width: 580px;
 }
-.festive-navratri-title {
+.festive-edit-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--color-gold-champagne);
+  margin-bottom: 0.75rem;
+  display: block;
+}
+.festive-edit-title {
   font-family: var(--font-serif);
   font-size: clamp(2rem, 3.8vw, 3rem);
   font-weight: 600;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   color: #FFFFFF;
   margin-bottom: 0.5rem;
 }
-.festive-navratri-sub {
+.festive-edit-subtitle {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 1.4rem;
-  color: #F7D08A;
+  color: var(--color-gold-champagne);
   margin-bottom: 1rem;
 }
-.festive-navratri-body {
+.festive-edit-body {
   font-family: var(--font-sans);
   font-size: 0.98rem;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(255, 255, 255, 0.9);
   line-height: 1.6;
   margin-bottom: 2rem;
 }
@@ -4676,41 +4703,74 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-pill);
 }
 
-/* 8. Promotional Strip: "THE FESTIVE EDIT" */
-.promo-festive-strip {
-  background: linear-gradient(135deg, #4A121A 0%, #2D0B10 100%);
-  color: #FFFFFF;
-  padding: 2.5rem 2rem;
-  border-radius: var(--radius-sm);
+/* Dedicated Newsletter Section */
+.newsletter-dedicated-section {
+  background-color: var(--bg-body);
+  border-top: 1px solid var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 5rem 0;
   text-align: center;
-  border: 1px solid rgba(212, 175, 55, 0.3);
-  margin: 3.5rem 0;
-  box-shadow: 0 10px 30px rgba(74, 18, 26, 0.15);
 }
-.promo-festive-tag {
-  font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: #D4AF37;
-  display: block;
-  margin-bottom: 0.4rem;
+.newsletter-dedicated-wrap {
+  max-width: 650px;
+  margin: 0 auto;
 }
-.promo-festive-heading {
+.newsletter-dedicated-title {
   font-family: var(--font-serif);
-  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: #FFFFFF;
-  margin-bottom: 0.4rem;
+  font-size: clamp(2rem, 3.5vw, 2.8rem);
+  color: var(--color-burgundy);
+  margin-bottom: 0.6rem;
 }
-.promo-festive-offer {
+.newsletter-dedicated-subtitle {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 1.25rem;
+  color: var(--color-wine);
+  margin-bottom: 1rem;
+}
+.newsletter-dedicated-text {
+  font-size: 0.95rem;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+.newsletter-dedicated-form {
+  display: flex;
+  gap: 0.5rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+.newsletter-dedicated-input {
+  flex: 1;
+  padding: 0.9rem 1.2rem;
+  border: 1px solid var(--border-medium);
+  background: #FFFFFF;
+  border-radius: var(--radius-xs);
+  font-size: 0.9rem;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+.newsletter-dedicated-input:focus {
+  border-color: var(--color-gold-antique);
+}
+.newsletter-dedicated-btn {
+  padding: 0.9rem 2rem;
+  background: var(--color-burgundy);
+  color: #FFFFFF;
+  border: 1px solid var(--color-burgundy);
+  border-radius: var(--radius-xs);
   font-family: var(--font-sans);
-  font-size: 1.05rem;
+  font-size: 0.82rem;
   font-weight: 600;
-  color: #F8EAD6;
-  margin-bottom: 1.5rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+.newsletter-dedicated-btn:hover {
+  background: #4E1422;
+  border-color: var(--color-gold-antique);
 }
 
 /* 9. 5 Trust Pillars */
