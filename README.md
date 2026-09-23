@@ -1,41 +1,45 @@
-# SAREE.COM — Authentic Handcrafted Indian Sarees
+# PALLUVO — Every drape, a little magic.
 
-> **Timeless weaves. Modern elegance. 100% Curated Indian Sarees.**
+> **Contemporary Luxury Indian Saree Fashion House & Boutique Atelier**
 
 ![Hero Showcase](images/hero_saree_art.jpg)
 
-**SAREE.COM** is a dedicated luxury Indian saree e-commerce platform crafted for celebrations, traditions, and everyday elegance. Built with strict **100% saree merchandising** (exclusively authentic sarees — zero lehengas, kurtis, salwar suits, gowns, or western wear), the platform honors India's master weavers with museum-grade digital presentation, intuitive client-side catalog filtering, and a seamless shopping journey.
+**PALLUVO** is a contemporary luxury Indian saree fashion house crafted for celebrations, traditions, and the modern muse (*“Every drape, a little magic.”*). Built with strict **100% saree merchandising** (strictly authentic sarees — zero lehengas, kurtis, salwar suits, gowns, or western wear), the platform moves beyond overwhelming 20+ category directories to focus on a curated boutique collection of **the top signature saree models**, honoring India's master artisans with museum-grade digital presentation, intuitive client-side catalog filtering, and a seamless shopping journey.
 
 ---
 
 ## 🌟 Key Architecture & Highlights
 
-### 1. Dedicated Saree-Only Navigation
-- **Top Announcement Bar**: Festive updates (*"FREE SHIPPING ON ORDERS ABOVE ₹999 | 100% AUTHENTIC WEAVES"*), India Delivery selector, and 24/7 Concierge Support.
-- **Main Header Bar**: `SAREE.COM` luxury wordmark, full-width instant search bar with live typeahead, and customer action buttons (Account, Wishlist, Cart Drawer with live item counter).
-- **Primary 9-Link Saree Navigation**:
+### 1. Brand Identity & Dedicated Saree Navigation
+- **Brand Name**: `PALLUVO`
+- **Tagline**: *“Every drape, a little magic.”*
+- **Main Header Bar**: `PALLUVO` luxury wordmark, full-width instant search bar with live typeahead, and customer action buttons (Account, Wishlist, Cart Drawer with live item counter).
+- **Curated Signature Navigation Links**:
   - `NEW ARRIVALS`
-  - `BANARASI`
   - `KANJIVARAM`
-  - `SILK SAREES`
-  - `HANDLOOM`
-  - `COTTON`
-  - `PARTY WEAR`
-  - `WEDDING`
+  - `BANARASI`
+  - `CHANDERI`
+  - `PAITHANI`
+  - `ORGANZA`
+  - `READY-TO-WEAR`
   - `ALL SAREES`
 
-### 2. Homepage Experience (`index.html`)
-- **"The Art of the Saree" Hero Section**:
-  - Editorial headline: *"Timeless weaves. Modern elegance."*
+### 2. Curated Boutique Homepage (`index.html`)
+- **"PALLUVO" Editorial Hero Section**:
+  - Headline: *"PALLUVO — Every drape, a little magic."*
   - Authentic Silk Mark Certified and Handloom Trust Badges.
-  - Action buttons: `SHOP SAREES` and `EXPLORE HANDLOOMS`.
+  - Action buttons: `EXPLORE TOP MODELS` and `SHOP ALL SAREES`.
   - High-resolution editorial portrait of an authentic crimson & gold bridal drape.
 - **"The Festive Edit" Promotional Banner**:
   - Gradient banner with *"UP TO 25% OFF"*, *"FREE SHIPPING ON ORDERS ABOVE ₹999"*, and direct promo link.
-- **"Shop By Saree Type" (All 27 Specified Regional & Fabric Categories)**:
-  - Banarasi, Kanjivaram, Paithani, Mysore Silk, Chanderi, Tussar, Gadwal, Pochampally, Uppada, Assam / Muga Silk, Patola, Bandhani, Leheriya, Kalamkari, Ilkal, Chikankari, Bomkai, Phulkari, Nauvari, Georgette, Chiffon, Cotton, Crepe, Organza, Net, Ready-to-Wear, and Handloom.
-  - Each category card includes an authentic high-resolution saree image, region badge, description, and direct filter link.
-- **"Shop By Occasion" (8 Curated Collections)**:
+- **"The Top Saree Models" (Curated 6 Signature Drapes)**:
+  1. **The Royal Kanjivaram** (Kanchipuram, Tamil Nadu) — 180+ Weaving Hours, Pure Mulberry Silk & Korvai Gold Temple Zari
+  2. **The Heirloom Banarasi** (Varanasi, UP) — 210+ Weaving Hours, Pure Katan Silk with Real Zari Jaal
+  3. **The Whispering Chanderi** (Chanderi, MP) — 95+ Weaving Hours, Gossamer Handloom Silk-Cotton Tissue
+  4. **The Imperial Paithani** (Paithan, Maharashtra) — 160+ Weaving Hours, Kaleidoscopic Mor Bangdi Peacock Pallu
+  5. **The Ethereal Organza** (Couture Atelier) — 75+ Embroidery Hours, Scalloped Hand-Embroidered Zardozi Sheer
+  6. **The 1-Minute Ready Drape** (Signature Studio) — Pre-Pleated Tailored Pure Silk Drape for 60-second glamour
+- **"Shop By Occasion" (Curated Collections)**:
   - Wedding, Bridal, Festive, Party Wear, Office Wear, Casual, Traditional, and Reception with curated recommendations.
 - **"Trending Now" (12 Saree Products)**:
   - 12 sarees with INR pricing, compare-at pricing, discount percentages, star ratings, live color swatches, wishlist toggles, quick view, and one-click Add to Bag.

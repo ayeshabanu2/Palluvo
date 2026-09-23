@@ -1,282 +1,99 @@
 /**
- * SAREE.COM — Premium Indian Saree Catalog & Merchandising Data
- * "The Art of the Saree — Timeless weaves. Modern elegance."
- * Saree-Only Merchandising (Zero suits, lehengas, kurtis or western wear)
+ * PALLUVO — Contemporary Luxury Saree Fashion House
+ * "Every drape, a little magic."
+ * Curated Top Models & Saree-Only Merchandising
  */
 
-// 27 Saree Categories as specified
-const SAREE_CATEGORIES = [
-  {
-    id: "banarasi",
-    slug: "banarasi",
-    name: "Banarasi Saree",
-    region: "Varanasi, Uttar Pradesh",
-    tag: "Heirloom Brocade",
-    desc: "Opulent pure silk handwoven with intricate gold and silver zari motifs inspired by Mughal florals and temple jaals.",
-    image: "images/categories/banarasi.jpg",
-    filterType: "Banarasi"
-  },
+// Curated Top 6 Signature Saree Models for PALLUVO
+const PALLUVO_TOP_MODELS = [
   {
     id: "kanjivaram",
     slug: "kanjivaram",
-    name: "Kanjivaram Saree",
+    name: "The Royal Kanjivaram",
+    shortName: "Kanjivaram Silk",
     region: "Kanchipuram, Tamil Nadu",
-    tag: "Temple Zari Weave",
-    desc: "Pure mulberry silk with three-ply twisted silk yarn and interlocking Korvai temple borders woven for bridal grandeur.",
+    tag: "Silk Mark Certified",
+    subtitle: "Pure Mulberry Silk & Korvai Gold Temple Zari",
+    desc: "Woven with heavy three-ply twisted silk yarns and interlocking Korvai temple borders, this iconic bridal model radiates regal heritage and heirloom permanence.",
     image: "images/categories/kanjivaram.jpg",
-    filterType: "Kanjivaram"
+    filterType: "Kanjivaram",
+    artisanHours: "180+ Weaving Hours",
+    pureSilkMark: true
   },
   {
-    id: "paithani",
-    slug: "paithani",
-    name: "Paithani Saree",
-    region: "Yeola & Paithan, Maharashtra",
-    tag: "Peacock Pallu",
-    desc: "Aristocratic handloom silk featuring kaleidoscopic peacocks (Mor) and parrot motifs against brilliant gold tissue borders.",
-    image: "images/categories/paithani.jpg",
-    filterType: "Paithani"
-  },
-  {
-    id: "mysore-silk",
-    slug: "mysore-silk",
-    name: "Mysore Silk Saree",
-    region: "Mysuru, Karnataka",
-    tag: "Royal Crepe Silk",
-    desc: "Unmatched buttery drape crafted from 100% pure natural silk threads with certified 24-karat tested gold zari edging.",
-    image: "images/categories/mysore-silk.jpg",
-    filterType: "Mysore Silk"
+    id: "banarasi",
+    slug: "banarasi",
+    name: "The Heirloom Banarasi",
+    shortName: "Katan Banarasi",
+    region: "Varanasi, Uttar Pradesh",
+    tag: "Kadhwa Handloom",
+    subtitle: "Pure Katan Silk with Real Zari Jaal",
+    desc: "Masterfully handwoven in Varanasi using unhurried Kadhwa techniques, featuring intricate floral jaals and tested gold zari that drapes like timeless royal poetry.",
+    image: "images/categories/banarasi.jpg",
+    filterType: "Banarasi",
+    artisanHours: "210+ Weaving Hours",
+    pureSilkMark: true
   },
   {
     id: "chanderi",
     slug: "chanderi",
-    name: "Chanderi Saree",
+    name: "The Whispering Chanderi",
+    shortName: "Chanderi Tissue",
     region: "Chanderi, Madhya Pradesh",
     tag: "Gossamer Handloom",
-    desc: "Lightweight sheer texture woven from silk warp and fine cotton weft, adorned with delicate traditional floral booties.",
+    subtitle: "Silk-Cotton Tissue with Gold Bootis",
+    desc: "A gossamer, featherlight drape woven from pure silk warp and delicate cotton weft, shimmering with traditional hand-embroidered bootis for ethereal daytime grace.",
     image: "images/categories/chanderi.jpg",
-    filterType: "Chanderi"
+    filterType: "Chanderi",
+    artisanHours: "95+ Weaving Hours",
+    pureSilkMark: true
   },
   {
-    id: "tussar",
-    slug: "tussar",
-    name: "Tussar Saree",
-    region: "Bhagalpur, Bihar & Jharkhand",
-    tag: "Wild Forest Silk",
-    desc: "Rich earthy gold sheen woven from wild silk cocoons, renowned for breathable comfort and organic texture.",
-    image: "images/categories/tussar.jpg",
-    filterType: "Tussar"
-  },
-  {
-    id: "gadwal",
-    slug: "gadwal",
-    name: "Gadwal Saree",
-    region: "Gadwal, Telangana",
-    tag: "Kuta Interlocked",
-    desc: "Distinguished by a lightweight unbleached cotton body skillfully interlocked with a contrast heavy pure silk zari border.",
-    image: "images/categories/gadwal.jpg",
-    filterType: "Gadwal"
-  },
-  {
-    id: "pochampally",
-    slug: "pochampally",
-    name: "Pochampally Saree",
-    region: "Bhoodan Pochampally, Telangana",
-    tag: "Double Ikat Weave",
-    desc: "Iconic geometric precision handwoven using tie-dye resist techniques on pure natural silk and mercerized cotton.",
-    image: "images/categories/pochampally.jpg",
-    filterType: "Pochampally"
-  },
-  {
-    id: "uppada",
-    slug: "uppada",
-    name: "Uppada Saree",
-    region: "East Godavari, Andhra Pradesh",
-    tag: "Jamdani Craft",
-    desc: "Featherlight Jamdani weave creating translucent drapery where delicate zari motifs seem to float across gossamer silk.",
-    image: "images/categories/uppada.jpg",
-    filterType: "Uppada"
-  },
-  {
-    id: "assam-muga",
-    slug: "assam-muga",
-    name: "Assam / Muga Silk Saree",
-    region: "Sualkuchi, Assam",
-    tag: "Golden Heritage Silk",
-    desc: "Naturally glossy golden wild silk woven with traditional geometric Japi and floral mekhala-inspired red accents.",
-    image: "images/categories/assam-muga.jpg",
-    filterType: "Muga Silk"
-  },
-  {
-    id: "patola",
-    slug: "patola",
-    name: "Patola Saree",
-    region: "Patan, Gujarat",
-    tag: "Double Ikat Masterpiece",
-    desc: "Revered heirloom drape taking months to weave, featuring identical jewel-toned geometric patterns on both front and reverse.",
-    image: "images/categories/patola.jpg",
-    filterType: "Patola"
-  },
-  {
-    id: "bandhani",
-    slug: "bandhani",
-    name: "Bandhani Saree",
-    region: "Kutch & Jamnagar, Gujarat",
-    tag: "Tie & Dye Heritage",
-    desc: "Intricate microscopic hand-tied dots forming swirling Shikari and Gharchola patterns across vibrant crimson and yellow silks.",
-    image: "images/categories/bandhani.jpg",
-    filterType: "Bandhani"
-  },
-  {
-    id: "leheriya",
-    slug: "leheriya",
-    name: "Leheriya Saree",
-    region: "Jaipur, Rajasthan",
-    tag: "Ripple Wave Dye",
-    desc: "Celebratory diagonal wave patterns tie-dyed on fluid georgette and chiffon, reminiscent of monsoon wind currents.",
-    image: "images/categories/leheriya.jpg",
-    filterType: "Leheriya"
-  },
-  {
-    id: "kalamkari",
-    slug: "kalamkari",
-    name: "Kalamkari Saree",
-    region: "Srikalahasti, Andhra Pradesh",
-    tag: "Pen-Art Handpainted",
-    desc: "Mythological storytelling hand-drawn with bamboo pens using 100% natural vegetable dyes on pure organic cotton silk.",
-    image: "images/categories/kalamkari.jpg",
-    filterType: "Kalamkari"
-  },
-  {
-    id: "ilkal",
-    slug: "ilkal",
-    name: "Ilkal Saree",
-    region: "Bagalkot, Karnataka",
-    tag: "Tope Teni Pallu",
-    desc: "Historic daily-wear handloom featuring red and white chevron stripes (Tope Teni) joined seamlessly with Kasuti embroidery.",
-    image: "images/categories/ilkal.jpg",
-    filterType: "Ilkal"
-  },
-  {
-    id: "chikankari",
-    slug: "chikankari",
-    name: "Chikankari Saree",
-    region: "Lucknow, Uttar Pradesh",
-    tag: "Shadow Needlework",
-    desc: "Graceful white-on-pastel shadow needlework with Bakhiya and Phanda stitches floating over airy modal and georgette.",
-    image: "images/categories/chikankari.jpg",
-    filterType: "Chikankari"
-  },
-  {
-    id: "bomkai",
-    slug: "bomkai",
-    name: "Bomkai Saree",
-    region: "Ganjam, Odisha",
-    tag: "Tribal Extra-Weft",
-    desc: "Sacred temple weave with contrasting ikat borders and stylized mythological motifs of fish, peacocks, and temple lamps.",
-    image: "images/categories/bomkai.jpg",
-    filterType: "Bomkai"
-  },
-  {
-    id: "phulkari",
-    slug: "phulkari",
-    name: "Phulkari Saree",
-    region: "Punjab",
-    tag: "Embroidered Florals",
-    desc: "Darning-stitch embroidery using lustrous untwisted silk floss (pat) creating vibrant geometric flower gardens on rich fabric.",
-    image: "images/categories/phulkari.jpg",
-    filterType: "Phulkari"
-  },
-  {
-    id: "nauvari",
-    slug: "nauvari",
-    name: "Nauvari Saree",
-    region: "Maharashtra",
-    tag: "9-Yard Royal Drape",
-    desc: "The legendary nine-yard Maratha warrior drape woven with pure silk, celebrated for empowering movement and cultural poise.",
-    image: "images/categories/nauvari.jpg",
-    filterType: "Nauvari"
-  },
-  {
-    id: "georgette",
-    slug: "georgette",
-    name: "Georgette Saree",
-    region: "Contemporary Indian Weave",
-    tag: "Fluid Modern Drape",
-    desc: "Lightweight crinkled crepe fabric with graceful fluid fall, adorned with delicate sequins and contemporary border accents.",
-    image: "images/categories/georgette.jpg",
-    filterType: "Georgette"
-  },
-  {
-    id: "chiffon",
-    slug: "chiffon",
-    name: "Chiffon Saree",
-    region: "Contemporary Indian Weave",
-    tag: "Featherlight Grace",
-    desc: "Soft, floating sheer drape ideal for sunset soirées, summer festivities, and effortless day-to-evening elegance.",
-    image: "images/categories/chiffon.jpg",
-    filterType: "Chiffon"
-  },
-  {
-    id: "cotton",
-    slug: "cotton",
-    name: "Cotton Saree",
-    region: "Bengal & South India",
-    tag: "Pure Breathable Comfort",
-    desc: "Cool, organic handspun cotton sarees including Bengal Jamdani, Chettinad, and Mangalagiri drapes crafted for quiet luxury.",
-    image: "images/categories/cotton.jpg",
-    filterType: "Cotton"
-  },
-  {
-    id: "crepe",
-    slug: "crepe",
-    name: "Crepe Saree",
-    region: "Mysuru & Surat",
-    tag: "Textured Silk Drape",
-    desc: "Lustrous pebbled silk with naturally anti-crease durability, draped with refined gold lace borders and delicate accents.",
-    image: "images/categories/crepe.jpg",
-    filterType: "Crepe"
+    id: "paithani",
+    slug: "paithani",
+    name: "The Imperial Paithani",
+    shortName: "Pure Paithani",
+    region: "Paithan & Yeola, Maharashtra",
+    tag: "Peacock Pallu",
+    subtitle: "Kaleidoscopic Pure Silk with Zari Borders",
+    desc: "The celebrated queen of Maharashtra silks, crowned with radiant oblique square borders and a kaleidoscopic hand-woven peacock (Mor Bangdi) tissue pallu.",
+    image: "images/categories/paithani.jpg",
+    filterType: "Paithani",
+    artisanHours: "160+ Weaving Hours",
+    pureSilkMark: true
   },
   {
     id: "organza",
     slug: "organza",
-    name: "Organza Saree",
-    region: "Contemporary Couture",
-    tag: "Translucent Sculptural Sheer",
-    desc: "Crisp ethereal sheer fabric with hand-painted botanicals, scalloped cutwork borders, and soft romantic luster.",
+    name: "The Ethereal Organza",
+    shortName: "Embroidered Organza",
+    region: "PALLUVO Contemporary Atelier",
+    tag: "Couture Sheer",
+    subtitle: "Scalloped Hand-Embroidered Zardozi Silk",
+    desc: "Crisp, sheer luxury silk detailed with delicate scalloped borders and hand-applied zardozi floral motifs, designed for contemporary festive evenings and cocktails.",
     image: "images/categories/organza.jpg",
-    filterType: "Organza"
-  },
-  {
-    id: "net",
-    slug: "net",
-    name: "Net Saree",
-    region: "Contemporary Eveningwear",
-    tag: "Cocktail Glamour",
-    desc: "Delicate fine mesh saree embellished with shimmering self-thread embroidery, pearls, and tonal crystal work.",
-    image: "images/categories/net.jpg",
-    filterType: "Net"
+    filterType: "Organza",
+    artisanHours: "75+ Hand-Embroidery Hours",
+    pureSilkMark: true
   },
   {
     id: "ready-to-wear",
     slug: "ready-to-wear",
-    name: "Ready-to-Wear Saree",
-    region: "Modern Innovation",
-    tag: "Pre-Pleated 60-Second Drape",
-    desc: "Ingeniously pre-stitched pleats and adjustable waistband delivering a flawless royal silhouette in under one minute.",
+    name: "The 1-Minute Ready Drape",
+    shortName: "Pre-Stitched Silk",
+    region: "PALLUVO Signature Studio",
+    tag: "Effortless Glamour",
+    subtitle: "Pre-Pleated Tailored Pure Silk Drape",
+    desc: "Expertly tailored with pre-stitched structured pleats and an effortless pallu drape. Slip into immaculate, runway-ready silk luxury in under sixty seconds.",
     image: "images/categories/ready-to-wear.jpg",
-    filterType: "Ready-to-Wear"
-  },
-  {
-    id: "handloom",
-    slug: "handloom",
-    name: "Handloom Saree",
-    region: "Pan-India Artisan Clusters",
-    tag: "Certified Authentic Weaves",
-    desc: "100% artisan hand-woven drapes supporting traditional weaver guilds with authentic Handloom Mark & Silk Mark credentials.",
-    image: "images/categories/handloom.jpg",
-    filterType: "Handloom"
+    filterType: "Ready-to-Wear",
+    artisanHours: "Boutique Tailored",
+    pureSilkMark: true
   }
 ];
+
+// Reference the curated top models as the primary saree categories
+const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
 
 // 8 Occasions (Saree-Only Curations)
 const SAREE_OCCASIONS = [
