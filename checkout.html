@@ -14,7 +14,15 @@
   <header class="checkout-header">
     <div class="container">
       <div class="checkout-header-inner">
-        <a href="index.html" class="brand-logo" style="font-size: 1.8rem;">PALLUVO</a>
+        <a href="index.html" class="brand-logo-block" aria-label="PALLUVO Home">
+          <div class="brand-medallion" style="width:38px; height:38px;">
+            <span class="brand-medallion-letter" style="font-size:1.35rem;">P</span>
+          </div>
+          <div class="brand-naming-col">
+            <span class="brand-name-text" style="font-size:1.7rem;">PALLUVO</span>
+            <span class="brand-subtitle-rule" style="font-size:0.55rem;">Handcrafted Luxury</span>
+          </div>
+        </a>
         <div class="checkout-ssl-notice">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
           <span>256-Bit SSL Bank Grade Encryption</span>
@@ -484,5 +492,16 @@
       selectPaymentMethod('upi');
     });
   </script>
+  <!-- FLOATING WHATSAPP CONCIERGE BUTTON (Singhania style) -->
+  <a href="https://wa.me/919876543210?text=Hello%20Palluvo%2C%20I%20have%20a%20question%20regarding%20my%20checkout%20order" 
+     class="whatsapp-floating-btn" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     aria-label="Chat with our Saree Stylist on WhatsApp"
+     title="Stylist Concierge on WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
+    </svg>
+  </a>
 </body>
 </html>

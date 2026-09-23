@@ -10,18 +10,24 @@ PALLUVO is a modern Indian fashion brand focused on elegant, sophisticated saree
 
 ## Brand Aesthetic & Philosophy
 
-- **Modern Indian Luxury**: Blending centuries of handloom weaving heritage with contemporary silhouettes and minimalist styling.
-- **Palette**: Warm ivory (`#FAF7F2`), deep charcoal (`#1A1816`), muted warm gold (`#B38E5D`), soft champagne secondary tones (`#F4EFE6`), and rich jewel accents.
-- **Typography**: Editorial serif typography (`Cormorant Garamond` & `Playfair Display`) paired with clean modern sans-serif (`Plus Jakarta Sans`).
+- **Modern Indian Luxury**: Blending centuries of handloom weaving heritage with contemporary silhouettes and minimalist styling. Inspired by premier heritage Indian houses like Singhania's Handcrafted Luxury.
+- **Palette**: Warm ivory (`#FAF7F2`), deep charcoal (`#1A1816`), royal crimson wine (`#4A121A`), muted warm gold (`#B38E5D`), soft champagne secondary tones (`#F4EFE6`), and color-blocked category accents.
+- **Typography**: Editorial serif typography (`Cormorant Garamond` & `Playfair Display`), elegant calligraphy script (`Alex Brush`), paired with clean modern sans-serif (`Plus Jakarta Sans`).
 
 ---
 
 ## Key Pages & Architecture
 
 1. **Homepage (`index.html`)**:
-   - Announcement bar with complimentary shipping threshold (> ₹2,999)
-   - Sticky navigation with desktop mega-menu & mobile drawer
-   - Hero campaign section: *“Every drape, a little magic.”*
+   - **3-Tier Luxury Header**:
+     - *Tier 1 (Top)*: Royal Crimson announcement bar with festive complimentary shipping announcement.
+     - *Tier 2 (Main)*: Gold radial-gradient monogram medallion logo (`P` / PALLUVO / Handcrafted Luxury), prominent wide centered search bar with gold button, and labeled icon navigation (Account, Wishlist, Cart with dynamic badges).
+     - *Tier 3 (Sub-Nav)*: Full-width category navigation strip (Kanjivaram, Banarasi, Designer Sarees, Weaves & Crafts, Salwar Sets, Lehenga, Fusion Wear, Mens).
+   - **Interactive Multi-Panel Hero Showcase**:
+     - *Left Heritage Brand Card*: Serif + cursive calligraphy headline (*“Timeless Heritage. Made for You.”*), 4 authentic badges (Direct from Weavers, Silk Mark Certified, 100% Pure Zari, Free Worldwide Shipping), and a deep wine CTA button.
+     - *Right 5-Panel Category Cards*: Interactive expandable cards for Kanjivaram, Banarasi, Embroidery & Designer, Lehengas & Wedding, and Contemporary Readymade drapes with color-blocked footers and hover zoom.
+   - **Indian Gold Filigree Flourish Divider**: Traditional botanical ornamental motif bridging the hero and curated collections.
+   - **Floating WhatsApp Concierge Button**: Direct stylist assistance widget on all pages.
    - Featured Collections (*“Find Your Drape”*): Everyday Elegance, Festive Edit, Silk Stories, Contemporary Drapes, Wedding Edit
    - New Arrivals product grid with live color swatches, quick add, and quick view
    - Brand Story editorial split: *“The Art of the Drape”*
