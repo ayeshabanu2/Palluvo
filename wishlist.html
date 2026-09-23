@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Saved Wishlist — PALLUVO</title>
+  <meta name="description" content="Your saved PALLUVO sarees. Discover and move your favored drapes directly to your shopping bag.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div class="announcement-bar">
+    <span>Complimentary shipping on orders above <strong>₹2,999</strong> across India</span>
+  </div>
+
+  <!-- STICKY SITE HEADER -->
+  <header class="site-header" id="siteHeader">
+    <div class="container">
+      <div class="header-inner">
+        <nav class="header-nav-left" aria-label="Main Navigation">
+          <a href="sarees.html" class="nav-link">Shop</a>
+          <a href="index.html#collections" class="nav-link">Collections</a>
+          <a href="index.html#new-arrivals" class="nav-link">New Arrivals</a>
+          <a href="sarees.html" class="nav-link">Sarees</a>
+          <a href="about.html" class="nav-link">About</a>
+        </nav>
+
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="header-logo-center">
+          <a href="index.html" class="brand-logo" aria-label="PALLUVO Home">PALLUVO</a>
+          <span class="brand-tagline">Every drape, a little magic</span>
+        </div>
+
+        <div class="header-actions-right">
+          <button class="header-action-btn js-search-trigger" aria-label="Search PALLUVO">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          <a href="account.html" class="header-action-btn" aria-label="Customer Account">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </a>
+          <a href="wishlist.html" class="header-action-btn is-active" aria-label="Wishlist">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.6">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <span class="header-badge wishlist-badge hidden">0</span>
+          </a>
+          <button class="header-action-btn js-cart-drawer-trigger" aria-label="Shopping Bag">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span class="header-badge cart-badge hidden">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div class="brand-logo" style="font-size: 1.5rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="mobileMenuClose">&times;</button>
+    </div>
+    <div class="mobile-drawer-nav">
+      <a href="sarees.html" class="mobile-nav-link">Shop Sarees <span>&rarr;</span></a>
+      <a href="about.html" class="mobile-nav-link">Our Story <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">Saved Wishlist <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">My Account <span>&rarr;</span></a>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <!-- WISHLIST CONTENT -->
+  <main class="section-spacing-sm">
+    <div class="container">
+      <nav class="breadcrumbs">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span>Saved Wishlist</span>
+      </nav>
+
+      <h1 class="plp-title" style="margin-bottom: 0.5rem;">Saved Wishlist</h1>
+      <p class="section-subtitle" style="text-align: left; margin: 0 0 2.5rem 0;" id="wishlistCountText">Your saved favorites</p>
+
+      <div class="product-grid" id="wishlistGrid">
+        <!-- Rendered via JS -->
+      </div>
+
+      <!-- Empty State -->
+      <div id="wishlistEmptyState" class="cart-empty-state hidden">
+        <div class="empty-icon">
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+        </div>
+        <h2 class="empty-title">Your wishlist is currently empty</h2>
+        <p class="empty-sub">Explore our contemporary handloom catalog and tap the heart icon on any drape you cherish.</p>
+        <a href="sarees.html" class="btn btn-primary">DISCOVER SAREES</a>
+      </div>
+    </div>
+  </main>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SHARED CART DRAWER -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
+    </div>
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
+      </div>
+    </div>
+    <div class="cart-drawer-items" id="cartDrawerItems"></div>
+    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- SHARED SEARCH OVERLAY -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
+    </div>
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
+    </div>
+    <div class="search-suggestions-wrap">
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- QUICK VIEW MODAL -->
+  <div class="modal-wrapper" id="quickViewModal" role="dialog" aria-modal="true">
+    <div id="quickViewContent"></div>
+  </div>
+  <div class="modal-backdrop" id="quickViewBackdrop"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    function renderWishlistPage() {
+      let ids = WishlistStore.getWishlist();
+
+      // If user arrives with an empty wishlist, seed 2 gorgeous sarees for demo so it looks lively!
+      if (ids.length === 0 && !localStorage.getItem('palluvo_wishlist_visited')) {
+        WishlistStore.add('pal-001');
+        WishlistStore.add('pal-002');
+        localStorage.setItem('palluvo_wishlist_visited', 'true');
+        ids = WishlistStore.getWishlist();
+      }
+
+      const grid = document.getElementById('wishlistGrid');
+      const empty = document.getElementById('wishlistEmptyState');
+      const countText = document.getElementById('wishlistCountText');
+
+      if (ids.length === 0) {
+        grid.style.display = 'none';
+        empty.classList.remove('hidden');
+        countText.textContent = "0 saved items";
+        return;
+      }
+
+      grid.style.display = 'grid';
+      empty.classList.add('hidden');
+      countText.textContent = `${ids.length} ${ids.length === 1 ? 'drape saved for later' : 'drapes saved for later'}`;
+
+      const products = ids.map(id => ProductsCatalog.getById(id)).filter(Boolean);
+      grid.innerHTML = products.map(renderProductCard).join('');
+      WishlistStore.updateHeartIcons();
+    }
+
+    // Re-render when wishlist changes
+    const originalWishlistToggle = WishlistStore.toggle;
+    WishlistStore.toggle = function(id) {
+      originalWishlistToggle.call(this, id);
+      renderWishlistPage();
+    };
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderWishlistPage();
+    });
+  </script>
+</body>
+</html>

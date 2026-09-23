@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarees Catalog — PALLUVO | Contemporary Handloom & Pure Silk Sarees</title>
+  <meta name="description" content="Explore the complete PALLUVO collection of contemporary Indian drapes. Woven in pure Kanjivaram silk, Banarasi, Chanderi, organza, and artisanal handlooms.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div class="announcement-bar">
+    <span>Complimentary shipping on orders above <strong>₹2,999</strong> across India</span>
+  </div>
+
+  <!-- STICKY SITE HEADER -->
+  <header class="site-header" id="siteHeader">
+    <div class="container">
+      <div class="header-inner">
+        <nav class="header-nav-left" aria-label="Main Navigation">
+          <a href="sarees.html" class="nav-link is-active">Shop</a>
+          <a href="index.html#collections" class="nav-link">Collections</a>
+          <a href="index.html#new-arrivals" class="nav-link">New Arrivals</a>
+          <a href="sarees.html" class="nav-link is-active">Sarees</a>
+          <a href="about.html" class="nav-link">About</a>
+        </nav>
+
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <div class="header-logo-center">
+          <a href="index.html" class="brand-logo" aria-label="PALLUVO Home">PALLUVO</a>
+          <span class="brand-tagline">Every drape, a little magic</span>
+        </div>
+
+        <div class="header-actions-right">
+          <button class="header-action-btn js-search-trigger" aria-label="Search PALLUVO">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+          <a href="account.html" class="header-action-btn" aria-label="Customer Account">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </a>
+          <a href="wishlist.html" class="header-action-btn" aria-label="Wishlist">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <span class="header-badge wishlist-badge hidden">0</span>
+          </a>
+          <button class="header-action-btn js-cart-drawer-trigger" aria-label="Shopping Bag">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span class="header-badge cart-badge hidden">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE MENU DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div class="brand-logo" style="font-size: 1.5rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="mobile-drawer-nav">
+      <a href="sarees.html" class="mobile-nav-link">Shop Sarees <span>&rarr;</span></a>
+      <a href="sarees.html?category=Silk" class="mobile-nav-link">Silk Stories <span>&rarr;</span></a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">Contemporary Organza <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">Wedding Edit <span>&rarr;</span></a>
+      <a href="about.html" class="mobile-nav-link">Our Story <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">Saved Wishlist <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">My Account & Orders <span>&rarr;</span></a>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <!-- PLP HEADER & BREADCRUMBS -->
+  <section class="plp-header">
+    <div class="container">
+      <nav class="breadcrumbs">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span>Sarees</span>
+      </nav>
+      <h1 class="plp-title" id="plpPageTitle">Sarees</h1>
+      <p class="plp-desc">Discover the PALLUVO collection of contemporary Indian drapes. Woven from certified pure silks, sheer organzas, and natural handlooms for effortless everyday grace and celebratory splendor.</p>
+    </div>
+  </section>
+
+  <!-- PLP MAIN CATALOG -->
+  <section class="section-spacing-sm">
+    <div class="container">
+      
+      <!-- Controls Bar -->
+      <div class="plp-controls-bar">
+        <div class="plp-count-info" id="plpCountInfo">
+          Showing <strong>10</strong> Drapes
+        </div>
+
+        <!-- Sort Select -->
+        <div class="plp-sort-wrap">
+          <label for="sortSelect" style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);">Sort by:</label>
+          <select id="sortSelect" class="plp-sort-select">
+            <option value="featured">Featured Drapes</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="rating-desc">Customer Rating</option>
+            <option value="newest">New Arrivals</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Active Filter Badges -->
+      <div class="active-filter-tags" id="activeFilterTags"></div>
+
+      <!-- Two-Column Layout: Sidebar Filters + Products Grid -->
+      <div class="plp-main-layout">
+        
+        <!-- Left Filter Sidebar -->
+        <aside class="filter-sidebar" id="filterSidebar">
+          
+          <!-- Category -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Category</h4>
+            <div class="filter-options-list">
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Silk" onchange="applyFilters()">
+                Silk Stories
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Organza" onchange="applyFilters()">
+                Sheer Organza
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Chanderi" onchange="applyFilters()">
+                Chanderi Handloom
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Tissue" onchange="applyFilters()">
+                Metallic Tissue
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Handloom" onchange="applyFilters()">
+                Handloom Linen
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_category" value="Georgette" onchange="applyFilters()">
+                Crepe Georgette
+              </label>
+            </div>
+          </div>
+
+          <!-- Price Range -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Price (₹)</h4>
+            <div class="filter-options-list">
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_price" value="under-4000" onchange="applyFilters()">
+                Under ₹4,000
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_price" value="4000-5500" onchange="applyFilters()">
+                ₹4,000 – ₹5,500
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_price" value="above-5500" onchange="applyFilters()">
+                Above ₹5,500
+              </label>
+            </div>
+          </div>
+
+          <!-- Color Swatches -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Color Palette</h4>
+            <div class="filter-color-palette">
+              <span class="filter-color-swatch" data-color="Emerald Green" style="background:#1C3B2E;" title="Emerald Green" onclick="toggleColorFilter(this, 'Emerald Green')"></span>
+              <span class="filter-color-swatch" data-color="Royal Wine" style="background:#4A1824;" title="Royal Wine" onclick="toggleColorFilter(this, 'Royal Wine')"></span>
+              <span class="filter-color-swatch" data-color="Powder Blush" style="background:#E5B9BA;" title="Powder Blush" onclick="toggleColorFilter(this, 'Powder Blush')"></span>
+              <span class="filter-color-swatch" data-color="Liquid Gold" style="background:#C9AA74;" title="Liquid Gold" onclick="toggleColorFilter(this, 'Liquid Gold')"></span>
+              <span class="filter-color-swatch" data-color="Champagne Sand" style="background:#D8C7B0;" title="Champagne Sand" onclick="toggleColorFilter(this, 'Champagne Sand')"></span>
+              <span class="filter-color-swatch" data-color="Olive Sage" style="background:#6B7559;" title="Olive Sage" onclick="toggleColorFilter(this, 'Olive Sage')"></span>
+              <span class="filter-color-swatch" data-color="Midnight Peacock" style="background:#102F3F;" title="Midnight Peacock" onclick="toggleColorFilter(this, 'Midnight Peacock')"></span>
+              <span class="filter-color-swatch" data-color="Ochre Mustard" style="background:#C19245;" title="Ochre Mustard" onclick="toggleColorFilter(this, 'Ochre Mustard')"></span>
+            </div>
+          </div>
+
+          <!-- Occasion -->
+          <div class="filter-group">
+            <h4 class="filter-group-title">Occasion</h4>
+            <div class="filter-options-list">
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Wedding" onchange="applyFilters()">
+                Wedding & Bridal
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Festive" onchange="applyFilters()">
+                Festive Celebrations
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Everyday" onchange="applyFilters()">
+                Everyday Elegance
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_occasion" value="Party" onchange="applyFilters()">
+                Evening Cocktail
+              </label>
+            </div>
+          </div>
+
+          <!-- Reset Button -->
+          <div>
+            <button class="btn btn-outline btn-block btn-xs" onclick="resetAllFilters()">Reset All Filters</button>
+          </div>
+
+        </aside>
+
+        <!-- Right Product Grid Area -->
+        <main>
+          <div class="product-grid" id="plpProductGrid">
+            <!-- Populated via applyFilters() -->
+          </div>
+
+          <!-- Empty Filter Results -->
+          <div id="plpEmptyState" class="cart-empty-state hidden">
+            <h3 class="empty-title">No matching drapes found</h3>
+            <p class="empty-sub">Try broadening your filter criteria or explore our curated collections.</p>
+            <button class="btn btn-primary btn-sm" onclick="resetAllFilters()">Clear All Filters</button>
+          </div>
+        </main>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div>
+          <div class="footer-brand-title">PALLUVO</div>
+          <p class="footer-tagline">“Every drape, a little magic.”</p>
+          <p class="footer-about-text">A contemporary Indian fashion label celebrating sarees, slow craftsmanship, femininity, and effortless luxury for the modern woman.</p>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Shop</h4>
+          <ul class="footer-links-list">
+            <li><a href="sarees.html">All Sarees</a></li>
+            <li><a href="sarees.html?category=Silk">Silk Stories</a></li>
+            <li><a href="sarees.html?category=Organza">Contemporary Organza</a></li>
+            <li><a href="sarees.html?occasion=Wedding">Wedding Edit</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Help</h4>
+          <ul class="footer-links-list">
+            <li><a href="about.html">Contact Us</a></li>
+            <li><a href="#sizeguide" onclick="SizeGuideModal.open()">Size Guide</a></li>
+            <li><a href="account.html">Track Order</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Currency & Shipping</h4>
+          <p style="font-size: 0.85rem; color: #B5ACA1; line-height: 1.6;">Complimentary shipping on orders above ₹2,999 across India. Handcrafted and insured.</p>
+          <p style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500; margin-top: 0.6rem;">Currency: <strong>INR (₹)</strong></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
+        <div class="footer-payment-badges">
+          <span class="payment-pill">UPI / QR</span>
+          <span class="payment-pill">RuPay</span>
+          <span class="payment-pill">Visa</span>
+          <span class="payment-pill">Mastercard</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SHARED CART DRAWER -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
+    </div>
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
+      </div>
+    </div>
+    <div class="cart-drawer-items" id="cartDrawerItems"></div>
+    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- SHARED SEARCH OVERLAY -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
+    </div>
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
+    </div>
+    <div class="search-suggestions-wrap">
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- QUICK VIEW MODAL -->
+  <div class="modal-wrapper" id="quickViewModal" role="dialog" aria-modal="true">
+    <div id="quickViewContent"></div>
+  </div>
+  <div class="modal-backdrop" id="quickViewBackdrop"></div>
+
+  <!-- SIZE GUIDE MODAL -->
+  <div class="modal-wrapper" id="sizeGuideModal" role="dialog" aria-modal="true">
+    <div class="sizeguide-dialog">
+      <button class="modal-close-btn" id="sizeGuideClose">&times;</button>
+      <span class="section-tag" style="text-align: left;">Concierge Tailoring</span>
+      <h2 style="font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.6rem;">Blouse Size Guide</h2>
+      <table class="sizeguide-table">
+        <thead><tr><th>Size</th><th>Bust</th><th>Waist</th><th>Shoulder</th><th>Armhole</th></tr></thead>
+        <tbody>
+          <tr><td>XS</td><td>32″</td><td>26″</td><td>13.5″</td><td>14″</td></tr>
+          <tr><td>S</td><td>34″</td><td>28″</td><td>14.0″</td><td>15″</td></tr>
+          <tr><td>M</td><td>36″</td><td>30″</td><td>14.5″</td><td>16″</td></tr>
+          <tr><td>L</td><td>38″</td><td>32″</td><td>15.0″</td><td>17″</td></tr>
+          <tr><td>XL</td><td>40″</td><td>34″</td><td>15.5″</td><td>18″</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="sizeGuideBackdrop"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    let activeColorFilter = null;
+
+    function toggleColorFilter(element, colorName) {
+      if (activeColorFilter === colorName) {
+        activeColorFilter = null;
+        element.classList.remove('is-active');
+      } else {
+        document.querySelectorAll('.filter-color-swatch').forEach(s => s.classList.remove('is-active'));
+        activeColorFilter = colorName;
+        element.classList.add('is-active');
+      }
+      applyFilters();
+    }
+
+    function resetAllFilters() {
+      document.querySelectorAll('input[type="checkbox"]').forEach(c => c.checked = false);
+      document.querySelectorAll('.filter-color-swatch').forEach(s => s.classList.remove('is-active'));
+      activeColorFilter = null;
+      document.getElementById('sortSelect').value = 'featured';
+      
+      // Clean query params
+      window.history.pushState({}, '', window.location.pathname);
+      applyFilters();
+    }
+
+    function applyFilters() {
+      let filtered = [...PALLUVO_PRODUCTS];
+
+      // 1. Categories
+      const selectedCategories = Array.from(document.querySelectorAll('input[name="filter_category"]:checked')).map(c => c.value);
+      if (selectedCategories.length > 0) {
+        filtered = filtered.filter(p => selectedCategories.includes(p.category));
+      }
+
+      // 2. Price ranges
+      const selectedPrices = Array.from(document.querySelectorAll('input[name="filter_price"]:checked')).map(c => c.value);
+      if (selectedPrices.length > 0) {
+        filtered = filtered.filter(p => {
+          return selectedPrices.some(range => {
+            if (range === 'under-4000') return p.price < 4000;
+            if (range === '4000-5500') return p.price >= 4000 && p.price <= 5500;
+            if (range === 'above-5500') return p.price > 5500;
+            return true;
+          });
+        });
+      }
+
+      // 3. Color
+      if (activeColorFilter) {
+        filtered = filtered.filter(p => p.color === activeColorFilter || p.swatches.some(s => s.name === activeColorFilter));
+      }
+
+      // 4. Occasion
+      const selectedOccasions = Array.from(document.querySelectorAll('input[name="filter_occasion"]:checked')).map(c => c.value);
+      if (selectedOccasions.length > 0) {
+        filtered = filtered.filter(p => selectedOccasions.includes(p.occasion));
+      }
+
+      // 5. URL query params filter check (collection / mood)
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlCollection = urlParams.get('collection');
+      const urlMood = urlParams.get('mood');
+      if (urlCollection) {
+        filtered = filtered.filter(p => p.collection.toLowerCase().includes(urlCollection.toLowerCase()));
+      }
+      if (urlMood) {
+        filtered = filtered.filter(p => p.mood.toLowerCase() === urlMood.toLowerCase());
+      }
+
+      // 6. Sorting
+      const sortVal = document.getElementById('sortSelect').value;
+      if (sortVal === 'price-asc') {
+        filtered.sort((a, b) => a.price - b.price);
+      } else if (sortVal === 'price-desc') {
+        filtered.sort((a, b) => b.price - a.price);
+      } else if (sortVal === 'rating-desc') {
+        filtered.sort((a, b) => b.rating - a.rating);
+      } else if (sortVal === 'newest') {
+        filtered.sort((a, b) => (b.newArrival ? 1 : 0) - (a.newArrival ? 1 : 0));
+      }
+
+      // Render Active Filter Pills
+      const pillsContainer = document.getElementById('activeFilterTags');
+      let pillsHtml = '';
+      selectedCategories.forEach(cat => {
+        pillsHtml += `<span class="filter-pill">${cat}</span>`;
+      });
+      selectedPrices.forEach(pr => {
+        pillsHtml += `<span class="filter-pill">${pr.replace('-', ' ')}</span>`;
+      });
+      if (activeColorFilter) {
+        pillsHtml += `<span class="filter-pill">${activeColorFilter}</span>`;
+      }
+      if (urlCollection) {
+        pillsHtml += `<span class="filter-pill">Collection: ${urlCollection}</span>`;
+      }
+      if (urlMood) {
+        pillsHtml += `<span class="filter-pill">Mood: ${urlMood}</span>`;
+      }
+      if (pillsHtml) {
+        pillsHtml += `<button class="btn-text-link btn-xs" style="margin-left:0.5rem;" onclick="resetAllFilters()">Clear All</button>`;
+      }
+      pillsContainer.innerHTML = pillsHtml;
+
+      // Update Count
+      document.getElementById('plpCountInfo').innerHTML = `Showing <strong>${filtered.length}</strong> ${filtered.length === 1 ? 'Drape' : 'Drapes'}`;
+
+      // Render Grid
+      const grid = document.getElementById('plpProductGrid');
+      const emptyState = document.getElementById('plpEmptyState');
+
+      if (filtered.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+      } else {
+        emptyState.classList.add('hidden');
+        grid.innerHTML = filtered.map(renderProductCard).join('');
+      }
+
+      WishlistStore.updateHeartIcons();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // Check URL parameters for pre-selected filters
+      const urlParams = new URLSearchParams(window.location.search);
+      const categoryParam = urlParams.get('category');
+      const occasionParam = urlParams.get('occasion');
+      const collectionParam = urlParams.get('collection');
+
+      if (categoryParam) {
+        const catBox = document.querySelector(`input[name="filter_category"][value="${categoryParam}"]`);
+        if (catBox) catBox.checked = true;
+        document.getElementById('plpPageTitle').textContent = `${categoryParam} Sarees`;
+      }
+
+      if (occasionParam) {
+        const occBox = document.querySelector(`input[name="filter_occasion"][value="${occasionParam}"]`);
+        if (occBox) occBox.checked = true;
+        document.getElementById('plpPageTitle').textContent = `${occasionParam} Sarees Edit`;
+      }
+
+      if (collectionParam) {
+        document.getElementById('plpPageTitle').textContent = `${collectionParam} Edit`;
+      }
+
+      document.getElementById('sortSelect').addEventListener('change', applyFilters);
+
+      applyFilters();
+    });
+  </script>
+</body>
+</html>

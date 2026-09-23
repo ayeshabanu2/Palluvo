@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PALLUVO — Every drape, a little magic | Luxury Contemporary Sarees</title>
+  <meta name="description" content="Discover PALLUVO. Contemporary Indian luxury sarees crafted with mindful craftsmanship, pure silks, and effortless elegance for modern women. Complimentary shipping on orders above ₹2,999.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+</head>
+<body>
+
+  <!-- ANNOUNCEMENT BAR -->
+  <div class="announcement-bar">
+    <span>Complimentary shipping on orders above <strong>₹2,999</strong> across India</span>
+  </div>
+
+  <!-- STICKY SITE HEADER -->
+  <header class="site-header" id="siteHeader">
+    <div class="container">
+      <div class="header-inner">
+        <!-- Left: Desktop Navigation -->
+        <nav class="header-nav-left" aria-label="Main Navigation">
+          <a href="sarees.html" class="nav-link">Shop</a>
+          <a href="#collections" class="nav-link">Collections</a>
+          <a href="#new-arrivals" class="nav-link">New Arrivals</a>
+          <a href="sarees.html" class="nav-link">Sarees</a>
+          <a href="about.html" class="nav-link">About</a>
+        </nav>
+
+        <!-- Mobile Hamburger Button -->
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Center: PALLUVO Brand Logo -->
+        <div class="header-logo-center">
+          <a href="index.html" class="brand-logo" aria-label="PALLUVO Home">PALLUVO</a>
+          <span class="brand-tagline">Every drape, a little magic</span>
+        </div>
+
+        <!-- Right: Utility Actions -->
+        <div class="header-actions-right">
+          <!-- Search Trigger -->
+          <button class="header-action-btn js-search-trigger" aria-label="Search PALLUVO">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </button>
+
+          <!-- Customer Account -->
+          <a href="account.html" class="header-action-btn" aria-label="Customer Account">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </a>
+
+          <!-- Wishlist with Badge -->
+          <a href="wishlist.html" class="header-action-btn" aria-label="Wishlist">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+            <span class="header-badge wishlist-badge hidden">0</span>
+          </a>
+
+          <!-- Shopping Bag with Drawer Trigger -->
+          <button class="header-action-btn js-cart-drawer-trigger" aria-label="Shopping Bag">
+            <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <path d="M16 10a4 4 0 0 1-8 0"></path>
+            </svg>
+            <span class="header-badge cart-badge hidden">0</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div class="brand-logo" style="font-size: 1.5rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="mobile-drawer-nav">
+      <a href="sarees.html" class="mobile-nav-link">Shop Sarees <span>&rarr;</span></a>
+      <a href="sarees.html?category=Silk" class="mobile-nav-link">Silk Stories <span>&rarr;</span></a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">Contemporary Organza <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">Wedding Edit <span>&rarr;</span></a>
+      <a href="#new-arrivals" class="mobile-nav-link" onclick="document.getElementById('mobileMenuClose').click()">New Arrivals <span>&rarr;</span></a>
+      <a href="about.html" class="mobile-nav-link">Our Story <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">Saved Wishlist <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">My Account & Orders <span>&rarr;</span></a>
+    </div>
+    <div class="mobile-drawer-footer">
+      <p>🇮🇳 India &bull; INR (₹)</p>
+      <p style="margin-top: 0.3rem;">Complimentary Shipping &bull; 7-Day Returns</p>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <main id="mainContent">
+
+    <!-- 1. HERO CAMPAIGN SECTION -->
+    <section class="hero-campaign">
+      <div class="hero-bg-media">
+        <img src="images/hero_campaign.jpg" alt="PALLUVO Editorial Silk Saree Campaign" class="hero-img">
+        <div class="hero-overlay-gradient"></div>
+      </div>
+      <div class="container" style="position: relative; z-index: 3;">
+        <div class="hero-content">
+          <span class="hero-kicker">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+            The Festive & Bridal Campaign
+          </span>
+          <h1 class="hero-title">Every drape, <br><em>a little magic.</em></h1>
+          <p class="hero-subtitle">Contemporary sarees, thoughtfully crafted for moments that matter. Blending timeless Indian handlooms with effortless modern silhouettes.</p>
+          <div class="hero-ctas">
+            <a href="sarees.html" class="btn btn-hero-solid">SHOP SAREES</a>
+            <a href="#new-arrivals" class="btn btn-hero-outline">EXPLORE NEW ARRIVALS</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. FEATURED COLLECTIONS ("Find Your Drape") -->
+    <section class="section-spacing" id="collections">
+      <div class="container">
+        <span class="section-tag">Curated Edits</span>
+        <h2 class="heading-section">Find Your Drape</h2>
+        <p class="section-subtitle">Discover handcrafted collections tailored for every celebration and quiet moment.</p>
+
+        <div class="collections-grid">
+          <!-- Everyday Elegance -->
+          <a href="sarees.html?collection=Everyday" class="collection-card col-span-4">
+            <img src="images/coll_everyday.jpg" alt="Everyday Elegance Sarees" class="collection-card-img" loading="lazy">
+            <div class="collection-card-overlay">
+              <span class="collection-card-kicker">Effortless Living</span>
+              <h3 class="collection-card-title">Everyday Elegance</h3>
+              <span class="collection-card-link">Explore Edit &rarr;</span>
+            </div>
+          </a>
+
+          <!-- Festive Edit -->
+          <a href="sarees.html?collection=Festive" class="collection-card col-span-4">
+            <img src="images/coll_festive.jpg" alt="Festive Edit Sarees" class="collection-card-img" loading="lazy">
+            <div class="collection-card-overlay">
+              <span class="collection-card-kicker">Celebration Ready</span>
+              <h3 class="collection-card-title">Festive Edit</h3>
+              <span class="collection-card-link">Explore Edit &rarr;</span>
+            </div>
+          </a>
+
+          <!-- Silk Stories -->
+          <a href="sarees.html?category=Silk" class="collection-card col-span-4">
+            <img src="images/coll_silk.jpg" alt="Silk Stories Sarees" class="collection-card-img" loading="lazy">
+            <div class="collection-card-overlay">
+              <span class="collection-card-kicker">Pure Mulberry & Kanjivaram</span>
+              <h3 class="collection-card-title">Silk Stories</h3>
+              <span class="collection-card-link">Explore Edit &rarr;</span>
+            </div>
+          </a>
+
+          <!-- Contemporary Drapes -->
+          <a href="sarees.html?collection=Contemporary" class="collection-card col-span-6">
+            <img src="images/coll_contemp.jpg" alt="Contemporary Drapes" class="collection-card-img" loading="lazy">
+            <div class="collection-card-overlay">
+              <span class="collection-card-kicker">Modern Silhouettes</span>
+              <h3 class="collection-card-title">Contemporary Drapes</h3>
+              <span class="collection-card-link">Explore Edit &rarr;</span>
+            </div>
+          </a>
+
+          <!-- Wedding Edit -->
+          <a href="sarees.html?occasion=Wedding" class="collection-card col-span-6">
+            <img src="images/coll_wedding.jpg" alt="Wedding & Bridal Edit" class="collection-card-img" loading="lazy">
+            <div class="collection-card-overlay">
+              <span class="collection-card-kicker">Heirloom Weaves</span>
+              <h3 class="collection-card-title">Wedding Edit</h3>
+              <span class="collection-card-link">Explore Edit &rarr;</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. NEW ARRIVALS -->
+    <section class="section-spacing" id="new-arrivals" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+      <div class="container">
+        <span class="section-tag">Just In</span>
+        <h2 class="heading-section">New Arrivals</h2>
+        <p class="section-subtitle">Fresh drapes. Timeless feeling.</p>
+
+        <!-- Product Grid populated dynamically with realistic luxury sarees -->
+        <div class="product-grid" id="newArrivalsGrid">
+          <!-- Rendered via JS -->
+        </div>
+
+        <div style="text-align: center; margin-top: 3.5rem;">
+          <a href="sarees.html" class="btn btn-outline">VIEW ALL SAREES</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. BRAND STORY / EDITORIAL SPLIT SECTION -->
+    <section class="editorial-story-section">
+      <div class="story-split-grid">
+        <div class="story-media-col">
+          <img src="images/craftsmanship.jpg" alt="PALLUVO Handloom Craftsmanship & Zari Weaving" class="story-img" loading="lazy">
+        </div>
+        <div class="story-content-col">
+          <span class="section-tag">Craft & Heritage</span>
+          <h2 class="story-title">The Art of the Drape</h2>
+          <p class="story-lead">“Rooted in Indian craftsmanship and imagined for the modern woman, PALLUVO celebrates the quiet magic of getting dressed.”</p>
+          <p class="story-body">We partner directly with traditional weaving clusters across Varanasi, Kanchipuram, and Chanderi. Every saree is woven with unhurried patience on wooden pit-looms, using certified pure silk yarns, authentic tested zari, and organic botanical dyes. Designed not just to be worn, but to be treasured as an heirloom.</p>
+          <div>
+            <a href="about.html" class="btn-text-link">OUR STORY &rarr;</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. SHOP BY MOOD -->
+    <section class="section-spacing">
+      <div class="container">
+        <span class="section-tag">Express Yourself</span>
+        <h2 class="heading-section">Shop by Mood</h2>
+        <p class="section-subtitle">Let your spirit guide your drape for every occasion and feeling.</p>
+
+        <div class="mood-grid">
+          <!-- Soft & Romantic -->
+          <a href="sarees.html?mood=Soft+%26+Romantic" class="mood-card">
+            <img src="images/mood_romantic.jpg" alt="Soft & Romantic Sarees" class="mood-card-img" loading="lazy">
+            <div class="mood-card-overlay">
+              <h3 class="mood-card-title">Soft & Romantic</h3>
+              <span class="mood-card-subtitle">Ethereal organzas & pastels</span>
+            </div>
+          </a>
+
+          <!-- Bold & Beautiful -->
+          <a href="sarees.html?mood=Bold+%26+Beautiful" class="mood-card">
+            <img src="images/mood_bold.jpg" alt="Bold & Beautiful Sarees" class="mood-card-img" loading="lazy">
+            <div class="mood-card-overlay">
+              <h3 class="mood-card-title">Bold & Beautiful</h3>
+              <span class="mood-card-subtitle">Jewel silks & midnight hues</span>
+            </div>
+          </a>
+
+          <!-- Minimal & Modern -->
+          <a href="sarees.html?mood=Minimal+%26+Modern" class="mood-card">
+            <img src="images/mood_minimal.jpg" alt="Minimal & Modern Sarees" class="mood-card-img" loading="lazy">
+            <div class="mood-card-overlay">
+              <h3 class="mood-card-title">Minimal & Modern</h3>
+              <span class="mood-card-subtitle">Clean lines & textured linens</span>
+            </div>
+          </a>
+
+          <!-- Festive & Opulent -->
+          <a href="sarees.html?mood=Festive+%26+Opulent" class="mood-card">
+            <img src="images/mood_festive.jpg" alt="Festive & Opulent Sarees" class="mood-card-img" loading="lazy">
+            <div class="mood-card-overlay">
+              <h3 class="mood-card-title">Festive & Opulent</h3>
+              <span class="mood-card-subtitle">Pure zari & regal brocades</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. BESTSELLERS ("Loved by Her") -->
+    <section class="section-spacing" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+      <div class="container">
+        <span class="section-tag">Most Cherished</span>
+        <h2 class="heading-section">Loved by Her</h2>
+        <p class="section-subtitle">Our most coveted drapes, celebrated by women across the globe.</p>
+
+        <div class="product-grid" id="bestsellersGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. THE PALLUVO EDIT (Styling Magazine) -->
+    <section class="section-spacing">
+      <div class="container">
+        <span class="section-tag">Style Journal</span>
+        <h2 class="heading-section">The PALLUVO Edit</h2>
+        <p class="section-subtitle">Curated perspectives on contemporary draping, blouse pairing, and styling.</p>
+
+        <div class="articles-grid">
+          <!-- Article 1 -->
+          <article class="article-card">
+            <div class="article-media">
+              <img src="images/blog_1.jpg" alt="How to style a silk saree" class="article-img" loading="lazy">
+            </div>
+            <div class="article-body">
+              <div class="article-meta">
+                <span>Draping Guide</span> &bull; <span>4 Min Read</span>
+              </div>
+              <h3 class="article-title">How to Style a Pure Silk Saree with Modern Minimalism</h3>
+              <p class="article-desc">Moving beyond heavy traditional layering: how to balance heirloom zari with contemporary jewellery and unlined blouses.</p>
+              <a href="about.html" class="btn-text-link">Read Journal &rarr;</a>
+            </div>
+          </article>
+
+          <!-- Article 2 -->
+          <article class="article-card">
+            <div class="article-media">
+              <img src="images/blog_2.jpg" alt="Sarees for intimate celebrations" class="article-img" loading="lazy">
+            </div>
+            <div class="article-body">
+              <div class="article-meta">
+                <span>Editorial</span> &bull; <span>3 Min Read</span>
+              </div>
+              <h3 class="article-title">Sarees for Intimate Celebrations & Sunset Soirées</h3>
+              <p class="article-desc">Whisper-light Chanderi and tissue silks that float effortlessly from twilight garden ceremonies into candlelit dinners.</p>
+              <a href="about.html" class="btn-text-link">Read Journal &rarr;</a>
+            </div>
+          </article>
+
+          <!-- Article 3 -->
+          <article class="article-card">
+            <div class="article-media">
+              <img src="images/blog_3.jpg" alt="Modern blouse pairings" class="article-img" loading="lazy">
+            </div>
+            <div class="article-body">
+              <div class="article-meta">
+                <span>Blouse Studio</span> &bull; <span>5 Min Read</span>
+              </div>
+              <h3 class="article-title">Modern Blouse Pairings: From High Necks to Corset Cuts</h3>
+              <p class="article-desc">A deep dive into our bespoke blouse tailoring studio and silhouette pairing recommendations for every drape.</p>
+              <a href="about.html" class="btn-text-link">Read Journal &rarr;</a>
+            </div>
+          </article>
+
+          <!-- Article 4 -->
+          <article class="article-card">
+            <div class="article-media">
+              <img src="images/blog_4.jpg" alt="Drapes for festive evenings" class="article-img" loading="lazy">
+            </div>
+            <div class="article-body">
+              <div class="article-meta">
+                <span>Masterclass</span> &bull; <span>4 Min Read</span>
+              </div>
+              <h3 class="article-title">Drapes for Festive Evenings: The Contemporary Belted Pallu</h3>
+              <p class="article-desc">Learn how our signature micro-pleat technique gives structured ease for dancing and effortless movement all night long.</p>
+              <a href="about.html" class="btn-text-link">Read Journal &rarr;</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- 8. INSTAGRAM / SOCIAL PROOF ("Seen in the PALLUVO World") -->
+    <section class="section-spacing-sm" style="background-color: var(--bg-card); border-top: 1px solid var(--border-subtle); border-bottom: 1px solid var(--border-subtle);">
+      <div class="container">
+        <span class="section-tag">Community</span>
+        <h2 class="heading-section">Seen in the PALLUVO World</h2>
+        <p class="section-subtitle">Real women, cherished moments, and their unique drapes.</p>
+
+        <div class="social-grid">
+          <div class="social-item">
+            <img src="images/insta_1.jpg" alt="@palluvo community drape 1" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+          <div class="social-item">
+            <img src="images/insta_2.jpg" alt="@palluvo community drape 2" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+          <div class="social-item">
+            <img src="images/insta_3.jpg" alt="@palluvo community drape 3" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+          <div class="social-item">
+            <img src="images/insta_4.jpg" alt="@palluvo community drape 4" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+          <div class="social-item">
+            <img src="images/insta_5.jpg" alt="@palluvo community drape 5" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+          <div class="social-item">
+            <img src="images/insta_6.jpg" alt="@palluvo community drape 6" class="social-img" loading="lazy">
+            <div class="social-hover-overlay">
+              <span>@PALLUVO</span>
+            </div>
+          </div>
+        </div>
+
+        <div style="text-align: center; margin-top: 2.5rem;">
+          <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" class="btn btn-outline btn-sm">FOLLOW @PALLUVO</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- 9. NEWSLETTER ("A little magic, delivered.") -->
+    <section class="section-spacing">
+      <div class="container">
+        <div class="newsletter-box">
+          <span class="section-tag">Private Edit</span>
+          <h2 class="newsletter-title">A little magic, delivered.</h2>
+          <p class="newsletter-sub">Be the first to discover new drapes, private edits, and intimate stories from PALLUVO. Enjoy 10% off your first drape with code <strong>FIRSTDRAPE</strong>.</p>
+          <form class="newsletter-form" id="newsletterForm">
+            <input type="email" placeholder="Your email address" class="newsletter-input" required aria-label="Email address for newsletter">
+            <button type="submit" class="btn btn-primary">SUBSCRIBE</button>
+          </form>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 10. LUXURY FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <!-- Brand Info -->
+        <div>
+          <div class="footer-brand-title">PALLUVO</div>
+          <p class="footer-tagline">“Every drape, a little magic.”</p>
+          <p class="footer-about-text">A contemporary Indian fashion label celebrating sarees, slow craftsmanship, femininity, and effortless luxury for the modern woman.</p>
+          <div class="footer-social-icons">
+            <a href="#" class="footer-social-btn" aria-label="Instagram">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+            </a>
+            <a href="#" class="footer-social-btn" aria-label="Facebook">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path></svg>
+            </a>
+            <a href="#" class="footer-social-btn" aria-label="Pinterest">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"></circle><path d="M8 12c0-2.2 1.8-4 4-4s4 1.8 4 4c0 1.5-.8 2.8-2 3.5l-1 3.5-1-3.5C9.2 14.8 8 13.5 8 12z"></path></svg>
+            </a>
+          </div>
+        </div>
+
+        <!-- Shop Links -->
+        <div>
+          <h4 class="footer-col-title">Shop</h4>
+          <ul class="footer-links-list">
+            <li><a href="sarees.html">All Sarees</a></li>
+            <li><a href="#new-arrivals">New Arrivals</a></li>
+            <li><a href="sarees.html?category=Silk">Silk Stories</a></li>
+            <li><a href="sarees.html?category=Organza">Contemporary Organza</a></li>
+            <li><a href="sarees.html?occasion=Wedding">Wedding Edit</a></li>
+            <li><a href="sarees.html?badge=Bestseller">Bestsellers</a></li>
+          </ul>
+        </div>
+
+        <!-- Help Links -->
+        <div>
+          <h4 class="footer-col-title">Help</h4>
+          <ul class="footer-links-list">
+            <li><a href="contact.html">Contact Us</a></li>
+            <li><a href="#shipping" onclick="alert('Complimentary shipping across India on orders over ₹2,999. Express delivery takes 2-4 business days.')">Shipping & Delivery</a></li>
+            <li><a href="#returns" onclick="alert('We offer hassle-free 7-day exchanges and returns on unworn sarees with tags attached.')">Returns & Exchanges</a></li>
+            <li><a href="#sizeguide" onclick="SizeGuideModal.open()">Size & Blouse Guide</a></li>
+            <li><a href="account.html">Track Order</a></li>
+            <li><a href="#faqs" onclick="alert('Have questions? Call or WhatsApp our concierge at +91 98765 43210 (Mon-Sat, 10 AM - 7 PM IST).')">Concierge FAQs</a></li>
+          </ul>
+        </div>
+
+        <!-- About Links -->
+        <div>
+          <h4 class="footer-col-title">About</h4>
+          <ul class="footer-links-list">
+            <li><a href="about.html">Our Story</a></li>
+            <li><a href="about.html#craft">Artisanal Craftsmanship</a></li>
+            <li><a href="about.html#weavers">Weaver Clusters</a></li>
+            <li><a href="about.html#sustainability">Ethical Sourcing</a></li>
+            <li><a href="about.html#journal">The PALLUVO Journal</a></li>
+          </ul>
+        </div>
+
+        <!-- Customer Trust & Currency -->
+        <div>
+          <h4 class="footer-col-title">Shipping & Currency</h4>
+          <p style="font-size: 0.85rem; color: #B5ACA1; margin-bottom: 1rem; line-height: 1.6;">
+            Complimentary doorstep shipping on orders above ₹2,999 across India. Handcrafted, inspected, and shipped in sustainable luxury boxes.
+          </p>
+          <div style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500;">
+            Currency: <strong>INR (₹ Indian Rupee)</strong>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer Bottom -->
+      <div class="footer-bottom">
+        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
+        <div class="footer-payment-badges">
+          <span class="payment-pill">UPI / QR</span>
+          <span class="payment-pill">RuPay</span>
+          <span class="payment-pill">Visa</span>
+          <span class="payment-pill">Mastercard</span>
+          <span class="payment-pill">Net Banking</span>
+          <span class="payment-pill">Cash on Delivery</span>
+        </div>
+        <div>
+          <a href="#" style="margin-right: 1.2rem;">Privacy Policy</a>
+          <a href="#">Terms of Service</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SLIDE-OUT CART DRAWER (Global Component) -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true" aria-labelledby="cartDrawerTitle">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title" id="cartDrawerTitle">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose" aria-label="Close bag">&times;</button>
+    </div>
+
+    <!-- Free Shipping Progress Indicator -->
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText">
+        Add <span>₹2,999</span> for <strong>Complimentary Shipping</strong>
+      </div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress" style="width: 0%;"></div>
+      </div>
+    </div>
+
+    <!-- Dynamic Cart Items Container -->
+    <div class="cart-drawer-items" id="cartDrawerItems">
+      <!-- Populated via CartStore.renderDrawer() -->
+    </div>
+
+    <!-- Cart Footer & Totals -->
+    <div class="cart-drawer-footer" id="cartDrawerFooter">
+      <!-- Populated via CartStore.renderDrawer() -->
+    </div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- FULL-WIDTH SEARCH OVERLAY (Global Component) -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose" aria-label="Close search">&times;</button>
+    </div>
+    
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, motifs, collections..." autocomplete="off">
+      <span class="search-submit-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </span>
+    </div>
+
+    <div class="search-suggestions-wrap">
+      <div class="search-suggested-keywords" id="searchSuggestedKeywords">
+        <span style="font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em;">Trending:</span>
+        <button class="search-keyword-tag">Silk Sarees</button>
+        <button class="search-keyword-tag">Organza</button>
+        <button class="search-keyword-tag">Festive</button>
+        <button class="search-keyword-tag">Tissue Silk</button>
+        <button class="search-keyword-tag">Chanderi</button>
+        <button class="search-keyword-tag">Wedding</button>
+      </div>
+
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- QUICK VIEW MODAL (Global Component) -->
+  <div class="modal-wrapper" id="quickViewModal" role="dialog" aria-modal="true">
+    <div id="quickViewContent"></div>
+  </div>
+  <div class="modal-backdrop" id="quickViewBackdrop"></div>
+
+  <!-- SIZE & BLOUSE GUIDE MODAL (Global Component) -->
+  <div class="modal-wrapper" id="sizeGuideModal" role="dialog" aria-modal="true">
+    <div class="sizeguide-dialog">
+      <button class="modal-close-btn" id="sizeGuideClose">&times;</button>
+      <span class="section-tag" style="text-align: left;">Concierge Tailoring</span>
+      <h2 style="font-family: var(--font-serif); font-size: 1.8rem; margin-bottom: 0.6rem;">PALLUVO Blouse Size Guide</h2>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1.5rem;">All our custom tailored blouses are handcrafted by master tailors with 2-inch interior margins for effortless alteration if needed.</p>
+
+      <table class="sizeguide-table">
+        <thead>
+          <tr>
+            <th>Size</th>
+            <th>Bust (Inches)</th>
+            <th>Underbust / Waist</th>
+            <th>Shoulder</th>
+            <th>Armhole</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>XS</strong></td>
+            <td>32″</td>
+            <td>26″</td>
+            <td>13.5″</td>
+            <td>14″</td>
+          </tr>
+          <tr>
+            <td><strong>S</strong></td>
+            <td>34″</td>
+            <td>28″</td>
+            <td>14.0″</td>
+            <td>15″</td>
+          </tr>
+          <tr>
+            <td><strong>M</strong></td>
+            <td>36″</td>
+            <td>30″</td>
+            <td>14.5″</td>
+            <td>16″</td>
+          </tr>
+          <tr>
+            <td><strong>L</strong></td>
+            <td>38″</td>
+            <td>32″</td>
+            <td>15.0″</td>
+            <td>17″</td>
+          </tr>
+          <tr>
+            <td><strong>XL</strong></td>
+            <td>40″</td>
+            <td>34″</td>
+            <td>15.5″</td>
+            <td>18″</td>
+          </tr>
+          <tr>
+            <td><strong>XXL</strong></td>
+            <td>42″</td>
+            <td>36″</td>
+            <td>16.0″</td>
+            <td>19″</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="background-color: var(--bg-secondary); padding: 1.2rem; border-radius: var(--radius-xs); font-size: 0.85rem; color: var(--text-secondary);">
+        <strong>Unstitched Blouse Option:</strong> Every PALLUVO saree includes a complimentary 0.8m to 1.0m matching unstitched blouse fabric piece, giving you total freedom to tailor with your personal trusted master designer.
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop" id="sizeGuideBackdrop"></div>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    // Initialize homepage product sections
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Render New Arrivals (4-6 products)
+      const newArrivalsContainer = document.getElementById('newArrivalsGrid');
+      if (newArrivalsContainer) {
+        const items = ProductsCatalog.getNewArrivals();
+        newArrivalsContainer.innerHTML = items.map(renderProductCard).join('');
+      }
+
+      // 2. Render Bestsellers ("Loved by Her")
+      const bestsellersContainer = document.getElementById('bestsellersGrid');
+      if (bestsellersContainer) {
+        const bestsellers = ProductsCatalog.getBestsellers().slice(0, 4);
+        bestsellersContainer.innerHTML = bestsellers.map(renderProductCard).join('');
+      }
+
+      // Re-bind wishlist active state
+      WishlistStore.updateHeartIcons();
+    });
+  </script>
+</body>
+</html>
