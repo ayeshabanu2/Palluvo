@@ -621,23 +621,50 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 auto;
 }
 
-/* Brand Logo (Bold clean geometric sans-serif) */
+/* Brand Logo — Clean, Prestigious Indian Luxury */
 .brand-logo-clean {
-  font-family: var(--font-sans);
-  font-size: 1.85rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: #111111;
+  color: var(--color-burgundy);
   text-decoration: none;
   display: inline-flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  line-height: 1;
   transition: opacity var(--transition-fast);
   flex-shrink: 0;
+  gap: 3px;
 }
 
 .brand-logo-clean:hover {
-  opacity: 0.82;
+  opacity: 0.88;
+}
+
+.brand-name-text {
+  font-family: var(--font-serif);
+  font-size: 1.7rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-burgundy);
+  line-height: 1;
+  display: block;
+}
+
+.brand-tagline-sub {
+  display: block;
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold-antique);
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* Center Horizontal Nav Links */
@@ -3901,23 +3928,6 @@ h1, h2, h3, h4, h5, h6 {
    "The Art of the Saree — Timeless weaves. Modern elegance."
    ========================================================================== */
 
-/* Brand Logo */
-.brand-logo-clean {
-  font-family: var(--font-sans);
-  font-weight: 800;
-  font-size: 1.45rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: #111;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  transition: opacity 0.2s ease;
-}
-.brand-logo-clean:hover {
-  opacity: 0.85;
-}
-
 /* 1. Hero Section: "THE ART OF THE SAREE" */
 .hero-art-section {
   position: relative;
@@ -3927,9 +3937,9 @@ h1, h2, h3, h4, h5, h6 {
   max-height: 820px;
   display: flex;
   align-items: center;
-  background-image: url('../images/hero_saree_art.jpg');
+  background-image: url('../images/hero_saree_model.jpg');
   background-size: cover;
-  background-position: center 25%;
+  background-position: 60% 18%;
   background-repeat: no-repeat;
   overflow: hidden;
 }
@@ -3939,10 +3949,10 @@ h1, h2, h3, h4, h5, h6 {
   inset: 0;
   background: linear-gradient(
     90deg,
-    rgba(18, 14, 12, 0.78) 0%,
-    rgba(18, 14, 12, 0.55) 45%,
-    rgba(18, 14, 12, 0.18) 75%,
-    rgba(18, 14, 12, 0.05) 100%
+    rgba(24, 16, 18, 0.85) 0%,
+    rgba(24, 16, 18, 0.65) 38%,
+    rgba(24, 16, 18, 0.22) 65%,
+    rgba(24, 16, 18, 0.02) 100%
   );
   z-index: 1;
 }
@@ -4867,14 +4877,15 @@ h1, h2, h3, h4, h5, h6 {
    ========================================================================== */
 .brand-tagline-sub {
   display: block;
-  font-family: var(--font-serif);
-  font-style: italic;
-  font-size: 0.72rem;
-  letter-spacing: 0.1em;
-  color: var(--text-secondary);
-  font-weight: 400;
-  text-transform: none;
-  margin-top: -2px;
+  font-family: var(--font-sans);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-gold-antique);
+  line-height: 1;
+  white-space: nowrap;
+  margin-top: 3px;
 }
 
 .top-models-grid {
