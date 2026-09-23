@@ -10,96 +10,84 @@
 </head>
 <body>
 
-  <!-- ANNOUNCEMENT BAR (Tier 1: Royal Maroon) -->
-  <div class="announcement-bar">
-    <span><span class="announcement-sparkle">✨</span> Festive Season Edit: Complimentary Worldwide Shipping on Orders Above <strong>₹2,999</strong></span>
-  </div>
-
-  <!-- STICKY SITE HEADER (Tier 2 & 3: Singhania's Luxury Layout) -->
-  <header class="site-header" id="siteHeader">
-    <div class="container">
+  <!-- MODERN SLEEK SITE HEADER (Saree.com Reference Layout) -->
+  <header class="site-header-clean" id="siteHeader">
+    <div class="header-row-clean">
       
-      <!-- Tier 2: Main Row (Brand Logo, Wide Search Bar, Labeled Actions) -->
-      <div class="header-main-row">
-        
-        <!-- Left: Brand Logo with Gold Monogram Medallion -->
-        <a href="index.html" class="brand-logo-block" aria-label="PALLUVO Home">
-          <div class="brand-medallion">
-            <span class="brand-medallion-letter">P</span>
-          </div>
-          <div class="brand-naming-col">
-            <span class="brand-name-text">PALLUVO</span>
-            <span class="brand-subtitle-rule">Handcrafted Luxury</span>
-          </div>
+      <!-- Left: Clean Brand Logo -->
+      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
+        PALLUVO
+      </a>
+
+      <!-- Center: Modern Uppercase Category Navigation -->
+      <nav class="header-nav-center" aria-label="Main Categories">
+        <div class="nav-item-clean">
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="index.html#collections" class="nav-link-clean">CURATED EDITS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean is-active">SAREE</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Chanderi" class="nav-link-clean">SALWAR SUITS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">LEHENGAS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?collection=Contemporary" class="nav-link-clean">KURTI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="about.html" class="nav-link-clean">MEN'S</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?occasion=Festive" class="nav-link-clean" style="color: #E65100; font-weight: 700;">NAVRATRI</a>
+        </div>
+      </nav>
+
+      <!-- Right: Minimalist Outline Action Icons -->
+      <div class="header-actions-clean">
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
         </a>
 
-        <!-- Mobile Hamburger Button -->
-        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="header-action-badge wishlist-badge hidden">0</span>
+        </a>
+
+        <button class="header-action-icon js-cart-drawer-trigger" aria-label="Shopping Bag">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="header-action-badge cart-badge hidden">0</span>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu" style="display: none;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <line x1="3" y1="6" x2="21" y2="6"></line>
             <line x1="3" y1="12" x2="21" y2="12"></line>
             <line x1="3" y1="18" x2="21" y2="18"></line>
           </svg>
         </button>
-
-        <!-- Center: Prominent Search Bar -->
-        <div class="header-search-wrap">
-          <form class="header-search-form" onsubmit="event.preventDefault(); SearchOverlay.open();">
-            <input type="text" id="headerSearchInput" class="header-search-input" placeholder="Search for Sarees, Silks, Lehengas, Handlooms..." onclick="SearchOverlay.open()" autocomplete="off">
-            <button type="submit" class="header-search-btn" aria-label="Search">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              Search
-            </button>
-          </form>
-        </div>
-
-        <!-- Right: Labeled Actions (Account, Wishlist, Cart) -->
-        <div class="header-actions-row">
-          <a href="account.html" class="header-action-item">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-              <circle cx="12" cy="7" r="4"></circle>
-            </svg>
-            <span class="action-label-text">Account</span>
-          </a>
-
-          <a href="wishlist.html" class="header-action-item">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-            </svg>
-            <span class="action-label-text">Wishlist</span>
-            <span class="header-badge wishlist-badge hidden">0</span>
-          </a>
-
-          <button class="header-action-item js-cart-drawer-trigger" aria-label="Shopping Cart">
-            <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-              <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
-              <line x1="3" y1="6" x2="21" y2="6"></line>
-              <path d="M16 10a4 4 0 0 1-8 0"></path>
-            </svg>
-            <span class="action-label-text">Cart</span>
-            <span class="header-badge cart-badge hidden">0</span>
-          </button>
-        </div>
-
       </div>
-
-      <!-- Tier 3: Category Sub-Navigation Strip -->
-      <nav class="header-category-strip" aria-label="Product Categories">
-        <ul class="category-nav-links">
-          <li><a href="sarees.html?category=Silk" class="category-nav-link is-active">Kanjivaram</a></li>
-          <li><a href="sarees.html?category=Silk" class="category-nav-link">Banarasi</a></li>
-          <li><a href="sarees.html?category=Organza" class="category-nav-link">Designer Sarees</a></li>
-          <li><a href="sarees.html?category=Handloom" class="category-nav-link">Weaves & Crafts</a></li>
-          <li><a href="sarees.html?category=Chanderi" class="category-nav-link">Salwar Sets</a></li>
-          <li><a href="sarees.html?occasion=Wedding" class="category-nav-link">Lehenga</a></li>
-          <li><a href="sarees.html?collection=Contemporary" class="category-nav-link">Fusion Wear</a></li>
-          <li><a href="about.html" class="category-nav-link">Mens</a></li>
-        </ul>
-      </nav>
 
     </div>
   </header>
@@ -107,182 +95,70 @@
   <!-- MOBILE NAVIGATION DRAWER -->
   <div class="mobile-drawer" id="mobileMenuDrawer">
     <div class="mobile-drawer-header">
-      <div class="brand-logo-block">
-        <div class="brand-medallion" style="width:36px; height:36px;">
-          <span class="brand-medallion-letter" style="font-size:1.3rem;">P</span>
-        </div>
-        <span class="brand-name-text" style="font-size:1.6rem;">PALLUVO</span>
-      </div>
+      <span class="brand-logo-clean" style="font-size: 1.5rem;">PALLUVO</span>
       <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
     </div>
     <div class="mobile-drawer-nav">
-      <a href="sarees.html?category=Silk" class="mobile-nav-link">Kanjivaram Sarees <span>&rarr;</span></a>
-      <a href="sarees.html?category=Silk" class="mobile-nav-link">Banarasi Heritage <span>&rarr;</span></a>
-      <a href="sarees.html?category=Organza" class="mobile-nav-link">Designer Sarees <span>&rarr;</span></a>
-      <a href="sarees.html?category=Handloom" class="mobile-nav-link">Weaves & Crafts <span>&rarr;</span></a>
-      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">Lehengas & Wedding <span>&rarr;</span></a>
-      <a href="sarees.html?collection=Contemporary" class="mobile-nav-link">Fusion & Readymade <span>&rarr;</span></a>
-      <a href="about.html" class="mobile-nav-link">Our Story <span>&rarr;</span></a>
-      <a href="wishlist.html" class="mobile-nav-link">Saved Wishlist <span>&rarr;</span></a>
-      <a href="account.html" class="mobile-nav-link">My Account & Orders <span>&rarr;</span></a>
+      <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
+      <a href="index.html#collections" class="mobile-nav-link">CURATED EDITS <span>&rarr;</span></a>
+      <a href="sarees.html" class="mobile-nav-link">SAREES <span>&rarr;</span></a>
+      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">SALWAR SUITS <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Wedding" class="mobile-nav-link">LEHENGAS <span>&rarr;</span></a>
+      <a href="sarees.html?collection=Contemporary" class="mobile-nav-link">KURTI & FUSION <span>&rarr;</span></a>
+      <a href="sarees.html?occasion=Festive" class="mobile-nav-link" style="color: #E65100; font-weight: 700;">NAVRATRI SPECIAL <span>&rarr;</span></a>
+      <a href="about.html" class="mobile-nav-link">OUR STORY <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
     </div>
     <div class="mobile-drawer-footer">
       <p>🇮🇳 India &bull; INR (₹)</p>
-      <p style="margin-top: 0.3rem;">Handcrafted Luxury &bull; Worldwide Shipping</p>
+      <p style="margin-top: 0.3rem;">Every drape, a little magic.</p>
     </div>
   </div>
   <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
 
   <main id="mainContent">
 
-    <!-- 1. SIGNATURE 5-PANEL HERO SHOWCASE (Singhania's Exact Layout) -->
-    <section class="hero-showcase-section">
-      <div class="hero-showcase-layout">
-        
-        <!-- Left Editorial Card: Brand Crest, Calligraphy & Badges -->
-        <div class="hero-brand-card">
-          <div class="hero-brand-emblem-wrap">
-            <div class="brand-medallion" style="width:40px; height:40px;">
-              <span class="brand-medallion-letter" style="font-size:1.45rem;">P</span>
-            </div>
-            <div class="brand-naming-col" style="text-align: left;">
-              <span class="brand-name-text" style="font-size:1.6rem;">PALLUVO</span>
-              <span class="brand-subtitle-rule" style="font-size:0.55rem;">Handcrafted Luxury</span>
-            </div>
+    <!-- 1. FULL-WIDTH CELEBRATORY HERO BANNER (Saree.com Reference Layout) -->
+    <section class="hero-festive-motion" id="heroCampaign">
+      <div class="hero-festive-scrim"></div>
+      
+      <div class="hero-motion-container">
+        <div class="hero-motion-content" id="heroTextContent">
+          <h1 class="hero-motion-title" id="heroSlideTitle">
+            NAVRATRI<br>IN MOTION
+          </h1>
+          <p class="hero-motion-subtitle" id="heroSlideSubtitle">
+            Lehengas Made For Every Twirl
+          </p>
+          <div class="hero-motion-offer" id="heroSlideOffer">
+            UPTO 25% OFF* + FREE SHIPPING
           </div>
-
-          <div class="hero-brand-heading-1">Timeless Heritage.</div>
-          <div class="hero-brand-heading-2">Made for You.</div>
-
-          <div class="hero-ornament-caption">
-            Exquisite Collections for Every Occasion
-          </div>
-
-          <!-- 4 Trust Badges -->
-          <div class="hero-badges-row">
-            <div class="hero-badge-col">
-              <div class="hero-badge-icon-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-              </div>
-              <span class="hero-badge-title">Authentic Handlooms</span>
-            </div>
-
-            <div class="hero-badge-col">
-              <div class="hero-badge-icon-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              </div>
-              <span class="hero-badge-title">Worldwide Shipping</span>
-            </div>
-
-            <div class="hero-badge-col">
-              <div class="hero-badge-icon-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              </div>
-              <span class="hero-badge-title">Secure Payments</span>
-            </div>
-
-            <div class="hero-badge-col">
-              <div class="hero-badge-icon-box">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
-              </div>
-              <span class="hero-badge-title">Certified Pure Silk</span>
-            </div>
-          </div>
-
-          <a href="sarees.html" class="btn-explore-collections">EXPLORE COLLECTIONS &rarr;</a>
+          <a href="sarees.html?occasion=Festive" class="hero-motion-btn" id="heroSlideBtn">
+            SHOP NOW
+          </a>
+          <span class="hero-motion-tagline" id="heroSlideTagline">
+            THE RICHNESS OF TRADITION
+          </span>
         </div>
-
-        <!-- Right 5-Panel Deck: Interactive Saree Category Showcase -->
-        <div class="hero-panels-deck">
-          
-          <!-- Panel 1: Kanjivaram Sarees (Deep Bronze Theme) -->
-          <a href="sarees.html?category=Silk" class="hero-panel-card theme-bronze">
-            <div class="hero-panel-media">
-              <img src="images/hero_campaign.jpg" alt="Kanjivaram Pure Silk Sarees">
-            </div>
-            <div class="hero-panel-footer">
-              <span class="panel-title-main">Kanjivaram</span>
-              <span class="panel-title-sub">Sarees</span>
-              <div class="panel-flourish-dash"></div>
-              <span class="panel-tagline">Rich. Regal. Timeless.</span>
-            </div>
-          </a>
-
-          <!-- Panel 2: Banarasi Sarees (Royal Crimson Maroon Theme) -->
-          <a href="sarees.html?category=Silk" class="hero-panel-card theme-maroon">
-            <div class="hero-panel-media">
-              <img src="images/saree_ruhani_1.jpg" alt="Banarasi Heritage Silk Sarees">
-            </div>
-            <div class="hero-panel-footer">
-              <span class="panel-title-main">Banarasi</span>
-              <span class="panel-title-sub">Sarees</span>
-              <div class="panel-flourish-dash"></div>
-              <span class="panel-tagline">Heritage in Every Weave.</span>
-            </div>
-          </a>
-
-          <!-- Panel 3: Embroidery & Designer Sarees (Dusty Rose Mauve Theme) -->
-          <a href="sarees.html?category=Organza" class="hero-panel-card theme-mauve">
-            <div class="hero-panel-media">
-              <img src="images/saree_meher_1.jpg" alt="Embroidery & Designer Organza Sarees">
-            </div>
-            <div class="hero-panel-footer">
-              <span class="panel-title-main">Embroidery</span>
-              <span class="panel-title-sub">Designer Sarees</span>
-              <div class="panel-flourish-dash"></div>
-              <span class="panel-tagline">Intricate. Elegant. Unique.</span>
-            </div>
-          </a>
-
-          <!-- Panel 4: Lehengas / Wedding Edit (Deep Forest Teal Theme) -->
-          <a href="sarees.html?occasion=Wedding" class="hero-panel-card theme-teal">
-            <div class="hero-panel-media">
-              <img src="images/saree_zoya_1.jpg" alt="Lehengas & Wedding Bridal Edit">
-            </div>
-            <div class="hero-panel-footer">
-              <span class="panel-title-main">Lehangas</span>
-              <span class="panel-title-sub">Made to Celebrate</span>
-              <div class="panel-flourish-dash"></div>
-              <span class="panel-tagline">Grace. Glamour. Grandeur.</span>
-            </div>
-          </a>
-
-          <!-- Panel 5: Readymade / Contemporary Drapes (Golden Champagne Theme) -->
-          <a href="sarees.html?collection=Contemporary" class="hero-panel-card theme-gold">
-            <div class="hero-panel-media">
-              <img src="images/coll_contemp.jpg" alt="Contemporary Fusion & Readymade Drapes">
-            </div>
-            <div class="hero-panel-footer">
-              <span class="panel-title-main">Readymade</span>
-              <span class="panel-title-sub">Style. Comfort. You.</span>
-              <div class="panel-flourish-dash"></div>
-              <span class="panel-tagline">Everyday Elegance.</span>
-            </div>
-          </a>
-
-          <!-- Floating Slider Navigation Arrows -->
-          <button class="hero-slider-arrow left" aria-label="Previous Showcase" onclick="event.preventDefault(); Toast.show('Curating previous edit', 'info')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
-          </button>
-          <button class="hero-slider-arrow right" aria-label="Next Showcase" onclick="event.preventDefault(); Toast.show('Curating next festive edit', 'info')">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
-          </button>
-
-        </div>
-
       </div>
-    </section>
 
-    <!-- Traditional Indian Gold Filigree Flourish Divider -->
-    <div class="hero-flourish-divider">
-      <svg class="filigree-icon" viewBox="0 0 240 30" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M10 15H90M150 15H230" stroke="#C5A059" stroke-width="1.2" stroke-linecap="round"/>
-        <circle cx="100" cy="15" r="2.5" fill="#C5A059"/>
-        <circle cx="140" cy="15" r="2.5" fill="#C5A059"/>
-        <path d="M120 4L123 11L130 15L123 19L120 26L117 19L110 15L117 11L120 4Z" fill="#C5A059"/>
-        <circle cx="120" cy="15" r="1.5" fill="#FAF7F2"/>
-      </svg>
-    </div>
+      <!-- Bottom Right Slider Navigation Controls -->
+      <div class="hero-slider-controls">
+        <button class="hero-slider-arrow-btn" id="heroPrevBtn" aria-label="Previous slide" onclick="cycleHeroSlide(-1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+        </button>
+        <div class="hero-slider-indicator-pill">
+          <span class="hero-indicator-dot is-active" data-slide="0" onclick="setHeroSlide(0)"></span>
+          <span class="hero-indicator-dot" data-slide="1" onclick="setHeroSlide(1)"></span>
+          <span class="hero-indicator-dot" data-slide="2" onclick="setHeroSlide(2)"></span>
+        </div>
+        <button class="hero-slider-arrow-btn" id="heroNextBtn" aria-label="Next slide" onclick="cycleHeroSlide(1)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg>
+        </button>
+      </div>
+
+    </section>
 
     <!-- 2. FEATURED COLLECTIONS ("Find Your Drape") -->
     <section class="section-spacing" id="collections">
@@ -820,6 +696,68 @@
   <script src="js/products.js"></script>
   <script src="js/store.js"></script>
   <script>
+    // Hero Celebratory Slider Data & Controls
+    const heroSlides = [
+      {
+        title: "NAVRATRI<br>IN MOTION",
+        subtitle: "Lehengas Made For Every Twirl",
+        offer: "UPTO 25% OFF* + FREE SHIPPING",
+        btnText: "SHOP NOW",
+        btnLink: "sarees.html?occasion=Festive",
+        tagline: "THE RICHNESS OF TRADITION",
+        bgImage: "images/hero_navratri_motion.jpg"
+      },
+      {
+        title: "ROYAL SILKS<br>IN SPLENDOR",
+        subtitle: "Pure Kanjivaram & Banarasi Handlooms",
+        offer: "COMPLIMENTARY BLOUSE STITCHING + GIFTS",
+        btnText: "EXPLORE SILKS",
+        btnLink: "sarees.html?category=Silk",
+        tagline: "LOOMED FOR GENERATIONS",
+        bgImage: "images/hero_campaign.jpg"
+      },
+      {
+        title: "BRIDAL EDIT<br>TIMELESS GRACE",
+        subtitle: "Opulent Drapes For The Indian Bride",
+        offer: "EXCLUSIVE BRIDAL STYLIST CONCIERGE",
+        btnText: "DISCOVER WEDDING",
+        btnLink: "sarees.html?occasion=Wedding",
+        tagline: "HANDCRAFTED PERFECTION",
+        bgImage: "images/coll_wedding.jpg"
+      }
+    ];
+
+    let currentHeroIndex = 0;
+
+    function renderHeroSlide(index) {
+      currentHeroIndex = (index + heroSlides.length) % heroSlides.length;
+      const slide = heroSlides[currentHeroIndex];
+      const banner = document.getElementById('heroCampaign');
+      if (banner) {
+        banner.style.backgroundImage = `url('${slide.bgImage}')`;
+      }
+      document.getElementById('heroSlideTitle').innerHTML = slide.title;
+      document.getElementById('heroSlideSubtitle').textContent = slide.subtitle;
+      document.getElementById('heroSlideOffer').textContent = slide.offer;
+      const btn = document.getElementById('heroSlideBtn');
+      btn.textContent = slide.btnText;
+      btn.href = slide.btnLink;
+      document.getElementById('heroSlideTagline').textContent = slide.tagline;
+
+      // Update indicator dots
+      document.querySelectorAll('.hero-indicator-dot').forEach((dot, idx) => {
+        dot.classList.toggle('is-active', idx === currentHeroIndex);
+      });
+    }
+
+    function cycleHeroSlide(direction) {
+      renderHeroSlide(currentHeroIndex + direction);
+    }
+
+    function setHeroSlide(index) {
+      renderHeroSlide(index);
+    }
+
     // Initialize homepage product sections
     document.addEventListener('DOMContentLoaded', () => {
       // 1. Render New Arrivals (4-6 products)
