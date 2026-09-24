@@ -12,9 +12,9 @@ import {
 import { ProductCard } from '@/components/product/ProductCard';
 
 export default function HomePage() {
-  const trendingSarees = [SAREE_PRODUCTS[0], SAREE_PRODUCTS[1], SAREE_PRODUCTS[2], SAREE_PRODUCTS[8]];
-  const newArrivals = [SAREE_PRODUCTS[3], SAREE_PRODUCTS[4], SAREE_PRODUCTS[7], SAREE_PRODUCTS[10]];
-  const bestsellers = [SAREE_PRODUCTS[5], SAREE_PRODUCTS[6], SAREE_PRODUCTS[9], SAREE_PRODUCTS[11]];
+  const trendingSarees = [SAREE_PRODUCTS[4], SAREE_PRODUCTS[1], SAREE_PRODUCTS[0], SAREE_PRODUCTS[13]];
+  const newArrivals = [SAREE_PRODUCTS[12], SAREE_PRODUCTS[14], SAREE_PRODUCTS[15], SAREE_PRODUCTS[16]];
+  const bestsellers = [SAREE_PRODUCTS[9], SAREE_PRODUCTS[5], SAREE_PRODUCTS[8], SAREE_PRODUCTS[19]];
 
   return (
     <>

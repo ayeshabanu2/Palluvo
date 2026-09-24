@@ -39,7 +39,7 @@ function AccountContent() {
         productId: 'saree-002',
         name: 'Classic Kanjivaram Silk Saree',
         slug: 'classic-kanjivaram-silk-saree',
-        image: '/images/saree_noor_1.jpg',
+        image: '/images/categories/kanjivaram.jpg',
         price: 7499,
         color: 'Emerald Green',
         colorHex: '#1C3B2E',

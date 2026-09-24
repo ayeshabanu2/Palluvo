@@ -151,7 +151,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Handwoven silk with signature motifs",
     subtitle: "Kaleidoscopic Pure Silk with Zari Borders",
     desc: "Celebrated queen of Maharashtra silks, crowned with oblique square borders and a kaleidoscopic hand-woven peacock pallu.",
-    image: "/images/categories/paithani.jpg",
+    image: "/images/saree_paithani_royal.jpg",
     filterType: "Paithani",
     artisanHours: "160+ Weaving Hours",
     pureSilkMark: true
@@ -221,7 +221,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
 export const FESTIVE_SAREES: FestiveSaree[] = [
   { name: "Bandhani Silk", region: "Gujarat", image: "/images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
   { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "/images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
-  { name: "Imperial Paithani", region: "Maharashtra", image: "/images/categories/paithani.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
+  { name: "Traditional Paithani", region: "Maharashtra", image: "/images/saree_paithani_royal.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
   { name: "Royal Banarasi", region: "Varanasi, UP", image: "/images/categories/banarasi.jpg", desc: "Opulent real gold zari jaal on rich scarlet and crimson katan silk." },
   { name: "Temple Kanjivaram", region: "Tamil Nadu", image: "/images/categories/kanjivaram.jpg", desc: "Three-ply mulberry silk with auspicious gold temple border motifs." },
   { name: "Pochampally Ikat", region: "Telangana", image: "/images/categories/pochampally.jpg", desc: "Dynamic double-ikat silk weave crafted for Garba celebrations and aartis." }
@@ -365,10 +365,10 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
     reviewsCount: 42,
     stock: 9,
     images: [
-      "/images/saree_noor_1.jpg",
-      "/images/saree_noor_2.jpg",
       "/images/categories/kanjivaram.jpg",
-      "/images/craftsmanship.jpg"
+      "/images/products/kanjivaram_royal.jpg",
+      "/images/banner_traditional_saree.jpg",
+      "/images/coll_silk.jpg"
     ],
     description: "Mastercrafted in Kanchipuram with three-ply heavy mulberry silk yarn. Features authentic contrast Korvai temple borders, rich peacock booties, and certified pure zari workmanship.",
     specifications: {
@@ -477,43 +477,43 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
   },
   {
     id: "saree-005",
-    slug: "imperial-paithani-silk-saree",
-    name: "Imperial Paithani Silk Saree",
+    slug: "traditional-paithani-silk-saree",
+    name: "Traditional Paithani Silk Saree",
     sareeType: "Paithani",
-    tagline: "Rich Silk with Traditional Mor Bangdi Peacock Tapestry",
+    tagline: "Pure Yeola Silk with Traditional Mor Bangdi Peacock Tapestry",
     price: 8999,
     compareAtPrice: 12499,
     discount: "28% OFF",
-    badge: "Heirloom",
+    badge: "Heritage",
     category: "Paithani",
-    fabric: "Pure Mulberry Silk",
-    color: "Royal Purple",
-    colorHex: "#3F1B42",
+    fabric: "Pure Yeola Silk",
+    color: "Royal Crimson Gold",
+    colorHex: "#8B1E2B",
     swatches: [
+      { name: "Royal Crimson Gold", hex: "#8B1E2B", inStock: true },
       { name: "Royal Purple", hex: "#3F1B42", inStock: true },
-      { name: "Rani Pink", hex: "#B8246E", inStock: true },
       { name: "Peacock Green", hex: "#134E4A", inStock: true }
     ],
     blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Bridal",
     rating: 5.0,
-    reviewsCount: 26,
-    stock: 6,
+    reviewsCount: 38,
+    stock: 7,
     images: [
+      "/images/saree_paithani_royal.jpg",
+      "/images/products/paithani_gold.jpg",
       "/images/categories/paithani.jpg",
-      "/images/saree_sitara_1.jpg",
-      "/images/craftsmanship.jpg",
-      "/images/coll_wedding.jpg"
+      "/images/coll_silk.jpg"
     ],
-    description: "The crown jewel of Maharashtra drapes. Handcrafted over 160 hours using oblique interlocking tapestry weaving. The pallu features the kaleidoscope of the auspicious Mor Bangdi (dancing peacocks in bangles) against solid gold tissue.",
+    description: "The crown jewel of Maharashtra drapes, handwoven in Yeola over 160 hours using oblique interlocking tapestry weaving. The pallu features the kaleidoscope of the auspicious Mor Bangdi (dancing peacocks in bangles) against solid gold tissue.",
     specifications: {
       length: "5.5 meters",
       width: "46 inches",
       blouseLength: "0.8 meter matching pure silk blouse piece with zari border",
-      weave: "Tapestry Weaving on Handloom",
+      weave: "Authentic Yeola Handloom Tapestry Weave",
       origin: "Paithan & Yeola, Maharashtra",
-      weight: "760 grams",
-      zariType: "Pure Tested Gold Zari",
+      weight: "780 grams",
+      zariType: "Certified Pure Tested Gold Zari",
       transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Wrap in unbleached cotton muslin."
@@ -726,9 +726,9 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
     stock: 4,
     images: [
       "/images/categories/patola.jpg",
+      "/images/products/patola_silk.jpg",
       "/images/saree_sitara_1.jpg",
-      "/images/coll_wedding.jpg",
-      "/images/craftsmanship.jpg"
+      "/images/coll_wedding.jpg"
     ],
     description: "An ultra-rare Gujarati masterpiece. Mathematical precision double ikat where both warp and weft are dyed before hand-weaving. Identical on both front and back sides, steeped in royal legend.",
     specifications: {
@@ -771,7 +771,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
     stock: 13,
     images: [
       "/images/categories/kalamkari.jpg",
-      "/images/craftsmanship.jpg",
+      "/images/saree_ruhani_1.jpg",
       "/images/saree_meher_2.jpg",
       "/images/coll_everyday.jpg"
     ],
@@ -817,7 +817,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
     images: [
       "/images/categories/georgette.jpg",
       "/images/saree_tara_1.jpg",
-      "/images/saree_kavya_1.jpg",
+      "/images/coll_contemp.jpg",
       "/images/coll_wedding.jpg"
     ],
     description: "Modern evening poise. Woven from breathable viscose georgette with subtle metallic lurex undertones and an intricate scalloped zari cutwork border designed to drape effortlessly around every curve.",
@@ -834,6 +834,365 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       care: "Dry clean only. Hang on padded hanger."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-013",
+    slug: "gujarati-bandhani-gharchola-silk-saree",
+    name: "Auspicious Gujarati Bandhani Saree",
+    sareeType: "Bandhani",
+    tagline: "Pure Gaji Silk Rai-Bandhej with 24K Gold Zari Check Grid",
+    price: 7899,
+    compareAtPrice: 10499,
+    discount: "25% OFF",
+    badge: "Festive Luxury",
+    category: "Bandhani",
+    fabric: "Pure Gaji Silk",
+    color: "Sindoor Red",
+    colorHex: "#9B111E",
+    swatches: [
+      { name: "Sindoor Red", hex: "#9B111E", inStock: true },
+      { name: "Marigold Yellow", hex: "#EAA221", inStock: true },
+      { name: "Royal Rani Pink", hex: "#C71585", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Festive",
+    rating: 4.9,
+    reviewsCount: 27,
+    stock: 8,
+    images: [
+      "/images/categories/bandhani.jpg",
+      "/images/products/bandhani_gharchola.jpg",
+      "/images/occasions/festive.jpg",
+      "/images/coll_silk.jpg"
+    ],
+    description: "Handcrafted in Jamnagar and Bhuj using traditional Rai-Bandhej resist tie-dye. Thousands of micro-knots are tied by hand onto rich Gaji silk framed by authentic golden Gharchola grids, making it the most auspicious celebration drape.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter pure gaji silk blouse piece with bandhej dots",
+      weave: "Traditional Jamnagar Hand-Tied Bandhej",
+      origin: "Kutch & Jamnagar, Gujarat",
+      weight: "620 grams",
+      zariType: "Real Gold Tested Zari Check Grid",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Strictly dry clean only. Roll press to preserve crinkle texture."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-014",
+    slug: "bridal-heirloom-crimson-kanjivaram-saree",
+    name: "Bridal Heirloom Crimson Kanjivaram",
+    sareeType: "Kanjivaram",
+    tagline: "Pure Three-Ply Mulberry Silk with Pure Gold Mayil Peacock Brocade",
+    price: 11999,
+    compareAtPrice: 16499,
+    discount: "27% OFF",
+    badge: "Bridal Heirloom",
+    category: "Kanjivaram",
+    fabric: "Three-Ply Mulberry Silk",
+    color: "Crimson Bridal Gold",
+    colorHex: "#800020",
+    swatches: [
+      { name: "Crimson Bridal Gold", hex: "#800020", inStock: true },
+      { name: "Temple Vermilion", hex: "#D9381E", inStock: true },
+      { name: "Auspicious Kumkum", hex: "#7E191B", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Bridal",
+    rating: 5.0,
+    reviewsCount: 48,
+    stock: 5,
+    images: [
+      "/images/banner_traditional_saree.jpg",
+      "/images/occasions/bridal.jpg",
+      "/images/products/kanjivaram_royal.jpg",
+      "/images/categories/kanjivaram.jpg"
+    ],
+    description: "The quintessential South Indian bridal heirloom. Three warp and weft mulberry silk threads twisted together create unmatched weight, sheen, and durability. Adorned with Rudraksha, Mayil (peacock), and Temple Shikhara borders in heavy dipped gold zari.",
+    specifications: {
+      length: "5.5 meters",
+      width: "47 inches",
+      blouseLength: "0.8 meter rich brocade contrast blouse fabric",
+      weave: "Double Korvai Petni Handloom Weave",
+      origin: "Kanchipuram, Tamil Nadu",
+      weight: "950 grams",
+      zariType: "Pure Silver Gilt with 24K Gold Plating (Tested)",
+      transparency: "Opaque",
+      fallPico: "Complimentary heavy fall and pico edging done",
+      care: "Dry clean only. Store in wooden or cotton heirloom box."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-015",
+    slug: "lucknowi-chikankari-mukaish-silk-saree",
+    name: "Lucknowi Chikankari Mukaish Saree",
+    sareeType: "Chikankari",
+    tagline: "Hand-Embroidered Shadow Work with Badla & Mukaish Metallic Accents",
+    price: 6799,
+    compareAtPrice: 8999,
+    discount: "24% OFF",
+    badge: "Artisanal",
+    category: "Chikankari",
+    fabric: "Pure Viscose Georgette",
+    color: "Pearl Ivory",
+    colorHex: "#FDFBF7",
+    swatches: [
+      { name: "Pearl Ivory", hex: "#FDFBF7", inStock: true },
+      { name: "Pastel Mint", hex: "#D1E7DD", inStock: true },
+      { name: "Powder Peach", hex: "#FCE4D6", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Party Wear",
+    rating: 4.9,
+    reviewsCount: 22,
+    stock: 9,
+    images: [
+      "/images/categories/chikankari.jpg",
+      "/images/saree_aira_1.jpg",
+      "/images/coll_contemp.jpg",
+      "/images/categories/georgette.jpg"
+    ],
+    description: "An aristocratic Nawabi creation from Lucknow. Hand-embroidered across 90 days with 32 unique needlework stitches including Bakhiya (shadow work), Phanda, and Tepchi, accented by hand-flattened Mukaish metallic sparkles that shimmer like stardust.",
+    specifications: {
+      length: "5.5 meters",
+      width: "44 inches",
+      blouseLength: "0.8 meter pure georgette blouse piece with matching chikankari sleeves",
+      weave: "Hand-Embroidered Chikan Work",
+      origin: "Lucknow, Uttar Pradesh",
+      weight: "480 grams",
+      zariType: "Silver Mukaish Badla Highlights",
+      transparency: "Semi-Sheer",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Gentle dry clean only."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-016",
+    slug: "pure-gadwal-kuta-interlocked-silk-saree",
+    name: "Pure Gadwal Kuta Silk Saree",
+    sareeType: "Gadwal",
+    tagline: "Hand-Interlocked Kuta Temple Border with Pure Gold Zari Pallu",
+    price: 5899,
+    compareAtPrice: 7999,
+    discount: "26% OFF",
+    badge: "Handloom Pure",
+    category: "Gadwal",
+    fabric: "Gadwal Sico & Pure Silk",
+    color: "Royal Mustard & Magenta",
+    colorHex: "#DDA21B",
+    swatches: [
+      { name: "Royal Mustard & Magenta", hex: "#DDA21B", inStock: true },
+      { name: "Peacock Green & Purple", hex: "#166534", inStock: true },
+      { name: "Crimson & Black", hex: "#7F1D1D", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Traditional",
+    rating: 4.8,
+    reviewsCount: 18,
+    stock: 11,
+    images: [
+      "/images/categories/gadwal.jpg",
+      "/images/saree_meher_1.jpg",
+      "/images/saree_meher_2.jpg",
+      "/images/coll_silk.jpg"
+    ],
+    description: "A wonder of Andhra & Telangana handloom engineering. The breathable, gossamer body is woven with lightweight yarn, while the heavy pure silk borders and solid zari pallu are interlocked using the revered Kuta (interlocking weft) technique.",
+    specifications: {
+      length: "5.5 meters",
+      width: "46 inches",
+      blouseLength: "0.8 meter contrast pure silk blouse piece included",
+      weave: "Kuta Interlocking Pitloom Handloom",
+      origin: "Gadwal, Telangana",
+      weight: "520 grams",
+      zariType: "Tested Gold Zari Pallu",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean only. Iron on reverse."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-017",
+    slug: "rare-royal-assam-muga-wild-silk-saree",
+    name: "Royal Assam Muga Wild Silk Saree",
+    sareeType: "Assam Muga",
+    tagline: "Natural Golden Luster Wild Silk with Woven Kingkhap Motifs",
+    price: 12499,
+    compareAtPrice: 16999,
+    discount: "26% OFF",
+    badge: "Rare Heritage",
+    category: "Assam Muga",
+    fabric: "100% Golden Muga Silk",
+    color: "Natural Champagne Gold",
+    colorHex: "#D4AF37",
+    swatches: [
+      { name: "Natural Champagne Gold", hex: "#D4AF37", inStock: true },
+      { name: "Honey Amber", hex: "#C68B59", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Wedding",
+    rating: 5.0,
+    reviewsCount: 15,
+    stock: 3,
+    images: [
+      "/images/categories/assam-muga.jpg",
+      "/images/coll_silk.jpg",
+      "/images/categories/chanderi.jpg",
+      "/images/craftsmanship.jpg"
+    ],
+    description: "Endemic exclusively to the Brahmaputra valley of Assam. Muga silk is naturally golden and famously outlasts its owner, growing more lustrous with every decade and gentle wash. Woven with auspicious Kingkhap royal motifs and red-black meenakari.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter pure muga silk running blouse piece",
+      weave: "Throw-Shuttle Handloom Weave",
+      origin: "Sualkuchi, Assam",
+      weight: "610 grams",
+      zariType: "Natural Golden Silk Sheen & Tested Zari",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean recommended for first wash. Wrap in fine cotton."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-018",
+    slug: "bhagalpuri-tussar-ghicha-handloom-saree",
+    name: "Bhagalpuri Tussar Ghicha Saree",
+    sareeType: "Tussar",
+    tagline: "Earthy Textured Raw Silk with Hand-Block Tribal Motifs & Zari Pinstripes",
+    price: 4299,
+    compareAtPrice: 5799,
+    discount: "26% OFF",
+    badge: "Organic Silk",
+    category: "Tussar",
+    fabric: "Wild Raw Tussar Silk",
+    color: "Honey Amber",
+    colorHex: "#C19A6B",
+    swatches: [
+      { name: "Honey Amber", hex: "#C19A6B", inStock: true },
+      { name: "Olive Earth", hex: "#556B2F", inStock: true },
+      { name: "Burnt Sienna", hex: "#E97451", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Office Wear",
+    rating: 4.8,
+    reviewsCount: 25,
+    stock: 14,
+    images: [
+      "/images/categories/tussar.jpg",
+      "/images/categories/handloom.jpg",
+      "/images/coll_everyday.jpg",
+      "/images/categories/cotton.jpg"
+    ],
+    description: "Revered as the 'Peace Silk' of Bihar. Wild cocoons cultivated by forest communities yield a distinct tactile texture and breathable thermal insulation. Draped with organic vegetable block-print borders and subtle zari stripes.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter textured raw tussar fabric included",
+      weave: "Traditional Bhagalpur Handloom",
+      origin: "Bhagalpur, Bihar",
+      weight: "490 grams",
+      zariType: "Matte Antique Copper Zari",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Gentle dry clean only."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-019",
+    slug: "bomkai-sonepuri-handloom-silk-saree",
+    name: "Bomkai Sonepuri Handloom Saree",
+    sareeType: "Bomkai",
+    tagline: "Odisha Tribal Extra-Weft Ikat with Auspicious Fish & Lotus Bootis",
+    price: 6199,
+    compareAtPrice: 8499,
+    discount: "27% OFF",
+    badge: "GI Certified",
+    category: "Bomkai",
+    fabric: "Malda Mulberry Silk",
+    color: "Sunset Maroon & Saffron",
+    colorHex: "#7E191B",
+    swatches: [
+      { name: "Sunset Maroon & Saffron", hex: "#7E191B", inStock: true },
+      { name: "Forest Emerald", hex: "#14532D", inStock: true },
+      { name: "Royal Midnight Blue", hex: "#1E1B4B", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Festive",
+    rating: 4.9,
+    reviewsCount: 17,
+    stock: 7,
+    images: [
+      "/images/categories/bomkai.jpg",
+      "/images/saree_sitara_1.jpg",
+      "/images/coll_wedding.jpg",
+      "/images/categories/pochampally.jpg"
+    ],
+    description: "From the mystical weaving villages of Subarnapur (Sonepur), Odisha. Features complex extra-warp and extra-weft jaala patterning depicting ancient coastal tribal folklore, sacred tortoise motifs, and a solid contrast ikat border.",
+    specifications: {
+      length: "5.5 meters",
+      width: "46 inches",
+      blouseLength: "0.8 meter contrast silk blouse piece included",
+      weave: "Jaala Attachment Extra-Weft Handloom Weave",
+      origin: "Subarnapur, Odisha",
+      weight: "580 grams",
+      zariType: "Subtle Tested Zari Borders",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean only. Keep wrapped in cotton cloth."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-020",
+    slug: "traditional-peshwai-nauvari-silk-saree",
+    name: "Traditional Peshwai Nauvari Saree",
+    sareeType: "Nauvari",
+    tagline: "Authentic 9-Yard Royal Kashta Drape with Traditional Peacock Zari Border",
+    price: 8499,
+    compareAtPrice: 11499,
+    discount: "26% OFF",
+    badge: "Royal Kashta",
+    category: "Nauvari",
+    fabric: "Pure Paithani Silk Weave",
+    color: "Parrot Green & Ruby",
+    colorHex: "#2E8B57",
+    swatches: [
+      { name: "Parrot Green & Ruby", hex: "#2E8B57", inStock: true },
+      { name: "Marigold Yellow & Royal Blue", hex: "#D97706", inStock: true },
+      { name: "Deep Crimson & Gold", hex: "#881337", inStock: true }
+    ],
+    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
+    occasion: "Traditional",
+    rating: 4.9,
+    reviewsCount: 30,
+    stock: 6,
+    images: [
+      "/images/categories/nauvari.jpg",
+      "/images/products/paithani_gold.jpg",
+      "/images/saree_paithani_royal.jpg",
+      "/images/coll_silk.jpg"
+    ],
+    description: "The royal 9-yard (Sakachha) drape favored by Maratha queens. Woven in full 8.2-meter length allowing seamless dhoti-style Kashta draping without separate underskirt. Features dense Narali (coconut) zari borders and Mor Bangdi pallu motifs.",
+    specifications: {
+      length: "8.2 meters (Full 9-Yard Kashta Length)",
+      width: "47 inches",
+      blouseLength: "0.8 meter matching pure silk blouse piece with zari border",
+      weave: "Traditional Yeola Nauvari Pit Loom Weave",
+      origin: "Yeola, Maharashtra",
+      weight: "890 grams",
+      zariType: "Certified Pure Matte Gold Zari",
+      transparency: "Opaque",
+      fallPico: "Ready to wear without additional underskirt",
+      care: "Strictly dry clean only."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   }
 ];
 
@@ -842,7 +1201,7 @@ export const HANDLOOM_REGIONS: HandloomRegion[] = [
   { name: "Gadwal", state: "Telangana", weave: "Kuta Interlocked Silk", image: "/images/categories/gadwal.jpg" },
   { name: "Uppada", state: "Andhra Pradesh", weave: "Fine Jamdani Cotton Silk", image: "/images/categories/uppada.jpg" },
   { name: "Chanderi", state: "Madhya Pradesh", weave: "Gossamer Zari Weave", image: "/images/categories/chanderi.jpg" },
-  { name: "Paithani", state: "Maharashtra", weave: "Peacock Tapestry Silk", image: "/images/categories/paithani.jpg" },
+  { name: "Paithani", state: "Maharashtra", weave: "Peacock Tapestry Silk", image: "/images/saree_paithani_royal.jpg" },
   { name: "Banarasi", state: "Uttar Pradesh", weave: "Kadhwa Gold Brocade", image: "/images/categories/banarasi.jpg" },
   { name: "Kanjivaram", state: "Tamil Nadu", weave: "Pure Korvai Temple Zari", image: "/images/categories/kanjivaram.jpg" },
   { name: "Ilkal", state: "Karnataka", weave: "Tope Teni Heritage Pallu", image: "/images/categories/ilkal.jpg" },
@@ -862,7 +1221,11 @@ export function getAllProducts(): SareeProduct[] {
 export function getProductBySlugOrId(identifier: string): SareeProduct | undefined {
   if (!identifier) return undefined;
   const idLower = identifier.toLowerCase();
-  return SAREE_PRODUCTS.find(p => p.slug.toLowerCase() === idLower || p.id.toLowerCase() === idLower);
+  return SAREE_PRODUCTS.find(p => 
+    p.slug.toLowerCase() === idLower || 
+    p.id.toLowerCase() === idLower ||
+    (idLower === 'imperial-paithani-silk-saree' && p.id === 'saree-005')
+  );
 }
 
 export function searchProducts(query: string): SareeProduct[] {
