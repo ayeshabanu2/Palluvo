@@ -121,8 +121,9 @@
   </div>
   <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
 
-  <!-- PLP HEADER & BREADCRUMBS -->
+  <!-- PLP FULL-WIDTH LUXURY HERO HEADER -->
   <section class="plp-header">
+    <div class="plp-header-scrim"></div>
     <div class="container plp-header-inner">
       <div class="plp-header-content">
         <nav class="breadcrumbs">
@@ -138,16 +139,12 @@
           <span class="plp-badge-tag">🌿 100% Certified Pure Silk</span>
           <span class="plp-badge-tag">✨ Master Handloom Weaves</span>
           <span class="plp-badge-tag">🚚 Express Insured Delivery</span>
+          <span class="plp-badge-tag">👑 Heritage Temple Zari</span>
         </div>
       </div>
-      <div class="plp-header-visual">
-        <div class="plp-header-img-wrapper">
-          <img src="images/banner_traditional_saree.jpg" alt="Traditional Royal Kanjivaram Silk Saree" class="plp-header-img" loading="eager">
-          <div class="plp-header-img-overlay">
-            <span class="plp-header-img-caption">Royal Kanjivaram &bull; Master Temple Weave</span>
-          </div>
-        </div>
-      </div>
+    </div>
+    <div class="plp-header-caption-pill">
+      Royal Kanjivaram &bull; Master Temple Weave
     </div>
   </section>
 
@@ -158,7 +155,7 @@
       <!-- Controls Bar -->
       <div class="plp-controls-bar">
         <div class="plp-count-info" id="plpCountInfo">
-          Showing <strong>12</strong> Sarees
+          Showing <strong>25</strong> Sarees
         </div>
 
         <!-- Sort Select -->
@@ -236,6 +233,26 @@
                 <input type="checkbox" name="filter_type" value="Georgette" onchange="applyFilters()">
                 Georgette Saree
               </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Patola" onchange="applyFilters()">
+                Patola Ikat Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Leheriya" onchange="applyFilters()">
+                Leheriya Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Ilkal" onchange="applyFilters()">
+                Ilkal Saree
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Cotton" onchange="applyFilters()">
+                Bengal Jamdani Cotton
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_type" value="Nauvari" onchange="applyFilters()">
+                Nauvari 9-Yard Saree
+              </label>
             </div>
           </div>
 
@@ -269,7 +286,15 @@
               </label>
               <label class="filter-checkbox-label">
                 <input type="checkbox" name="filter_fabric" value="Georgette" onchange="applyFilters()">
-                Shimmer Georgette
+                Khaddi Georgette
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Tissue" onchange="applyFilters()">
+                Gold Tissue Silk
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_fabric" value="Cotton" onchange="applyFilters()">
+                Fine Muslin Cotton
               </label>
             </div>
           </div>
@@ -283,12 +308,16 @@
                 Under ₹4,500
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_price" value="4500-6500" onchange="applyFilters()">
-                ₹4,500 – ₹6,500
+                <input type="checkbox" name="filter_price" value="4500-7500" onchange="applyFilters()">
+                ₹4,500 – ₹7,500
               </label>
               <label class="filter-checkbox-label">
-                <input type="checkbox" name="filter_price" value="above-6500" onchange="applyFilters()">
-                Above ₹6,500
+                <input type="checkbox" name="filter_price" value="7500-12000" onchange="applyFilters()">
+                ₹7,500 – ₹12,000
+              </label>
+              <label class="filter-checkbox-label">
+                <input type="checkbox" name="filter_price" value="above-12000" onchange="applyFilters()">
+                Above ₹12,000 (Luxury Heirlooms)
               </label>
             </div>
           </div>
@@ -510,8 +539,9 @@
         filtered = filtered.filter(p => {
           return selectedPrices.some(range => {
             if (range === 'under-4500') return p.price < 4500;
-            if (range === '4500-6500') return p.price >= 4500 && p.price <= 6500;
-            if (range === 'above-6500') return p.price > 6500;
+            if (range === '4500-7500' || range === '4500-6500') return p.price >= 4500 && p.price <= 7500;
+            if (range === '7500-12000') return p.price > 7500 && p.price <= 12000;
+            if (range === 'above-12000' || range === 'above-6500') return p.price > 12000;
             return true;
           });
         });

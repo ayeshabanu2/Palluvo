@@ -98,8 +98,8 @@
 ## 📁 Repository Structure
 
 ```
-├── index.html            # Homepage (Hero, Top Models, 8 Occasions, 20 Products, Handlooms)
-├── sarees.html           # Multi-filter Saree Catalog (20 Premium Curated Handlooms)
+├── index.html            # Homepage (Hero, Top Models, 8 Occasions, 25 Products, Handlooms)
+├── sarees.html           # Multi-filter Saree Catalog (Full-Bleed Luxury Hero + 25 Handlooms)
 ├── product.html          # Product Detail Page with authentic 5.5m+0.8m specs
 ├── cart.html             # Cart Page & Drawer state
 ├── checkout.html         # Secure Indian payment checkout
@@ -110,7 +110,7 @@
 ├── css/
 │   └── style.css         # Complete Luxury Design System & Component Styles
 ├── js/
-│   ├── products.js       # Curated Models, 8 Occasions, 20 Products, 10 Loom Clusters
+│   ├── products.js       # Curated Models, 8 Occasions, 25 Products, 10 Loom Clusters
 │   └── store.js          # Cart, Wishlist, Search, Modals, Toasts, Checkout logic
 ├── images/
 │   ├── categories/       # Regional & Fabric Saree Category Photography

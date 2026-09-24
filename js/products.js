@@ -209,7 +209,7 @@ const SAREE_OCCASIONS = [
   }
 ];
 
-// Complete 20-Product Catalog of Authentic Luxury Sarees
+// Complete 25-Product Catalog of Authentic Luxury Sarees
 const SAREE_PRODUCTS = [
   {
     id: "saree-001",
@@ -697,16 +697,16 @@ const SAREE_PRODUCTS = [
   },
   {
     id: "saree-012",
-    slug: "contemporary-georgette-saree",
-    name: "Contemporary Georgette Saree",
+    slug: "pure-khaddi-georgette-banarasi-saree",
+    name: "Pure Khaddi Georgette Banarasi Saree",
     sareeType: "Georgette",
-    tagline: "Midnight Navy Shimmer Georgette with Scalloped Zari Lace",
-    price: 4499,
-    compareAtPrice: 5999,
+    tagline: "Midnight Navy Hand-Dyed Khaddi Silk with Pure Silver & Antique Gold Zari Floral Jaal",
+    price: 6899,
+    compareAtPrice: 9299,
     discount: "25% OFF",
-    badge: "Party Edit",
+    badge: "Couture Edit",
     category: "Georgette",
-    fabric: "Viscose Shimmer Georgette",
+    fabric: "Pure Khaddi Georgette Silk",
     color: "Midnight Navy",
     colorHex: "#101D36",
     swatches: [
@@ -719,20 +719,20 @@ const SAREE_PRODUCTS = [
     reviewsCount: 34,
     stock: 17,
     images: [
-      "images/categories/georgette.jpg",
-      "images/saree_tara_1.jpg",
+      "images/categories/chiffon.jpg",
+      "images/occasions/party-wear.jpg",
       "images/coll_contemp.jpg",
       "images/coll_wedding.jpg"
     ],
-    description: "Modern evening poise. Woven from breathable viscose georgette with subtle metallic lurex undertones and an intricate scalloped zari cutwork border designed to drape effortlessly around every curve.",
+    description: "Modern evening poise meets artisanal heritage. Handwoven from pure khaddi georgette silk with delicate drape flow, accented by dual-tone antique gold and silver zari floral jaal and a scalloped border that flatters every silhouette.",
     specifications: {
       length: "5.5 meters",
       width: "45 inches",
-      blouseLength: "0.8 meter matching heavy embroidered georgette fabric",
-      weave: "Contemporary Powerloom Georgette",
-      origin: "Surat, Gujarat",
-      weight: "510 grams",
-      zariType: "Metallic Lurex & Micro Sequins",
+      blouseLength: "0.8 meter matching heavy embroidered silk georgette fabric",
+      weave: "Banarasi Handloom Khaddi Weave",
+      origin: "Varanasi, Uttar Pradesh",
+      weight: "580 grams",
+      zariType: "Dual-Tone Matte Gold & Silver Zari",
       transparency: "Semi-Sheer",
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Hang on padded hanger."
@@ -1087,6 +1087,226 @@ const SAREE_PRODUCTS = [
       transparency: "Opaque",
       fallPico: "Ready to wear without additional underskirt",
       care: "Strictly dry clean only."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-021",
+    slug: "royal-rajasthani-leheriya-silk-saree",
+    name: "Royal Rajasthani Leheriya Silk Saree",
+    sareeType: "Leheriya",
+    tagline: "Hand-Rolled Mothra Chevron Waves with Intricate Gota Patti Hand Zardosi",
+    price: 5499,
+    compareAtPrice: 7499,
+    discount: "26% OFF",
+    badge: "Royal Heritage",
+    category: "Leheriya",
+    fabric: "Pure Georgette & Organza Silk",
+    color: "Saffron & Ruby",
+    colorHex: "#FF7722",
+    swatches: [
+      { name: "Saffron & Ruby", hex: "#FF7722", inStock: true },
+      { name: "Rani Pink & Peacock Blue", hex: "#C71585", inStock: true },
+      { name: "Emerald & Lime", hex: "#1C3B2E", inStock: true }
+    ],
+    occasion: "Festive",
+    rating: 4.9,
+    reviewsCount: 29,
+    stock: 9,
+    images: [
+      "images/categories/leheriya.jpg",
+      "images/occasions/festive.jpg",
+      "images/coll_festive.jpg",
+      "images/hero_campaign.jpg"
+    ],
+    description: "A celebratory masterpiece of Mewar royal tradition. Hand-tied and dyed in authentic Mothra diagonal cross-chevron patterns, finished with pure gold gota patti and zardosi work along the border and pallu.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter pure silk fabric with gota border included",
+      weave: "Traditional Hand-Tied Mothra Leheriya",
+      origin: "Jaipur, Rajasthan",
+      weight: "560 grams",
+      zariType: "Certified Gota Patti & Zardosi Stitchwork",
+      transparency: "Semi-Sheer",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean only. Roll fold to protect zari work."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-022",
+    slug: "heritage-ilkal-tope-teni-silk-saree",
+    name: "Heritage Ilkal Tope Teni Silk Saree",
+    sareeType: "Ilkal",
+    tagline: "Signature Red & White Tope Teni Pallu with Chikki Paras Border",
+    price: 4799,
+    compareAtPrice: 6299,
+    discount: "23% OFF",
+    badge: "Artisanal Heirloom",
+    category: "Ilkal",
+    fabric: "Pure Cotton-Silk Blend",
+    color: "Indigo Navy & Crimson",
+    colorHex: "#1B2A4A",
+    swatches: [
+      { name: "Indigo Navy & Crimson", hex: "#1B2A4A", inStock: true },
+      { name: "Forest Green & Maroon", hex: "#1B4332", inStock: true },
+      { name: "Mustard Yellow & Red", hex: "#D48B14", inStock: true }
+    ],
+    occasion: "Traditional",
+    rating: 4.8,
+    reviewsCount: 24,
+    stock: 11,
+    images: [
+      "images/categories/ilkal.jpg",
+      "images/occasions/traditional.jpg",
+      "images/coll_silk.jpg",
+      "images/craftsmanship.jpg"
+    ],
+    description: "Rooted in Karnataka's 8th-century weaving legacy. Handcrafted with the iconic Kondi interlocking technique where the cotton warp joins the crimson silk pallu. Features the legendary Tope Teni temple spearheads and Kasuti embroidery motifs.",
+    specifications: {
+      length: "6.2 meters (Including Blouse Piece)",
+      width: "47 inches",
+      blouseLength: "0.8 meter running cotton-silk blouse piece",
+      weave: "Traditional Ilkal Kondi Joint Handloom Weave",
+      origin: "Bagalkot, Karnataka",
+      weight: "620 grams",
+      zariType: "Traditional Tested Golden Threads",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Gentle hand wash with mild shampoo or dry clean."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-023",
+    slug: "bengal-dhakai-jamdani-handloom-saree",
+    name: "Bengal Dhakai Jamdani Handloom Saree",
+    sareeType: "Cotton",
+    tagline: "Featherlight 100s Count Muslin Cotton with Extra-Weft Floral Buttas",
+    price: 3899,
+    compareAtPrice: 4999,
+    discount: "22% OFF",
+    badge: "Handcrafted Muslin",
+    category: "Cotton",
+    fabric: "100s Count Mercerized Muslin Cotton",
+    color: "Ivory & Antique Gold",
+    colorHex: "#F5F2EB",
+    swatches: [
+      { name: "Ivory & Antique Gold", hex: "#F5F2EB", inStock: true },
+      { name: "Powder Blue & Silver", hex: "#8EA8C3", inStock: true },
+      { name: "Blush Rose & Muted Gold", hex: "#E8B4B8", inStock: true }
+    ],
+    occasion: "Casual",
+    rating: 4.9,
+    reviewsCount: 31,
+    stock: 14,
+    images: [
+      "images/categories/cotton.jpg",
+      "images/occasions/casual.jpg",
+      "images/categories/uppada.jpg",
+      "images/coll_everyday.jpg"
+    ],
+    description: "An ethereal drape of UNESCO-recognized Jamdani heritage. Woven without mechanical assistance using a bamboo needle, where each floral butta is painstakingly inserted into the gossamer muslin weft like fine tapestry needlework.",
+    specifications: {
+      length: "5.5 meters",
+      width: "46 inches",
+      blouseLength: "0.8 meter contrast unstitched blouse fabric included",
+      weave: "Discontinuous Extra-Weft Jamdani Weave",
+      origin: "Phulia, West Bengal",
+      weight: "340 grams (Featherlight)",
+      zariType: "Subtle Tested Zari Motifs",
+      transparency: "Semi-Sheer Muslin",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean recommended for first two washes, followed by delicate cold wash."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-024",
+    slug: "imperial-yeola-gold-tissue-paithani-saree",
+    name: "Imperial Yeola Gold Tissue Paithani Saree",
+    sareeType: "Paithani",
+    tagline: "All-Over 24K Electroplated Gold Tissue with Hand-Interlocked Peacock Mor Pallu",
+    price: 14999,
+    compareAtPrice: 19999,
+    discount: "25% OFF",
+    badge: "Museum Piece",
+    category: "Paithani",
+    fabric: "Pure Mulberry Silk & Metallic Gold Tissue",
+    color: "Champagne Royal Gold",
+    colorHex: "#CFB53B",
+    swatches: [
+      { name: "Champagne Royal Gold", hex: "#CFB53B", inStock: true },
+      { name: "Regal Emerald Gold", hex: "#1F4037", inStock: true },
+      { name: "Ruby Crimson Gold", hex: "#721422", inStock: true }
+    ],
+    occasion: "Wedding",
+    rating: 5.0,
+    reviewsCount: 42,
+    stock: 4,
+    images: [
+      "images/products/paithani_gold.jpg",
+      "images/saree_paithani_royal.jpg",
+      "images/categories/paithani.jpg",
+      "images/coll_wedding.jpg"
+    ],
+    description: "The crown jewel of Maharashtrian bridal royalty. Fully woven on a pure silk warp with continuous gold tissue weft. The opulent pallu features polychromatic Mor (peacock), Bangdi (bangle), and Asawali floral vines woven over 45 painstaking days.",
+    specifications: {
+      length: "5.5 meters",
+      width: "46 inches",
+      blouseLength: "0.8 meter pure gold tissue matching blouse piece",
+      weave: "Interlocking Weft Tapestry Weave with Muniya Borders",
+      origin: "Yeola, Maharashtra",
+      weight: "820 grams",
+      zariType: "Certified Pure 24K Tested Zari",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Strictly dry clean only. Wrap in muslin cloth."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-025",
+    slug: "royal-patan-patola-double-ikat-silk-saree",
+    name: "Royal Patan Patola Double Ikat Silk Saree",
+    sareeType: "Patola",
+    tagline: "Master Geometric Nari Kunjar (Elephant & Dancing Girl) Motifs in Natural Dyes",
+    price: 12499,
+    compareAtPrice: 16999,
+    discount: "26% OFF",
+    badge: "Masterpiece Heritage",
+    category: "Patola",
+    fabric: "Pure Mulberry Silk",
+    color: "Vermilion & Deep Indigo",
+    colorHex: "#B82E2E",
+    swatches: [
+      { name: "Vermilion & Deep Indigo", hex: "#B82E2E", inStock: true },
+      { name: "Olive Moss & Rust", hex: "#4A5D3E", inStock: true },
+      { name: "Mustard Gold & Crimson", hex: "#C98A2C", inStock: true }
+    ],
+    occasion: "Wedding",
+    rating: 5.0,
+    reviewsCount: 39,
+    stock: 5,
+    images: [
+      "images/products/patola_silk.jpg",
+      "images/categories/patola.jpg",
+      "images/coll_silk.jpg",
+      "images/craftsmanship.jpg"
+    ],
+    description: "One of the rarest textile treasures in world history. Revered as 'Padi Patole Bhaat, Phate Pan Phite Nahin' (The fabric may tear, but the color and pattern will never fade). Both warp and weft are pre-dyed with mathematical precision using natural plant extracts.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter matching pure silk blouse piece",
+      weave: "Authentic Double Ikat (Warp & Weft Resist Dyed)",
+      origin: "Patan, Gujarat",
+      weight: "640 grams",
+      zariType: "Zari Border Trimmings",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Strictly dry clean only. Change folds every 6 months."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   }
