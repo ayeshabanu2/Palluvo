@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PALLUVO — Every drape, a little magic. | Curated Luxury Indian Sarees</title>
+  <meta name="description" content="Discover the philosophy, master weavers, and artisanal heritage behind PALLUVO. Handcrafted Indian sarees crafted with unhurried reverence.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥻</text></svg>">
+</head>
+<body>
+
+  <!-- STICKY SITE HEADER (PALLUVO) -->
+  <header class="site-header-clean" id="siteHeader">
+    <div class="header-row-clean">
+      
+            <!-- Left: Logo & Tagline -->
+      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
+        <span class="brand-name-text">PALLUVO</span>
+        <span class="brand-tagline-sub">Every drape, a little magic.</span>
+      </a>
+
+      <!-- Center: Navigation (Curated Top Saree Models) -->
+      <nav class="header-nav-center" aria-label="Signature Models Navigation">
+        <div class="nav-item-clean">
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Chanderi" class="nav-link-clean">CHANDERI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Paithani" class="nav-link-clean">PAITHANI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Organza" class="nav-link-clean">ORGANZA</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Ready-to-Wear" class="nav-link-clean">READY-TO-WEAR</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean">ALL SAREES</a>
+        </div>
+      </nav>
+
+      <!-- Right: Action Icons -->
+      <div class="header-actions-clean">
+        <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+
+        <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="header-action-badge wishlist-badge hidden">0</span>
+        </a>
+
+        <button class="header-action-icon js-cart-drawer-trigger" aria-label="Shopping Bag">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="header-action-badge cart-badge hidden">0</span>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+    <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div>
+        <span class="brand-name-text" style="font-size: 1.5rem;">PALLUVO</span>
+        <span class="brand-tagline-sub">Every drape, a little magic.</span>
+      </div>
+      <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="mobile-drawer-nav">
+      <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">ROYAL KANJIVARAM <span>&rarr;</span></a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">HEIRLOOM BANARASI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">WHISPERING CHANDERI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Paithani" class="mobile-nav-link">IMPERIAL PAITHANI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">ETHEREAL ORGANZA <span>&rarr;</span></a>
+      <a href="sarees.html?category=Ready-to-Wear" class="mobile-nav-link">1-MINUTE READY DRAPE <span>&rarr;</span></a>
+      <a href="sarees.html" class="mobile-nav-link">ALL SAREES <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
+    </div>
+    <div class="mobile-drawer-footer">
+      <p>ðŸ‡®ðŸ‡³ India &bull; INR (₹)</p>
+      <p style="margin-top: 0.3rem; font-style: italic;">Every drape, a little magic.</p>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <!-- EDITORIAL ABOUT MAIN CONTENT -->
+  <main>
+    
+    <!-- Hero Banner -->
+    <section class="section-spacing" style="background-color: var(--bg-secondary); border-bottom: 1px solid var(--border-subtle); text-align: center;">
+      <div class="container-narrow">
+        <span class="section-tag">Brand Manifesto</span>
+        <h1 class="heading-display" style="margin-bottom: 1.5rem;">The Story Behind the Drape</h1>
+        <p style="font-size: 1.25rem; font-family: var(--font-serif); font-style: italic; color: var(--text-secondary); max-width: 780px; margin: 0 auto; line-height: 1.7;">
+          “A saree is neither past nor costume; it is the most fluid, sensual, and modern architecture a woman can inhabit.”
+        </p>
+      </div>
+    </section>
+
+    <!-- Narrative Section 1: The Modern Indian Drape -->
+    <section class="section-spacing">
+      <div class="container-narrow">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center;">
+          <div>
+            <span class="section-tag" style="text-align: left;">The Genesis</span>
+            <h2 style="font-family: var(--font-serif); font-size: 2.6rem; line-height: 1.2; margin-bottom: 1.4rem;">Indian Heritage, Reimagined for Her</h2>
+            <p style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 1.2rem;">
+              PALLUVO was born from a singular conviction: that the saree should feel like effortless poetry rather than ceremonial burden.
+            </p>
+            <p style="font-size: 0.95rem; color: var(--text-muted); line-height: 1.8;">
+              Too often, traditional Indian wear is bogged down by excessive stiffness, glaring artificial luster, or garish embellishments. We stripped away the noise, focusing strictly on whisper-light textures, certified pure mulberry and wild tussar silks, hand-twisted zari, and muted jewel hues that resonate with contemporary global lifestyles.
+            </p>
+          </div>
+          <div>
+            <img src="images/hero_campaign.jpg" alt="PALLUVO Editorial drape" style="border-radius: var(--radius-xs); box-shadow: var(--shadow-card); aspect-ratio: 4/5; object-fit: cover;">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Full-Width Craftsmanship Feature -->
+    <section style="background-color: var(--bg-dark); color: #FFFFFF; padding: 6rem 0;">
+      <div class="container">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 5rem; align-items: center;">
+          <div>
+            <img src="images/craftsmanship.jpg" alt="Artisanal Handloom Weaving" style="border-radius: var(--radius-xs); aspect-ratio: 4/3; object-fit: cover;">
+          </div>
+          <div>
+            <span class="section-tag" style="color: var(--color-gold); text-align: left;">Sovereign Craftsmanship</span>
+            <h2 style="font-family: var(--font-display); font-size: 2.8rem; margin-bottom: 1.5rem; color: #FFFFFF;">The Slow Magic of the Loom</h2>
+            <p style="font-size: 1.05rem; color: #D6CEC3; line-height: 1.8; margin-bottom: 1.2rem;">
+              Each PALLUVO drape represents anywhere from 18 to 45 days of unhurried artisan devotion. We partner directly with master weaver families in Varanasi, Kanchipuram, Chanderi, and Gujarat.
+            </p>
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 2rem; margin-top: 2rem;">
+              <div>
+                <h4 style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--color-gold);">100%</h4>
+                <p style="font-size: 0.82rem; color: #A69E93; text-transform: uppercase; letter-spacing: 0.08em;">Pure Certified Silk</p>
+              </div>
+              <div>
+                <h4 style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--color-gold);">0%</h4>
+                <p style="font-size: 0.82rem; color: #A69E93; text-transform: uppercase; letter-spacing: 0.08em;">Synthetic Fibers</p>
+              </div>
+              <div>
+                <h4 style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--color-gold);">380+</h4>
+                <p style="font-size: 0.82rem; color: #A69E93; text-transform: uppercase; letter-spacing: 0.08em;">Master Weavers Supported</p>
+              </div>
+              <div>
+                <h4 style="font-family: var(--font-serif); font-size: 1.8rem; color: var(--color-gold);">Fair Trade</h4>
+                <p style="font-size: 0.82rem; color: #A69E93; text-transform: uppercase; letter-spacing: 0.08em;">Ethical Living Wages</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Narrative Section 3: The PALLUVO Woman -->
+    <section class="section-spacing">
+      <div class="container-narrow">
+        <div style="text-align: center; max-width: 720px; margin: 0 auto;">
+          <span class="section-tag">Philosophy</span>
+          <h2 class="heading-section">For the Woman Who Moves</h2>
+          <p style="font-size: 1.05rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 2.5rem;">
+            Whether you are stepping into a boardroom, attending an intimate sunset celebration, or hosting an evening dinner with friends, a PALLUVO saree moves with you. No excessive pins. No heavy petticoats. Just the timeless grace of five and a half meters of living art.
+          </p>
+          <a href="sarees.html" class="btn btn-primary">EXPLORE THE COLLECTION</a>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        <div>
+          <div class="footer-brand-title">PALLUVO</div>
+          <p class="footer-tagline">“Every drape, a little magic.”</p>
+          <p class="footer-about-text">A contemporary Indian fashion label celebrating sarees, slow craftsmanship, femininity, and effortless luxury for the modern woman.</p>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Shop</h4>
+          <ul class="footer-links-list">
+            <li><a href="sarees.html">All Sarees</a></li>
+            <li><a href="sarees.html?category=Silk">Silk Stories</a></li>
+            <li><a href="sarees.html?category=Organza">Contemporary Organza</a></li>
+            <li><a href="sarees.html?occasion=Wedding">Wedding Edit</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Help</h4>
+          <ul class="footer-links-list">
+            <li><a href="contact.html">Contact Us</a></li>
+            <li><a href="account.html">Track Order</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="footer-col-title">Contact & Concierge</h4>
+          <p style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500; margin-bottom: 0.3rem;"><a href="mailto:contact@palluvo.com" style="color: inherit; text-decoration: none;">✉️ contact@palluvo.com</a></p>
+          <p style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500; margin-bottom: 0.2rem;"><a href="tel:+918498854323" style="color: inherit; text-decoration: none;">📞 +91 84988 54323</a></p>
+          <p style="font-size: 0.85rem; color: #FFFFFF; font-weight: 500;"><a href="tel:+918106789789" style="color: inherit; text-decoration: none;">📞 +91 81067 89789</a></p>
+        </div>
+      </div>
+      <div class="footer-bottom">
+        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SHARED CART DRAWER -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
+    </div>
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
+      </div>
+    </div>
+    <div class="cart-drawer-items" id="cartDrawerItems"></div>
+    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- SHARED SEARCH OVERLAY -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
+    </div>
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
+    </div>
+    <div class="search-suggestions-wrap">
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <!-- FLOATING WHATSAPP CONCIERGE BUTTON (Singhania style) -->
+  <a href="https://wa.me/918498854323?text=Hello%20Palluvo%2C%20I%20would%20like%20to%20know%20more%20about%20your%20handcrafted%20drapes" 
+     class="whatsapp-floating-btn" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     aria-label="Chat with our Saree Stylist on WhatsApp"
+     title="Stylist Concierge on WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
+    </svg>
+  </a>
+</body>
+</html>

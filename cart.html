@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Bag — PALLUVO</title>
+  <meta name="description" content="Review your curated selection of contemporary PALLUVO sarees. Complimentary shipping on orders above ₹2,999.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>">
+</head>
+<body>
+
+  <!-- MODERN SLEEK SITE HEADER (PALLUVO Reference Layout) -->
+  <header class="site-header-clean" id="siteHeader">
+    <div class="header-row-clean">
+      
+      <!-- Left: Clean Brand Logo -->
+      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
+        PALLUVO
+      </a>
+
+      <!-- Center: 9 Navigation Links -->
+      <nav class="header-nav-center" aria-label="Main Categories">
+        <div class="nav-item-clean">
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?fabric=Silk" class="nav-link-clean">SILK SAREES</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Handloom" class="nav-link-clean">HANDLOOM</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?fabric=Cotton" class="nav-link-clean">COTTON</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?occasion=Party+Wear" class="nav-link-clean">PARTY WEAR</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?occasion=Wedding" class="nav-link-clean">WEDDING</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean">ALL SAREES</a>
+        </div>
+      </nav>
+
+      <!-- Right: Action Icons -->
+      <div class="header-actions-clean">
+        <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+
+        <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="header-action-badge wishlist-badge hidden">0</span>
+        </a>
+
+        <button class="header-action-icon js-cart-drawer-trigger is-active" aria-label="Shopping Bag">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="header-action-badge cart-badge hidden">0</span>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+    <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div>
+        <span class="brand-name-text" style="font-size: 1.5rem;">PALLUVO</span>
+        <span class="brand-tagline-sub">Every drape, a little magic.</span>
+      </div>
+      <button class="drawer-close-btn" id="mobileMenuClose" aria-label="Close menu">&times;</button>
+    </div>
+    <div class="mobile-drawer-nav">
+      <a href="sarees.html?sort=newest" class="mobile-nav-link">NEW ARRIVALS <span>&rarr;</span></a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">ROYAL KANJIVARAM <span>&rarr;</span></a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">HEIRLOOM BANARASI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">WHISPERING CHANDERI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Paithani" class="mobile-nav-link">IMPERIAL PAITHANI <span>&rarr;</span></a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">ETHEREAL ORGANZA <span>&rarr;</span></a>
+      <a href="sarees.html?category=Ready-to-Wear" class="mobile-nav-link">1-MINUTE READY DRAPE <span>&rarr;</span></a>
+      <a href="sarees.html" class="mobile-nav-link">ALL SAREES <span>&rarr;</span></a>
+      <a href="wishlist.html" class="mobile-nav-link">SAVED WISHLIST <span>&rarr;</span></a>
+      <a href="account.html" class="mobile-nav-link">MY ACCOUNT & ORDERS <span>&rarr;</span></a>
+    </div>
+    <div class="mobile-drawer-footer">
+      <p>ðŸ‡®ðŸ‡³ India &bull; INR (₹)</p>
+      <p style="margin-top: 0.3rem; font-style: italic;">Every drape, a little magic.</p>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <!-- CART PAGE CONTENT -->
+  <main class="section-spacing-sm">
+    <div class="container">
+      <nav class="breadcrumbs">
+        <a href="index.html">Home</a>
+        <span>/</span>
+        <span>Shopping Bag</span>
+      </nav>
+
+      <h1 class="plp-title" style="margin-bottom: 2rem;">Your Shopping Bag</h1>
+
+      <!-- Free Shipping Notice Box -->
+      <div style="background-color: var(--bg-secondary); border: 1px solid var(--border-subtle); padding: 1.2rem 1.6rem; border-radius: var(--radius-xs); margin-bottom: 2.5rem;">
+        <div id="pageFreeShippingText" style="font-size: 0.85rem; margin-bottom: 0.6rem;"></div>
+        <div class="shipping-progress-track">
+          <div class="shipping-progress-fill" id="pageFreeShippingBar" style="width: 0%;"></div>
+        </div>
+      </div>
+
+      <!-- Main Cart Layout Grid -->
+      <div class="plp-main-layout" style="grid-template-columns: 1.8fr 1fr; gap: 3.5rem;">
+        
+        <!-- Left: Items Table / List -->
+        <div>
+          <div id="pageCartItemsContainer">
+            <!-- Rendered via JS -->
+          </div>
+
+          <!-- Empty State -->
+          <div id="pageCartEmptyState" class="cart-empty-state hidden">
+            <div class="empty-icon">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <path d="M16 10a4 4 0 0 1-8 0"></path>
+              </svg>
+            </div>
+            <h2 class="empty-title">Your shopping bag is empty</h2>
+            <p class="empty-sub">Discover our curated collection of contemporary drapes crafted for moments that matter.</p>
+            <a href="sarees.html" class="btn btn-primary">EXPLORE SAREES</a>
+          </div>
+
+          <!-- Gift Box Packaging Option -->
+          <div style="margin-top: 2rem; padding: 1.5rem; background: #FFFFFF; border: 1px solid var(--border-subtle); border-radius: var(--radius-xs); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="20 12 20 22 4 22 4 12"></polyline><rect x="2" y="7" width="20" height="5"></rect><line x1="12" y1="22" x2="12" y2="7"></line><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"></path><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"></path></svg>
+              <div>
+                <div style="font-weight: 500; font-size: 0.9rem;">Complimentary Luxury Gift Packaging</div>
+                <div style="font-size: 0.78rem; color: var(--text-secondary);">Includes archival box, silk tissue wrap, and custom handwritten calligraphy card.</div>
+              </div>
+            </div>
+            <label style="display:flex; align-items:center; gap:0.4rem; font-size:0.8rem; cursor:pointer;">
+              <input type="checkbox" id="giftOption" style="accent-color: var(--color-gold);">
+              Add Gift Packaging
+            </label>
+          </div>
+        </div>
+
+        <!-- Right: Order Summary Sidebar -->
+        <div>
+          <div class="checkout-summary-sidebar" id="pageCartSummary">
+            <h3 style="font-family: var(--font-serif); font-size: 1.5rem; margin-bottom: 1.5rem;">Order Summary</h3>
+            
+            <!-- Promo Code Form -->
+            <div style="margin-bottom: 1.5rem;">
+              <div class="coupon-input-group">
+                <input type="text" id="pageCouponInput" placeholder="Discount code (e.g. PALLUVO10)" class="coupon-field">
+                <button class="btn btn-outline btn-xs" onclick="handlePageCoupon()">Apply</button>
+              </div>
+              <div id="pageCouponAppliedStatus"></div>
+            </div>
+
+            <!-- Cost Breakdown -->
+            <div class="drawer-cost-breakdown">
+              <div class="cost-row">
+                <span>Subtotal</span>
+                <span id="pageSummarySubtotal">₹0</span>
+              </div>
+              <div class="cost-row text-gold" id="pageDiscountRow" style="display:none;">
+                <span>Discount</span>
+                <span id="pageSummaryDiscount">-₹0</span>
+              </div>
+              <div class="cost-row">
+                <span>Estimated Shipping</span>
+                <span id="pageSummaryShipping">COMPLIMENTARY</span>
+              </div>
+              <div class="cost-row total-row">
+                <span>Total Amount</span>
+                <span class="total-amount" id="pageSummaryTotal">₹0</span>
+              </div>
+              <p class="tax-note">All Indian GST and import duties included.</p>
+            </div>
+
+            <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 0.8rem;">
+              <a href="checkout.html" class="btn btn-primary btn-block">PROCEED TO CHECKOUT</a>
+              <a href="sarees.html" class="btn btn-ghost btn-block btn-xs" style="text-align: center;">Continue Shopping</a>
+            </div>
+
+            <div class="cart-trust-badges" style="margin-top: 2rem; border-top: 1px solid var(--border-subtle); padding-top: 1rem;">
+              <span>✓ 100% Authentic Handloom</span>
+              <span>✓ 7-Day Hassle-Free Returns</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- LUXURY FOOTER -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-bottom">
+        <div>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved.</div>
+        <div class="footer-payment-badges">
+          <span class="payment-pill">UPI / QR</span>
+          <span class="payment-pill">RuPay</span>
+          <span class="payment-pill">Visa</span>
+          <span class="payment-pill">Mastercard</span>
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SHARED CART DRAWER -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
+    </div>
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
+      </div>
+    </div>
+    <div class="cart-drawer-items" id="cartDrawerItems"></div>
+    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- SHARED SEARCH OVERLAY -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
+    </div>
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
+    </div>
+    <div class="search-suggestions-wrap">
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    function renderPageCart() {
+      const cart = CartStore.getCart();
+      const totals = CartStore.getTotals();
+
+      const itemsContainer = document.getElementById('pageCartItemsContainer');
+      const emptyState = document.getElementById('pageCartEmptyState');
+      const summaryBox = document.getElementById('pageCartSummary');
+
+      // Free shipping bar
+      const freeShipText = document.getElementById('pageFreeShippingText');
+      const freeShipBar = document.getElementById('pageFreeShippingBar');
+      if (totals.remainingForFreeShipping === 0 && totals.subtotal > 0) {
+        freeShipText.innerHTML = `<span class="text-gold font-medium">✨ You've unlocked Complimentary Express Shipping!</span>`;
+        freeShipBar.style.width = '100%';
+      } else {
+        freeShipText.innerHTML = `Add <strong class="text-charcoal">${formatINR(totals.remainingForFreeShipping)}</strong> more to unlock <strong>Complimentary Express Shipping</strong>.`;
+        freeShipBar.style.width = `${totals.progressPercent}%`;
+      }
+
+      if (cart.length === 0) {
+        itemsContainer.style.display = 'none';
+        emptyState.classList.remove('hidden');
+        summaryBox.style.opacity = '0.5';
+        summaryBox.style.pointerEvents = 'none';
+        return;
+      }
+
+      itemsContainer.style.display = 'block';
+      emptyState.classList.add('hidden');
+      summaryBox.style.opacity = '1';
+      summaryBox.style.pointerEvents = 'auto';
+
+      let html = '';
+      cart.forEach(item => {
+        html += `
+          <div class="cart-item-row" style="background:#FFFFFF; padding:1.5rem; border:1px solid var(--border-subtle); border-radius:var(--radius-xs); margin-bottom:1rem;">
+            <a href="product.html?id=${item.slug}" style="display:block;">
+              <img src="${item.image}" alt="${item.name}" class="cart-item-thumb" style="width:90px; height:120px;">
+            </a>
+            <div class="cart-item-details">
+              <div class="cart-item-header">
+                <h3 class="cart-item-title" style="font-size:1.35rem;">
+                  <a href="product.html?id=${item.slug}">${item.name}</a>
+                </h3>
+                <button class="cart-item-remove-btn" onclick="handlePageRemoveItem('${item.cartItemId}')">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+              <div class="cart-item-meta" style="font-size:0.82rem; margin-top:0.4rem;">
+                <span><span class="color-dot" style="background:${item.colorHex};"></span> ${item.color}</span>
+                <span>Blouse: ${item.blouseName} ${item.blousePrice > 0 ? `(+${formatINR(item.blousePrice)})` : ''}</span>
+              </div>
+              <div class="cart-item-footer" style="margin-top:1.2rem;">
+                <div class="qty-stepper">
+                  <button class="qty-btn" onclick="handlePageQty('${item.cartItemId}', -1)">−</button>
+                  <span class="qty-num">${item.qty}</span>
+                  <button class="qty-btn" onclick="handlePageQty('${item.cartItemId}', 1)">+</button>
+                </div>
+                <div class="cart-item-pricing" style="font-size:1.15rem;">
+                  <span class="item-price">${formatINR(item.unitTotal * item.qty)}</span>
+                </div>
+              </div>
+              <div class="cart-item-actions" style="margin-top:0.8rem;">
+                <button class="btn-text-link" onclick="handlePageWishlist('${item.cartItemId}')">Save to Wishlist</button>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+      itemsContainer.innerHTML = html;
+
+      // Summary updates
+      document.getElementById('pageSummarySubtotal').textContent = formatINR(totals.subtotal);
+      if (totals.discount > 0) {
+        document.getElementById('pageDiscountRow').style.display = 'flex';
+        document.getElementById('pageSummaryDiscount').textContent = `-${formatINR(totals.discount)}`;
+      } else {
+        document.getElementById('pageDiscountRow').style.display = 'none';
+      }
+
+      document.getElementById('pageSummaryShipping').innerHTML = totals.shipping === 0 ? '<span class="text-gold">COMPLIMENTARY</span>' : formatINR(totals.shipping);
+      document.getElementById('pageSummaryTotal').textContent = formatINR(totals.total);
+
+      // Coupon status
+      const statusDiv = document.getElementById('pageCouponAppliedStatus');
+      if (totals.coupon) {
+        statusDiv.innerHTML = `
+          <div class="applied-coupon-row" style="margin-top:0.6rem;">
+            <span>Coupon <strong>${totals.coupon.code}</strong> applied (-${formatINR(totals.discount)})</span>
+            <button class="btn-text-link remove-coupon" onclick="CartStore.setCoupon(null); renderPageCart();">Remove</button>
+          </div>
+        `;
+      } else {
+        statusDiv.innerHTML = '';
+      }
+    }
+
+    function handlePageQty(id, delta) {
+      CartStore.updateQty(id, delta);
+      renderPageCart();
+    }
+
+    function handlePageRemoveItem(id) {
+      CartStore.removeItem(id);
+      renderPageCart();
+    }
+
+    function handlePageWishlist(id) {
+      CartStore.moveToWishlist(id);
+      renderPageCart();
+    }
+
+    function handlePageCoupon() {
+      const input = document.getElementById('pageCouponInput');
+      const res = CartStore.applyCoupon(input.value);
+      if (res.success) {
+        Toast.show(res.message, 'success');
+        input.value = '';
+      } else {
+        Toast.show(res.message, 'error');
+      }
+      renderPageCart();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderPageCart();
+    });
+  </script>
+  <!-- FLOATING WHATSAPP CONCIERGE BUTTON (Singhania style) -->
+  <a href="https://wa.me/918498854323?text=Hello%20Palluvo%2C%20I%20would%20like%20assistance%20with%20a%20saree%20selection" 
+     class="whatsapp-floating-btn" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     aria-label="Chat with our Saree Stylist on WhatsApp"
+     title="Stylist Concierge on WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
+    </svg>
+  </a>
+</body>
+</html>

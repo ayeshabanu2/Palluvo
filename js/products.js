@@ -1,101 +1,11 @@
-export interface Swatch {
-  name: string;
-  hex: string;
-  inStock: boolean;
-}
+/**
+ * PALLUVO — Contemporary Luxury Saree Fashion House
+ * "Every drape, a little magic."
+ * Curated Top Models & Saree-Only Merchandising
+ */
 
-export interface BlouseOption {
-  id: string;
-  name: string;
-  price: number;
-}
-
-export interface SareeSpecifications {
-  length: string;
-  width: string;
-  blouseLength: string;
-  weave: string;
-  origin: string;
-  weight: string;
-  zariType: string;
-  transparency: string;
-  fallPico: string;
-  care: string;
-}
-
-export interface SareeProduct {
-  id: string;
-  slug: string;
-  name: string;
-  sareeType: string;
-  tagline: string;
-  price: number;
-  compareAtPrice: number;
-  discount: string;
-  badge?: string;
-  category: string;
-  fabric: string;
-  color: string;
-  colorHex: string;
-  swatches: Swatch[];
-  blouseOptions: BlouseOption[];
-  occasion: string;
-  rating: number;
-  reviewsCount: number;
-  stock: number;
-  images: string[];
-  description: string;
-  specifications: SareeSpecifications;
-  deliveryInfo: string;
-}
-
-export interface SareeCategory {
-  id: string;
-  slug: string;
-  name: string;
-  shortName: string;
-  region: string;
-  tag: string;
-  oneLiner: string;
-  subtitle: string;
-  desc: string;
-  image: string;
-  filterType: string;
-  artisanHours: string;
-  pureSilkMark: boolean;
-}
-
-export interface SareeOccasion {
-  id: string;
-  name: string;
-  subtitle: string;
-  sareeType: string;
-  image: string;
-  filterParam: string;
-}
-
-export interface HandloomRegion {
-  name: string;
-  state: string;
-  weave: string;
-  image: string;
-}
-
-export interface FestiveSaree {
-  name: string;
-  region: string;
-  image: string;
-  desc: string;
-}
-
-export const DEFAULT_BLOUSE_OPTIONS: BlouseOption[] = [
-  { id: "unstitched", name: "Unstitched Matching Fabric (0.8m Included)", price: 0 },
-  { id: "tailored-classic", name: "Custom Tailored - Classic Elbow Sleeve & U-Neck", price: 1200 },
-  { id: "tailored-sleeveless", name: "Custom Tailored - Deep Sweetheart Sleeveless", price: 1200 },
-  { id: "ready-padded", name: "Ready-to-Wear Premium Padded Corset Blouse", price: 1800 }
-];
-
-export const PALLUVO_TOP_MODELS: SareeCategory[] = [
+// Curated Top Signature Saree Models for PALLUVO
+const PALLUVO_TOP_MODELS = [
   {
     id: "banarasi",
     slug: "banarasi",
@@ -106,7 +16,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Timeless zari woven in Varanasi",
     subtitle: "Pure Katan Silk with Real Zari Jaal",
     desc: "Masterfully handwoven in Varanasi using unhurried Kadhwa techniques, featuring intricate floral jaals and tested gold zari.",
-    image: "/images/categories/banarasi.jpg",
+    image: "images/categories/banarasi.jpg",
     filterType: "Banarasi",
     artisanHours: "210+ Weaving Hours",
     pureSilkMark: true
@@ -121,7 +31,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Rich silk and heritage temple borders",
     subtitle: "Pure Mulberry Silk & Korvai Gold Temple Zari",
     desc: "Heavy three-ply twisted silk yarns with contrast interlocking Korvai temple borders, radiating royal heirloom majesty.",
-    image: "/images/categories/kanjivaram.jpg",
+    image: "images/categories/kanjivaram.jpg",
     filterType: "Kanjivaram",
     artisanHours: "180+ Weaving Hours",
     pureSilkMark: true
@@ -136,7 +46,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Iconic geometric Ikat from Telangana",
     subtitle: "Pure Handloom Silk Double Ikat Weave",
     desc: "Iconic geometric precision handwoven using tie-dye resist techniques on pure natural silk with vibrant heritage borders.",
-    image: "/images/categories/pochampally.jpg",
+    image: "images/categories/pochampally.jpg",
     filterType: "Pochampally",
     artisanHours: "140+ Weaving Hours",
     pureSilkMark: true
@@ -151,7 +61,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Handwoven silk with signature motifs",
     subtitle: "Kaleidoscopic Pure Silk with Zari Borders",
     desc: "Celebrated queen of Maharashtra silks, crowned with oblique square borders and a kaleidoscopic hand-woven peacock pallu.",
-    image: "/images/saree_paithani_royal.jpg",
+    image: "images/saree_paithani_royal.jpg",
     filterType: "Paithani",
     artisanHours: "160+ Weaving Hours",
     pureSilkMark: true
@@ -166,7 +76,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Gossamer handloom with delicate golden bootis",
     subtitle: "Silk-Cotton Tissue with Gold Bootis",
     desc: "A gossamer, featherlight drape woven from pure silk warp and fine cotton weft, shimmering with traditional golden bootis.",
-    image: "/images/categories/chanderi.jpg",
+    image: "images/categories/chanderi.jpg",
     filterType: "Chanderi",
     artisanHours: "95+ Weaving Hours",
     pureSilkMark: true
@@ -181,7 +91,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Crisp sheer luxury with hand-embroidered zardozi",
     subtitle: "Scalloped Hand-Embroidered Zardozi Silk",
     desc: "Crisp, sheer luxury silk detailed with delicate scalloped borders and hand-applied zardozi floral motifs for festive soirées.",
-    image: "/images/categories/organza.jpg",
+    image: "images/categories/organza.jpg",
     filterType: "Organza",
     artisanHours: "75+ Hand-Embroidery Hours",
     pureSilkMark: true
@@ -196,7 +106,7 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Pre-pleated 60-second couture drape",
     subtitle: "Pre-Pleated Tailored Pure Silk Drape",
     desc: "Expertly tailored with pre-stitched structured pleats and flowing pallu. Slip into runway-ready silk luxury in 60 seconds.",
-    image: "/images/categories/ready-to-wear.jpg",
+    image: "images/categories/ready-to-wear.jpg",
     filterType: "Ready-to-Wear",
     artisanHours: "Boutique Tailored",
     pureSilkMark: true
@@ -211,29 +121,34 @@ export const PALLUVO_TOP_MODELS: SareeCategory[] = [
     oneLiner: "Royal crepe silk with certified gold zari",
     subtitle: "Pure Crepe Silk with 100% Tested Gold Zari",
     desc: "Buttery soft crepe drape crafted from 100% natural silk threads with certified 24-karat tested gold zari edging.",
-    image: "/images/categories/mysore-silk.jpg",
+    image: "images/categories/mysore-silk.jpg",
     filterType: "Mysore Silk",
     artisanHours: "110+ Weaving Hours",
     pureSilkMark: true
   }
 ];
 
-export const FESTIVE_SAREES: FestiveSaree[] = [
-  { name: "Bandhani Silk", region: "Gujarat", image: "/images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
-  { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "/images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
-  { name: "Traditional Paithani", region: "Maharashtra", image: "/images/saree_paithani_royal.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
-  { name: "Royal Banarasi", region: "Varanasi, UP", image: "/images/categories/banarasi.jpg", desc: "Opulent real gold zari jaal on rich scarlet and crimson katan silk." },
-  { name: "Temple Kanjivaram", region: "Tamil Nadu", image: "/images/categories/kanjivaram.jpg", desc: "Three-ply mulberry silk with auspicious gold temple border motifs." },
-  { name: "Pochampally Ikat", region: "Telangana", image: "/images/categories/pochampally.jpg", desc: "Dynamic double-ikat silk weave crafted for Garba celebrations and aartis." }
+// Reference the curated top models as the primary saree categories
+const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
+
+// Colorful Festive Sarees for "THE FESTIVE EDIT"
+const FESTIVE_SAREES = [
+  { name: "Bandhani Silk", region: "Gujarat", image: "images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
+  { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
+  { name: "Traditional Paithani", region: "Maharashtra", image: "images/saree_paithani_royal.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
+  { name: "Royal Banarasi", region: "Varanasi, UP", image: "images/categories/banarasi.jpg", desc: "Opulent real gold zari jaal on rich scarlet and crimson katan silk." },
+  { name: "Temple Kanjivaram", region: "Tamil Nadu", image: "images/categories/kanjivaram.jpg", desc: "Three-ply mulberry silk with auspicious gold temple border motifs." },
+  { name: "Pochampally Ikat", region: "Telangana", image: "images/categories/pochampally.jpg", desc: "Dynamic double-ikat silk weave crafted for Garba celebrations and aartis." }
 ];
 
-export const SAREE_OCCASIONS: SareeOccasion[] = [
+// 8 Occasions (Saree-Only Curations)
+const SAREE_OCCASIONS = [
   {
     id: "wedding",
     name: "Wedding",
     subtitle: "Heirloom Silks & Zari Grandeur",
     sareeType: "Pure Kanjivaram & Banarasi Silk",
-    image: "/images/occasions/wedding.jpg",
+    image: "images/occasions/wedding.jpg",
     filterParam: "Wedding"
   },
   {
@@ -241,7 +156,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Bridal",
     subtitle: "The Sacred Red & Gold Drape",
     sareeType: "Bridal Crimson Zari Brocade",
-    image: "/images/occasions/bridal.jpg",
+    image: "images/occasions/bridal.jpg",
     filterParam: "Bridal"
   },
   {
@@ -249,7 +164,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Festive",
     subtitle: "Vibrant Navratri & Diwali Celebrations",
     sareeType: "Bandhani, Patola & Paithani",
-    image: "/images/occasions/festive.jpg",
+    image: "images/occasions/festive.jpg",
     filterParam: "Festive"
   },
   {
@@ -257,7 +172,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Party Wear",
     subtitle: "Cocktail Drapes & Evening Sheers",
     sareeType: "Organza, Shimmer Georgette & Crepe",
-    image: "/images/occasions/party-wear.jpg",
+    image: "images/occasions/party-wear.jpg",
     filterParam: "Party Wear"
   },
   {
@@ -265,7 +180,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Office Wear",
     subtitle: "Crisp, Dignified Everyday Elegance",
     sareeType: "Linen, Chanderi & Mercerized Cotton",
-    image: "/images/occasions/office-wear.jpg",
+    image: "images/occasions/office-wear.jpg",
     filterParam: "Office Wear"
   },
   {
@@ -273,7 +188,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Casual",
     subtitle: "Effortless Featherlight Comfort",
     sareeType: "Mulmul Cotton & Pure Chiffon",
-    image: "/images/occasions/casual.jpg",
+    image: "images/occasions/casual.jpg",
     filterParam: "Casual"
   },
   {
@@ -281,7 +196,7 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Traditional",
     subtitle: "Sacred Pujas & Regional Rituals",
     sareeType: "Handloom Uppada, Gadwal & Ilkal",
-    image: "/images/occasions/traditional.jpg",
+    image: "images/occasions/traditional.jpg",
     filterParam: "Traditional"
   },
   {
@@ -289,12 +204,13 @@ export const SAREE_OCCASIONS: SareeOccasion[] = [
     name: "Reception",
     subtitle: "Modern Silhouettes & Sleek Satin Drapes",
     sareeType: "Pre-Pleated Tissue & Metallic Silk",
-    image: "/images/occasions/reception.jpg",
+    image: "images/occasions/reception.jpg",
     filterParam: "Reception"
   }
 ];
 
-export const SAREE_PRODUCTS: SareeProduct[] = [
+// Complete 20-Product Catalog of Authentic Luxury Sarees
+const SAREE_PRODUCTS = [
   {
     id: "saree-001",
     slug: "royal-banarasi-silk-saree",
@@ -314,16 +230,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Emerald Green", hex: "#1C3B2E", inStock: true },
       { name: "Royal Purple", hex: "#3F1B42", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Wedding",
     rating: 4.9,
     reviewsCount: 38,
     stock: 12,
     images: [
-      "/images/hero_saree_art.jpg",
-      "/images/categories/banarasi.jpg",
-      "/images/coll_silk.jpg",
-      "/images/craftsmanship.jpg"
+      "images/hero_saree_art.jpg",
+      "images/categories/banarasi.jpg",
+      "images/coll_silk.jpg",
+      "images/craftsmanship.jpg"
     ],
     description: "An authentic Varanasi heirloom, handwoven from 100% pure katan silk. Embellished with classic kadhwa floral jaal and a dense antique gold zari pallu, this saree embodies the supreme grace of Indian heritage brides.",
     specifications: {
@@ -359,16 +274,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Ruby Maroon", hex: "#7A1C25", inStock: true },
       { name: "Mustard Gold", hex: "#C59B27", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Wedding",
     rating: 4.9,
     reviewsCount: 42,
     stock: 9,
     images: [
-      "/images/categories/kanjivaram.jpg",
-      "/images/products/kanjivaram_royal.jpg",
-      "/images/banner_traditional_saree.jpg",
-      "/images/coll_silk.jpg"
+      "images/categories/kanjivaram.jpg",
+      "images/products/kanjivaram_royal.jpg",
+      "images/banner_traditional_saree.jpg",
+      "images/coll_silk.jpg"
     ],
     description: "Mastercrafted in Kanchipuram with three-ply heavy mulberry silk yarn. Features authentic contrast Korvai temple borders, rich peacock booties, and certified pure zari workmanship.",
     specifications: {
@@ -387,98 +301,96 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
   },
   {
     id: "saree-003",
-    slug: "delicate-organza-silk-saree",
-    name: "Delicate Organza Silk Saree",
-    sareeType: "Organza",
-    tagline: "Gossamer Sheer Silk with Scalloped Zardozi Border",
-    price: 4999,
-    compareAtPrice: 6999,
-    discount: "28% OFF",
-    badge: "Trending",
-    category: "Organza",
-    fabric: "Pure Organza Silk",
-    color: "Blush Pink",
-    colorHex: "#E8B4B8",
+    slug: "handwoven-pochampally-ikat-saree",
+    name: "Handwoven Pochampally Ikat Saree",
+    sareeType: "Pochampally",
+    tagline: "Double Ikat Silk with Geometric Heritage Border",
+    price: 5499,
+    compareAtPrice: 7499,
+    discount: "26% OFF",
+    badge: "Artisanal",
+    category: "Pochampally",
+    fabric: "Pure Silk Cotton",
+    color: "Midnight Black",
+    colorHex: "#1A1A1A",
     swatches: [
-      { name: "Blush Pink", hex: "#E8B4B8", inStock: true },
-      { name: "Sage Mist", hex: "#B2C2B0", inStock: true },
-      { name: "Powder Blue", hex: "#A8C3D8", inStock: true }
+      { name: "Midnight Black", hex: "#1A1A1A", inStock: true },
+      { name: "Mustard Yellow", hex: "#D4A017", inStock: true },
+      { name: "Terracotta Red", hex: "#A83E2D", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Party Wear",
+    occasion: "Traditional",
     rating: 4.8,
     reviewsCount: 29,
     stock: 14,
     images: [
-      "/images/categories/organza.jpg",
-      "/images/saree_aira_1.jpg",
-      "/images/saree_aira_2.jpg",
-      "/images/coll_contemp.jpg"
+      "images/categories/pochampally.jpg",
+      "images/saree_meher_1.jpg",
+      "images/saree_meher_2.jpg",
+      "images/craftsmanship.jpg"
     ],
-    description: "Whisper-light, sheer luxury. Crafted from pure organza silk with hand-cut scalloped borders embroidered with micro pearl beads and zardozi threadwork. Ideal for high-tea parties and destination receptions.",
+    description: "Celebrated Telangana double-ikat masterpiece. Each yarn is precision tie-dyed before weaving on traditional pit looms, yielding mesmerizing crisp geometric diamonds with a fluid fall.",
     specifications: {
       length: "5.5 meters",
       width: "44 inches",
-      blouseLength: "0.8 meter matching heavy embroidered organza fabric",
-      weave: "Fine Plain Weave Organza",
-      origin: "Varanasi Atelier",
-      weight: "380 grams",
-      zariType: "Fine Rose Gold & Silver Zari",
-      transparency: "Semi-Transparent",
+      blouseLength: "0.8 meter matching ikat fabric included",
+      weave: "Double Ikat Handloom Weave",
+      origin: "Pochampally, Telangana",
+      weight: "510 grams",
+      zariType: "Subtle Gold Zari Edging",
+      transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Dry clean only. Keep away from direct sunlight."
+      care: "Gentle dry clean recommended. Iron inside out."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-004",
-    slug: "whispering-chanderi-silk-cotton-saree",
-    name: "Whispering Chanderi Saree",
-    sareeType: "Chanderi",
-    tagline: "Featherlight Silk-Cotton with Ashrafi Gold Bootis",
-    price: 3499,
-    compareAtPrice: 4799,
-    discount: "27% OFF",
+    slug: "elegant-organza-saree",
+    name: "Elegant Organza Saree",
+    sareeType: "Organza",
+    tagline: "Translucent Powder Sage Organza with Hand-Cut Scallop Border",
+    price: 3899,
+    compareAtPrice: 5299,
+    discount: "26% OFF",
     badge: "New Arrival",
-    category: "Chanderi",
-    fabric: "Silk-Cotton Tissue",
-    color: "Ivory Gold",
-    colorHex: "#F2E8CF",
+    category: "Organza",
+    fabric: "Pure Silk Organza",
+    color: "Sage Green",
+    colorHex: "#8A9A86",
     swatches: [
-      { name: "Ivory Gold", hex: "#F2E8CF", inStock: true },
-      { name: "Peacock Blue", hex: "#1B4965", inStock: true },
-      { name: "Sunset Ochre", hex: "#D4A373", inStock: true }
+      { name: "Sage Green", hex: "#8A9A86", inStock: true },
+      { name: "Powder Pink", hex: "#E8C5C8", inStock: true },
+      { name: "Ice Blue", hex: "#C2D4D8", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Festive",
-    rating: 4.7,
-    reviewsCount: 19,
+    occasion: "Party Wear",
+    rating: 4.9,
+    reviewsCount: 31,
     stock: 18,
     images: [
-      "/images/categories/chanderi.jpg",
-      "/images/saree_zoya_1.jpg",
-      "/images/saree_zoya_2.jpg",
-      "/images/coll_everyday.jpg"
+      "images/categories/organza.jpg",
+      "images/saree_aira_1.jpg",
+      "images/saree_aira_2.jpg",
+      "images/coll_everyday.jpg"
     ],
-    description: "An authentic Chanderi handloom drape combining gossamer cotton weft with pure mulberry silk warp. Dotted with hand-interlocked Ashrafi gold coin bootis that catch the ambient festival lamps.",
+    description: "Whisper-light sheer silk organza featuring delicate hand-embroidered botanical vines and a laser-finished scalloped border with micro-sequin luminescence.",
     specifications: {
       length: "5.5 meters",
-      width: "45 inches",
-      blouseLength: "0.8 meter running silk-cotton fabric",
-      weave: "Traditional Pit Loom Weave",
-      origin: "Chanderi, Madhya Pradesh",
-      weight: "420 grams",
-      zariType: "Tested Gold Zari",
+      width: "44 inches",
+      blouseLength: "0.8 meter heavy embroidered organza blouse fabric",
+      weave: "Powerloom Organza with Hand Embroidery",
+      origin: "Varanasi & Surat",
+      weight: "340 grams",
+      zariType: "Matte Champagne Zari & Sequins",
       transparency: "Semi-Sheer",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Dry clean recommended. Gentle handwash in cold water after first dry clean."
+      care: "Dry clean only. Do not wring or steam press."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-005",
-    slug: "traditional-paithani-silk-saree",
-    name: "Traditional Paithani Silk Saree",
+    slug: "traditional-paithani-saree",
+    name: "Traditional Paithani Saree",
     sareeType: "Paithani",
     tagline: "Pure Yeola Silk with Traditional Mor Bangdi Peacock Tapestry",
     price: 8999,
@@ -491,21 +403,20 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
     colorHex: "#8B1E2B",
     swatches: [
       { name: "Royal Crimson Gold", hex: "#8B1E2B", inStock: true },
-      { name: "Royal Purple", hex: "#3F1B42", inStock: true },
-      { name: "Peacock Green", hex: "#134E4A", inStock: true }
+      { name: "Royal Violet", hex: "#4C2258", inStock: true },
+      { name: "Emerald Yeola Green", hex: "#134E4A", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Bridal",
+    occasion: "Festive",
     rating: 5.0,
-    reviewsCount: 38,
+    reviewsCount: 24,
     stock: 7,
     images: [
-      "/images/saree_paithani_royal.jpg",
-      "/images/products/paithani_gold.jpg",
-      "/images/categories/paithani.jpg",
-      "/images/coll_silk.jpg"
+      "images/saree_paithani_royal.jpg",
+      "images/products/paithani_gold.jpg",
+      "images/categories/paithani.jpg",
+      "images/coll_festive.jpg"
     ],
-    description: "The crown jewel of Maharashtra drapes, handwoven in Yeola over 160 hours using oblique interlocking tapestry weaving. The pallu features the kaleidoscope of the auspicious Mor Bangdi (dancing peacocks in bangles) against solid gold tissue.",
+    description: "The pride of Maharashtra. Handwoven in Yeola with pure natural mulberry silk and real gold zari tapestry, featuring the iconic kaleidoscopic peacock (Mor Bangdi) motif across the expansive grand pallu.",
     specifications: {
       length: "5.5 meters",
       width: "46 inches",
@@ -516,230 +427,225 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       zariType: "Certified Pure Tested Gold Zari",
       transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Strictly dry clean only. Wrap in unbleached cotton muslin."
+      care: "Strictly dry clean. Wrap in unbleached cotton muslin."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-006",
-    slug: "pochampally-ikat-silk-saree",
-    name: "Pochampally Ikat Silk Saree",
-    sareeType: "Pochampally",
-    tagline: "Geometric Double Ikat with Solid Contrast Temple Border",
-    price: 5499,
-    compareAtPrice: 7299,
+    slug: "premium-mysore-silk-saree",
+    name: "Premium Mysore Silk Saree",
+    sareeType: "Mysore Silk",
+    tagline: "Liquid Gold Drape with Kasuti Border in Royal Sapphire",
+    price: 5999,
+    compareAtPrice: 7999,
     discount: "25% OFF",
     badge: "Bestseller",
-    category: "Pochampally",
-    fabric: "Handloom Pure Silk",
-    color: "Sapphire Teal",
-    colorHex: "#0D5C75",
+    category: "Mysore Silk",
+    fabric: "100% Pure Mulberry Crepe Silk",
+    color: "Sapphire Blue",
+    colorHex: "#133E68",
     swatches: [
-      { name: "Sapphire Teal", hex: "#0D5C75", inStock: true },
-      { name: "Maroon Crimson", hex: "#6B1D28", inStock: true },
-      { name: "Mustard Black", hex: "#2B2118", inStock: true }
+      { name: "Sapphire Blue", hex: "#133E68", inStock: true },
+      { name: "Rani Pink", hex: "#B8235A", inStock: true },
+      { name: "Turmeric Gold", hex: "#D69B22", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Festive",
-    rating: 4.8,
-    reviewsCount: 31,
-    stock: 11,
+    occasion: "Traditional",
+    rating: 4.9,
+    reviewsCount: 36,
+    stock: 15,
     images: [
-      "/images/categories/pochampally.jpg",
-      "/images/saree_ruhani_1.jpg",
-      "/images/saree_ruhani_2.jpg",
-      "/images/coll_contemp.jpg"
+      "images/categories/mysore-silk.jpg",
+      "images/coll_silk.jpg",
+      "images/saree_ira_1.jpg",
+      "images/saree_ira_2.jpg"
     ],
-    description: "Renowned UNESCO heritage double-ikat craft from Bhoodan Pochampally. Both warp and weft silk yarns are meticulously tied and dyed prior to weaving to yield sharp, mesmerizing geometric diamond motifs.",
+    description: "Famous for its fluid, anti-crease drape and unmistakable luster. Crafted from government-certified mulberry silk yarn with an embossed gold zari band and delicate temple border.",
     specifications: {
       length: "5.5 meters",
       width: "45 inches",
-      blouseLength: "0.8 meter contrast ikat blouse piece included",
-      weave: "Double Ikat Resist Handloom Weave",
-      origin: "Pochampally, Telangana",
-      weight: "590 grams",
-      zariType: "Subtle Gold Zari Border",
+      blouseLength: "0.8 meter pure crepe silk blouse piece included",
+      weave: "High-Twist Silk Crepe Weave",
+      origin: "Mysuru, Karnataka",
+      weight: "480 grams",
+      zariType: "Certified Tested Gold Zari",
       transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Dry clean only to maintain vivid natural dye luster."
+      care: "Dry clean only. Protect from moisture."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-007",
-    slug: "one-minute-ready-to-wear-saree",
-    name: "1-Minute Ready-to-Wear Saree",
-    sareeType: "Ready-to-Wear",
-    tagline: "Pre-Pleated Mulberry Silk with Adjustable Hook Waistband",
-    price: 4799,
-    compareAtPrice: 6499,
-    discount: "26% OFF",
-    badge: "Innovator",
-    category: "Ready-to-Wear",
-    fabric: "Viscose Crepe & Silk Blend",
-    color: "Wine Berry",
-    colorHex: "#5B1E31",
+    slug: "handloom-chanderi-saree",
+    name: "Handloom Chanderi Saree",
+    sareeType: "Chanderi",
+    tagline: "Ivory Silk Cotton with Muted Gold Zari Ashrafi Booti",
+    price: 4299,
+    compareAtPrice: 5899,
+    discount: "27% OFF",
+    badge: "Staff Pick",
+    category: "Chanderi",
+    fabric: "Chanderi Silk Cotton",
+    color: "Ivory & Warm Gold",
+    colorHex: "#F2EADB",
     swatches: [
-      { name: "Wine Berry", hex: "#5B1E31", inStock: true },
-      { name: "Champagne Gold", hex: "#C7A75C", inStock: true },
-      { name: "Obsidian Black", hex: "#1A1A1A", inStock: true }
+      { name: "Ivory & Warm Gold", hex: "#F2EADB", inStock: true },
+      { name: "Mint Green", hex: "#A8C3B5", inStock: true },
+      { name: "Blush Peach", hex: "#E9BFA8", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Party Wear",
-    rating: 4.9,
-    reviewsCount: 57,
-    stock: 22,
+    occasion: "Office Wear",
+    rating: 4.8,
+    reviewsCount: 22,
+    stock: 16,
     images: [
-      "/images/categories/ready-to-wear.jpg",
-      "/images/saree_ananya_1.jpg",
-      "/images/coll_contemp.jpg",
-      "/images/saree_aira_2.jpg"
+      "images/categories/chanderi.jpg",
+      "images/saree_aira_1.jpg",
+      "images/saree_ruhani_1.jpg",
+      "images/craftsmanship.jpg"
     ],
-    description: "Revolutionizing traditional drapes. Perfectly tailored with permanent structured front pleats, adjustable waist clips (fitting 26 to 42 waist), and a pre-stitched flowing shoulder drape. Ready in 60 seconds with zero pins required.",
+    description: "A timeless handwoven marvel from historic Madhya Pradesh. Sheer, crisp, and comfortable, woven with fine Ashrafi coin motifs and a sleek narrow gold border.",
     specifications: {
-      length: "Pre-stitched customized fit (fits waist 26-42 inches)",
-      width: "Adjustable height up to 5'9\"",
-      blouseLength: "Includes matching ready-to-wear padded blouse (free size with margin)",
-      weave: "Tailored Studio Construction",
-      origin: "PALLUVO Signature Studio, Hyderabad",
-      weight: "540 grams",
-      zariType: "Minimalist Antique Gold Trim",
-      transparency: "Opaque",
-      fallPico: "Internal structure with pre-set micro pleats",
-      care: "Steam press on low heat or dry clean."
+      length: "5.5 meters",
+      width: "44 inches",
+      blouseLength: "0.8 meter matching chanderi blouse piece",
+      weave: "Chanderi Pit Loom Handloom",
+      origin: "Chanderi, Madhya Pradesh",
+      weight: "390 grams",
+      zariType: "Muted Antique Gold Zari",
+      transparency: "Semi-Sheer",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Dry clean recommended or gentle cold hand wash."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-008",
-    slug: "designer-uppada-jamdani-saree",
-    name: "Designer Uppada Saree",
-    sareeType: "Uppada",
-    tagline: "Fine Jamdani Cotton Silk with Intricate Gold Zari Meenakari",
-    price: 6499,
-    compareAtPrice: 8799,
+    slug: "festive-bandhani-saree",
+    name: "Festive Bandhani Saree",
+    sareeType: "Bandhani",
+    tagline: "Ruby Red Gharchola Silk Bandhej with Zari Grid Work",
+    price: 4799,
+    compareAtPrice: 6499,
     discount: "26% OFF",
-    badge: "Handcrafted",
-    category: "Uppada",
-    fabric: "Fine Jamdani Cotton Silk",
-    color: "Coral Peach",
-    colorHex: "#D97D64",
+    badge: "Festive Special",
+    category: "Bandhani",
+    fabric: "Pure Gajji Silk",
+    color: "Ruby Red",
+    colorHex: "#A31621",
     swatches: [
-      { name: "Coral Peach", hex: "#D97D64", inStock: true },
-      { name: "Mint Aqua", hex: "#88BDBF", inStock: true },
-      { name: "Ivory Pearl", hex: "#F3ECE2", inStock: true }
+      { name: "Ruby Red", hex: "#A31621", inStock: true },
+      { name: "Bright Marigold", hex: "#E58F12", inStock: true },
+      { name: "Bottle Green", hex: "#164B29", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Traditional",
-    rating: 4.8,
-    reviewsCount: 16,
-    stock: 8,
+    occasion: "Festive",
+    rating: 4.9,
+    reviewsCount: 33,
+    stock: 11,
     images: [
-      "/images/categories/uppada.jpg",
-      "/images/saree_ira_1.jpg",
-      "/images/saree_ira_2.jpg",
-      "/images/craftsmanship.jpg"
+      "images/categories/bandhani.jpg",
+      "images/products/bandhani_gharchola.jpg",
+      "images/coll_festive.jpg",
+      "images/saree_zoya_2.jpg"
     ],
-    description: "An ethereal masterwork from Uppada, Andhra Pradesh. Woven using the non-structural Jamdani extra-weft technique where every floral butta is placed by hand between shed warp threads. Weightless, regal, and deeply traditional.",
+    description: "Authentic Gujarati Bandhani crafted on lustrous Gajji silk. Features thousands of hand-pinched knot resist ties filled with vibrant dyes and enclosed in an auspicious gold zari check grid.",
     specifications: {
       length: "5.5 meters",
-      width: "45 inches",
-      blouseLength: "0.8 meter matching Jamdani border blouse piece",
-      weave: "Authentic Jamdani Handloom Weave",
-      origin: "Uppada, Andhra Pradesh",
-      weight: "410 grams",
-      zariType: "Pure Silver & Gold Zari Thread",
-      transparency: "Semi-Sheer",
+      width: "44 inches",
+      blouseLength: "0.8 meter matching bandhani silk piece",
+      weave: "Traditional Knot-Dye Bandhej on Handloom Silk",
+      origin: "Kutch & Jamnagar, Gujarat",
+      weight: "560 grams",
+      zariType: "Zari Woven Checks and Border",
+      transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Dry clean only. Roll around cylindrical tube to avoid creases."
+      care: "Roll-press dry clean only to preserve natural bandhani texture."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-009",
-    slug: "pure-mysore-crepe-silk-saree",
-    name: "Pure Mysore Crepe Silk Saree",
-    sareeType: "Mysore Silk",
-    tagline: "100% Tested Pure Gold Zari Edging on Heavy Crepe de Chine",
-    price: 7999,
-    compareAtPrice: 10999,
-    discount: "27% OFF",
-    badge: "Silk Mark",
-    category: "Mysore Silk",
-    fabric: "Pure Natural Crepe Silk",
-    color: "Peacock Teal",
-    colorHex: "#0F4C5C",
+    slug: "soft-tussar-silk-saree",
+    name: "Soft Tussar Silk Saree",
+    sareeType: "Tussar",
+    tagline: "Natural Golden Honey Tussar with Hand-Block Florals",
+    price: 4599,
+    compareAtPrice: 6199,
+    discount: "25% OFF",
+    badge: "Handcrafted",
+    category: "Tussar",
+    fabric: "Pure Wild Tussar Silk",
+    color: "Natural Honey Beige",
+    colorHex: "#C9A775",
     swatches: [
-      { name: "Peacock Teal", hex: "#0F4C5C", inStock: true },
-      { name: "Rich Crimson", hex: "#8A1C2C", inStock: true },
-      { name: "Saffron Amber", hex: "#C76D1F", inStock: true }
+      { name: "Natural Honey Beige", hex: "#C9A775", inStock: true },
+      { name: "Earthy Rust", hex: "#9B4522", inStock: true },
+      { name: "Indigo Charcoal", hex: "#223547", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Traditional",
-    rating: 4.9,
-    reviewsCount: 33,
-    stock: 10,
+    occasion: "Office Wear",
+    rating: 4.8,
+    reviewsCount: 19,
+    stock: 14,
     images: [
-      "/images/categories/mysore-silk.jpg",
-      "/images/coll_silk.jpg",
-      "/images/saree_meher_1.jpg",
-      "/images/craftsmanship.jpg"
+      "images/categories/tussar.jpg",
+      "images/saree_ruhani_1.jpg",
+      "images/saree_ruhani_2.jpg",
+      "images/craftsmanship.jpg"
     ],
-    description: "Crafted with 100% pure natural silk yarns spun in Karnataka and woven on heritage looms. Famous for its buttery supple drape, matte sheen, and certified pure tested gold zari borders that retain luster for decades.",
+    description: "Woven from forest wild tussar cocoons with organic slub texture and innate golden sheen. Hand block printed with traditional wooden stamps using azo-free eco pigments.",
     specifications: {
       length: "5.5 meters",
       width: "45 inches",
-      blouseLength: "0.8 meter matching pure crepe silk blouse fabric",
-      weave: "High-Twist Crepe De Chine Weave",
-      origin: "Mysuru, Karnataka",
-      weight: "630 grams",
-      zariType: "100% Certified Tested Gold Zari (0.65% Silver, 0.6% Gold)",
+      blouseLength: "0.8 meter contrasting printed tussar fabric",
+      weave: "Handspun Wild Silk Handloom",
+      origin: "Bhagalpur, Bihar",
+      weight: "490 grams",
+      zariType: "Dual Zari Threadwork along Pallu",
       transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Strictly dry clean only."
+      care: "Dry clean only. Iron on reverse with medium heat."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
   {
     id: "saree-010",
-    slug: "patan-patola-double-ikat-saree",
-    name: "Patan Patola Silk Saree",
-    sareeType: "Patola",
-    tagline: "Double Ikat Heritage with Auspicious Elephant & Parrot Motifs",
-    price: 9999,
-    compareAtPrice: 13999,
-    discount: "29% OFF",
-    badge: "Museum Grade",
-    category: "Patola",
-    fabric: "Mulberry Silk Double Ikat",
-    color: "Sindoor Red",
-    colorHex: "#991B1E",
+    slug: "designer-uppada-saree",
+    name: "Designer Uppada Saree",
+    sareeType: "Uppada",
+    tagline: "Translucent Jamdani Weave in Coral Peach with Zari Paisleys",
+    price: 6299,
+    compareAtPrice: 8699,
+    discount: "27% OFF",
+    badge: "Exclusive",
+    category: "Uppada",
+    fabric: "Pure Silk Cotton Jamdani",
+    color: "Coral Peach",
+    colorHex: "#E58E77",
     swatches: [
-      { name: "Sindoor Red", hex: "#991B1E", inStock: true },
-      { name: "Forest Green", hex: "#1A4329", inStock: true },
-      { name: "Royal Indigo", hex: "#192A51", inStock: true }
+      { name: "Coral Peach", hex: "#E58E77", inStock: true },
+      { name: "Aqua Marine", hex: "#5C9993", inStock: true },
+      { name: "Champagne Cream", hex: "#E8DCBA", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
-    occasion: "Wedding",
-    rating: 5.0,
-    reviewsCount: 14,
-    stock: 4,
+    occasion: "Reception",
+    rating: 4.9,
+    reviewsCount: 27,
+    stock: 10,
     images: [
-      "/images/categories/patola.jpg",
-      "/images/products/patola_silk.jpg",
-      "/images/saree_sitara_1.jpg",
-      "/images/coll_wedding.jpg"
+      "images/categories/uppada.jpg",
+      "images/saree_sitara_1.jpg",
+      "images/saree_aira_2.jpg",
+      "images/craftsmanship.jpg"
     ],
-    description: "An ultra-rare Gujarati masterpiece. Mathematical precision double ikat where both warp and weft are dyed before hand-weaving. Identical on both front and back sides, steeped in royal legend.",
+    description: "An exquisite lightweight Jamdani weave from Andhra Pradesh. Intricate paisleys and floral vines are individually laid into the warp using bamboo needles, creating an almost weightless silhouette.",
     specifications: {
       length: "5.5 meters",
-      width: "46 inches",
-      blouseLength: "0.8 meter matching double-ikat blouse piece",
-      weave: "Patan Mathematical Double Ikat",
-      origin: "Patan, Gujarat",
-      weight: "690 grams",
-      zariType: "Real Gold Brocade Pallu",
-      transparency: "Opaque",
+      width: "45 inches",
+      blouseLength: "0.8 meter plain silk blouse fabric with border",
+      weave: "Authentic Jamdani Handloom",
+      origin: "Uppada, Andhra Pradesh",
+      weight: "410 grams",
+      zariType: "Finest Silver & Gold Tested Zari",
+      transparency: "Semi-Sheer",
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Store draped in soft cotton cloth."
     },
@@ -764,16 +670,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Indigo Blue", hex: "#1F3A58", inStock: true },
       { name: "Mustard Ocre", hex: "#B98522", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Traditional",
     rating: 4.8,
     reviewsCount: 21,
     stock: 13,
     images: [
-      "/images/categories/kalamkari.jpg",
-      "/images/saree_ruhani_1.jpg",
-      "/images/saree_meher_2.jpg",
-      "/images/coll_everyday.jpg"
+      "images/categories/kalamkari.jpg",
+      "images/craftsmanship.jpg",
+      "images/saree_meher_2.jpg",
+      "images/coll_everyday.jpg"
     ],
     description: "Painstakingly drawn by master Kalamkari artisans in Srikalahasti using sharpened bamboo pens and 100% natural plant and mineral dyes. Depicts timeless flora, sacred peacocks, and temple borders.",
     specifications: {
@@ -809,16 +714,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Wine Burgundy", hex: "#521626", inStock: true },
       { name: "Champagne Silver", hex: "#B4B0A7", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Reception",
     rating: 4.9,
     reviewsCount: 34,
     stock: 17,
     images: [
-      "/images/categories/georgette.jpg",
-      "/images/saree_tara_1.jpg",
-      "/images/coll_contemp.jpg",
-      "/images/coll_wedding.jpg"
+      "images/categories/georgette.jpg",
+      "images/saree_tara_1.jpg",
+      "images/coll_contemp.jpg",
+      "images/coll_wedding.jpg"
     ],
     description: "Modern evening poise. Woven from breathable viscose georgette with subtle metallic lurex undertones and an intricate scalloped zari cutwork border designed to drape effortlessly around every curve.",
     specifications: {
@@ -854,16 +758,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Marigold Yellow", hex: "#EAA221", inStock: true },
       { name: "Royal Rani Pink", hex: "#C71585", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Festive",
     rating: 4.9,
     reviewsCount: 27,
     stock: 8,
     images: [
-      "/images/categories/bandhani.jpg",
-      "/images/products/bandhani_gharchola.jpg",
-      "/images/occasions/festive.jpg",
-      "/images/coll_silk.jpg"
+      "images/categories/bandhani.jpg",
+      "images/products/bandhani_gharchola.jpg",
+      "images/occasions/festive.jpg",
+      "images/coll_silk.jpg"
     ],
     description: "Handcrafted in Jamnagar and Bhuj using traditional Rai-Bandhej resist tie-dye. Thousands of micro-knots are tied by hand onto rich Gaji silk framed by authentic golden Gharchola grids, making it the most auspicious celebration drape.",
     specifications: {
@@ -899,16 +802,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Temple Vermilion", hex: "#D9381E", inStock: true },
       { name: "Auspicious Kumkum", hex: "#7E191B", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Bridal",
     rating: 5.0,
     reviewsCount: 48,
     stock: 5,
     images: [
-      "/images/banner_traditional_saree.jpg",
-      "/images/occasions/bridal.jpg",
-      "/images/products/kanjivaram_royal.jpg",
-      "/images/categories/kanjivaram.jpg"
+      "images/banner_traditional_saree.jpg",
+      "images/occasions/bridal.jpg",
+      "images/products/kanjivaram_royal.jpg",
+      "images/categories/kanjivaram.jpg"
     ],
     description: "The quintessential South Indian bridal heirloom. Three warp and weft mulberry silk threads twisted together create unmatched weight, sheen, and durability. Adorned with Rudraksha, Mayil (peacock), and Temple Shikhara borders in heavy dipped gold zari.",
     specifications: {
@@ -944,16 +846,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Pastel Mint", hex: "#D1E7DD", inStock: true },
       { name: "Powder Peach", hex: "#FCE4D6", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Party Wear",
     rating: 4.9,
     reviewsCount: 22,
     stock: 9,
     images: [
-      "/images/categories/chikankari.jpg",
-      "/images/saree_aira_1.jpg",
-      "/images/coll_contemp.jpg",
-      "/images/categories/georgette.jpg"
+      "images/categories/chikankari.jpg",
+      "images/saree_aira_1.jpg",
+      "images/coll_contemp.jpg",
+      "images/categories/georgette.jpg"
     ],
     description: "An aristocratic Nawabi creation from Lucknow. Hand-embroidered across 90 days with 32 unique needlework stitches including Bakhiya (shadow work), Phanda, and Tepchi, accented by hand-flattened Mukaish metallic sparkles that shimmer like stardust.",
     specifications: {
@@ -989,16 +890,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Peacock Green & Purple", hex: "#166534", inStock: true },
       { name: "Crimson & Black", hex: "#7F1D1D", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Traditional",
     rating: 4.8,
     reviewsCount: 18,
     stock: 11,
     images: [
-      "/images/categories/gadwal.jpg",
-      "/images/saree_meher_1.jpg",
-      "/images/saree_meher_2.jpg",
-      "/images/coll_silk.jpg"
+      "images/categories/gadwal.jpg",
+      "images/saree_meher_1.jpg",
+      "images/saree_meher_2.jpg",
+      "images/coll_silk.jpg"
     ],
     description: "A wonder of Andhra & Telangana handloom engineering. The breathable, gossamer body is woven with lightweight yarn, while the heavy pure silk borders and solid zari pallu are interlocked using the revered Kuta (interlocking weft) technique.",
     specifications: {
@@ -1033,16 +933,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Natural Champagne Gold", hex: "#D4AF37", inStock: true },
       { name: "Honey Amber", hex: "#C68B59", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Wedding",
     rating: 5.0,
     reviewsCount: 15,
     stock: 3,
     images: [
-      "/images/categories/assam-muga.jpg",
-      "/images/coll_silk.jpg",
-      "/images/categories/chanderi.jpg",
-      "/images/craftsmanship.jpg"
+      "images/categories/assam-muga.jpg",
+      "images/coll_silk.jpg",
+      "images/categories/chanderi.jpg",
+      "images/craftsmanship.jpg"
     ],
     description: "Endemic exclusively to the Brahmaputra valley of Assam. Muga silk is naturally golden and famously outlasts its owner, growing more lustrous with every decade and gentle wash. Woven with auspicious Kingkhap royal motifs and red-black meenakari.",
     specifications: {
@@ -1078,16 +977,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Olive Earth", hex: "#556B2F", inStock: true },
       { name: "Burnt Sienna", hex: "#E97451", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Office Wear",
     rating: 4.8,
     reviewsCount: 25,
     stock: 14,
     images: [
-      "/images/categories/tussar.jpg",
-      "/images/categories/handloom.jpg",
-      "/images/coll_everyday.jpg",
-      "/images/categories/cotton.jpg"
+      "images/categories/tussar.jpg",
+      "images/categories/handloom.jpg",
+      "images/coll_everyday.jpg",
+      "images/categories/cotton.jpg"
     ],
     description: "Revered as the 'Peace Silk' of Bihar. Wild cocoons cultivated by forest communities yield a distinct tactile texture and breathable thermal insulation. Draped with organic vegetable block-print borders and subtle zari stripes.",
     specifications: {
@@ -1123,16 +1021,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Forest Emerald", hex: "#14532D", inStock: true },
       { name: "Royal Midnight Blue", hex: "#1E1B4B", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Festive",
     rating: 4.9,
     reviewsCount: 17,
     stock: 7,
     images: [
-      "/images/categories/bomkai.jpg",
-      "/images/saree_sitara_1.jpg",
-      "/images/coll_wedding.jpg",
-      "/images/categories/pochampally.jpg"
+      "images/categories/bomkai.jpg",
+      "images/saree_sitara_1.jpg",
+      "images/coll_wedding.jpg",
+      "images/categories/pochampally.jpg"
     ],
     description: "From the mystical weaving villages of Subarnapur (Sonepur), Odisha. Features complex extra-warp and extra-weft jaala patterning depicting ancient coastal tribal folklore, sacred tortoise motifs, and a solid contrast ikat border.",
     specifications: {
@@ -1168,16 +1065,15 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       { name: "Marigold Yellow & Royal Blue", hex: "#D97706", inStock: true },
       { name: "Deep Crimson & Gold", hex: "#881337", inStock: true }
     ],
-    blouseOptions: DEFAULT_BLOUSE_OPTIONS,
     occasion: "Traditional",
     rating: 4.9,
     reviewsCount: 30,
     stock: 6,
     images: [
-      "/images/categories/nauvari.jpg",
-      "/images/products/paithani_gold.jpg",
-      "/images/saree_paithani_royal.jpg",
-      "/images/coll_silk.jpg"
+      "images/categories/nauvari.jpg",
+      "images/products/paithani_gold.jpg",
+      "images/saree_paithani_royal.jpg",
+      "images/coll_silk.jpg"
     ],
     description: "The royal 9-yard (Sakachha) drape favored by Maratha queens. Woven in full 8.2-meter length allowing seamless dhoti-style Kashta draping without separate underskirt. Features dense Narali (coconut) zari borders and Mor Bangdi pallu motifs.",
     specifications: {
@@ -1196,48 +1092,66 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
   }
 ];
 
-export const HANDLOOM_REGIONS: HandloomRegion[] = [
-  { name: "Pochampally", state: "Telangana", weave: "Double Ikat Silk", image: "/images/categories/pochampally.jpg" },
-  { name: "Gadwal", state: "Telangana", weave: "Kuta Interlocked Silk", image: "/images/categories/gadwal.jpg" },
-  { name: "Uppada", state: "Andhra Pradesh", weave: "Fine Jamdani Cotton Silk", image: "/images/categories/uppada.jpg" },
-  { name: "Chanderi", state: "Madhya Pradesh", weave: "Gossamer Zari Weave", image: "/images/categories/chanderi.jpg" },
-  { name: "Paithani", state: "Maharashtra", weave: "Peacock Tapestry Silk", image: "/images/saree_paithani_royal.jpg" },
-  { name: "Banarasi", state: "Uttar Pradesh", weave: "Kadhwa Gold Brocade", image: "/images/categories/banarasi.jpg" },
-  { name: "Kanjivaram", state: "Tamil Nadu", weave: "Pure Korvai Temple Zari", image: "/images/categories/kanjivaram.jpg" },
-  { name: "Ilkal", state: "Karnataka", weave: "Tope Teni Heritage Pallu", image: "/images/categories/ilkal.jpg" },
-  { name: "Bomkai", state: "Odisha", weave: "Tribal Extra-Weft Ikat", image: "/images/categories/bomkai.jpg" },
-  { name: "Assam / Muga", state: "Assam", weave: "Golden Wild Silk", image: "/images/categories/assam-muga.jpg" }
+// Handloom Regions for "THE HANDLOOM EDIT"
+const HANDLOOM_REGIONS = [
+  { name: "Pochampally", state: "Telangana", weave: "Double Ikat Silk", image: "images/categories/pochampally.jpg" },
+  { name: "Gadwal", state: "Telangana", weave: "Kuta Interlocked Silk", image: "images/categories/gadwal.jpg" },
+  { name: "Uppada", state: "Andhra Pradesh", weave: "Fine Jamdani Cotton Silk", image: "images/categories/uppada.jpg" },
+  { name: "Chanderi", state: "Madhya Pradesh", weave: "Gossamer Zari Weave", image: "images/categories/chanderi.jpg" },
+  { name: "Paithani", state: "Maharashtra", weave: "Peacock Tapestry Silk", image: "images/saree_paithani_royal.jpg" },
+  { name: "Banarasi", state: "Uttar Pradesh", weave: "Kadhwa Gold Brocade", image: "images/categories/banarasi.jpg" },
+  { name: "Kanjivaram", state: "Tamil Nadu", weave: "Pure Korvai Temple Zari", image: "images/categories/kanjivaram.jpg" },
+  { name: "Ilkal", state: "Karnataka", weave: "Tope Teni Heritage Pallu", image: "images/categories/ilkal.jpg" },
+  { name: "Bomkai", state: "Odisha", weave: "Tribal Extra-Weft Ikat", image: "images/categories/bomkai.jpg" },
+  { name: "Assam / Muga", state: "Assam", weave: "Golden Wild Silk", image: "images/categories/assam-muga.jpg" }
 ];
 
-export function formatINR(amount: number): string {
-  if (isNaN(amount)) amount = 0;
-  return '₹' + amount.toLocaleString('en-IN');
-}
+// Helper functions for easy querying
+const SareeCatalog = {
+  getAllProducts: () => SAREE_PRODUCTS,
+  getProductById: (id) => SAREE_PRODUCTS.find(p => p.id === id || p.slug === id),
+  getProductsByCategory: (cat) => SAREE_PRODUCTS.filter(p => p.category.toLowerCase() === cat.toLowerCase() || p.sareeType.toLowerCase() === cat.toLowerCase()),
+  getProductsByOccasion: (occ) => SAREE_PRODUCTS.filter(p => p.occasion.toLowerCase() === occ.toLowerCase()),
+  getAllCategories: () => SAREE_CATEGORIES,
+  getAllOccasions: () => SAREE_OCCASIONS,
+  getHandloomRegions: () => HANDLOOM_REGIONS,
+  search: (query) => {
+    if (!query) return SAREE_PRODUCTS;
+    const q = query.toLowerCase().trim();
+    return SAREE_PRODUCTS.filter(p => 
+      p.name.toLowerCase().includes(q) ||
+      p.sareeType.toLowerCase().includes(q) ||
+      p.category.toLowerCase().includes(q) ||
+      p.fabric.toLowerCase().includes(q) ||
+      p.color.toLowerCase().includes(q) ||
+      p.occasion.toLowerCase().includes(q) ||
+      (p.specifications && p.specifications.origin.toLowerCase().includes(q))
+    );
+  }
+};
 
-export function getAllProducts(): SareeProduct[] {
-  return SAREE_PRODUCTS;
-}
+// Ensure default blouseOptions on each product if not present
+SAREE_PRODUCTS.forEach(p => {
+  if (!p.blouseOptions) {
+    p.blouseOptions = [
+      { id: "unstitched", name: "Unstitched Matching Fabric (0.8m Included)", price: 0 },
+      { id: "tailored-classic", name: "Custom Tailored - Classic Elbow Sleeve & U-Neck", price: 1200 },
+      { id: "tailored-sleeveless", name: "Custom Tailored - Deep Sweetheart Sleeveless", price: 1200 },
+      { id: "ready-padded", name: "Ready-to-Wear Premium Padded Corset Blouse", price: 1800 }
+    ];
+  }
+});
 
-export function getProductBySlugOrId(identifier: string): SareeProduct | undefined {
-  if (!identifier) return undefined;
-  const idLower = identifier.toLowerCase();
-  return SAREE_PRODUCTS.find(p => 
-    p.slug.toLowerCase() === idLower || 
-    p.id.toLowerCase() === idLower ||
-    (idLower === 'imperial-paithani-silk-saree' && p.id === 'saree-005')
-  );
-}
+// Backward and cross-compatibility aliases
+const ProductsCatalog = {
+  getAll: () => SAREE_PRODUCTS,
+  getById: (id) => SareeCatalog.getProductById(id),
+  getBySlug: (slug) => SAREE_PRODUCTS.find(p => p.slug === slug || p.id === slug),
+  getByCategory: (cat) => SareeCatalog.getProductsByCategory(cat),
+  getByOccasion: (occ) => SareeCatalog.getProductsByOccasion(occ),
+  getNewArrivals: () => [SAREE_PRODUCTS[4], SAREE_PRODUCTS[1], SAREE_PRODUCTS[0], SAREE_PRODUCTS[13]],
+  getBestsellers: () => SAREE_PRODUCTS.filter(p => p.badge === 'Bestseller' || p.badge === 'Trending' || p.badge === 'Heritage'),
+  search: (query) => SareeCatalog.search(query)
+};
 
-export function searchProducts(query: string): SareeProduct[] {
-  if (!query) return SAREE_PRODUCTS;
-  const q = query.toLowerCase().trim();
-  return SAREE_PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(q) ||
-    p.sareeType.toLowerCase().includes(q) ||
-    p.category.toLowerCase().includes(q) ||
-    p.fabric.toLowerCase().includes(q) ||
-    p.color.toLowerCase().includes(q) ||
-    p.occasion.toLowerCase().includes(q) ||
-    (p.specifications && p.specifications.origin.toLowerCase().includes(q))
-  );
-}
+const PALLUVO_PRODUCTS = SAREE_PRODUCTS;

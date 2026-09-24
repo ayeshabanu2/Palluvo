@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Contact Us &amp; Concierge — PALLUVO | Luxury Indian Sarees</title>
+  <meta name="description" content="Get in touch with PALLUVO. Connect with our dedicated saree stylists, book private bridal appointments, or inquire about orders. Email: contact@palluvo.com | Phone: +91 84988 54323, +91 81067 89789.">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🥻</text></svg>">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    /* Dedicated Contact Page Luxury Styles */
+    .contact-hero-section {
+      background: radial-gradient(circle at 50% 30%, rgba(201, 168, 106, 0.08) 0%, rgba(253, 251, 247, 0.95) 70%), var(--color-ivory);
+      padding: 5rem 1.5rem 3.5rem;
+      text-align: center;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .contact-eyebrow {
+      display: inline-block;
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--color-gold-antique);
+      margin-bottom: 0.8rem;
+    }
+    .contact-title {
+      font-family: var(--font-serif);
+      font-size: clamp(2.2rem, 4vw, 3.2rem);
+      color: var(--color-burgundy);
+      margin-bottom: 1rem;
+      line-height: 1.2;
+    }
+    .contact-subtitle {
+      max-width: 680px;
+      margin: 0 auto;
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* Contact Details Grid */
+    .contact-details-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.8rem;
+      margin-top: -2rem;
+      position: relative;
+      z-index: 2;
+    }
+    .contact-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 2.2rem 1.8rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+    .contact-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 16px 36px rgba(114, 20, 34, 0.08);
+      border-color: var(--color-gold-antique);
+    }
+    .contact-card-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(114, 20, 34, 0.06);
+      color: var(--color-burgundy);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.35rem;
+      margin-bottom: 1.4rem;
+    }
+    .contact-card-title {
+      font-family: var(--font-serif);
+      font-size: 1.25rem;
+      color: var(--color-burgundy);
+      margin-bottom: 0.6rem;
+    }
+    .contact-card-desc {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.6;
+      margin-bottom: 1.2rem;
+    }
+    .contact-card-content {
+      margin-top: auto;
+    }
+    .contact-main-link {
+      display: block;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: var(--color-burgundy);
+      text-decoration: none;
+      margin-bottom: 0.4rem;
+      transition: color 0.2s ease;
+    }
+    .contact-main-link:hover {
+      color: var(--color-gold-antique);
+      text-decoration: underline;
+    }
+    .contact-sub-badge {
+      display: inline-block;
+      font-size: 0.76rem;
+      color: var(--color-gold-antique);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      margin-top: 0.4rem;
+    }
+
+    /* WhatsApp Button in Card */
+    .whatsapp-btn-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #25D366;
+      color: #FFFFFF !important;
+      padding: 0.65rem 1.2rem;
+      border-radius: var(--radius-xs);
+      font-size: 0.86rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.2s ease, transform 0.2s ease;
+      margin-top: 0.5rem;
+    }
+    .whatsapp-btn-inline:hover {
+      background: #1EBE5D;
+      transform: translateY(-2px);
+    }
+
+    /* Main Inquiry Form Section */
+    .contact-layout-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 3.5rem;
+      align-items: start;
+      margin: 4.5rem 0;
+    }
+    @media (max-width: 900px) {
+      .contact-layout-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+      }
+    }
+    .inquiry-form-card {
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 2.8rem 2.4rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+    }
+    @media (max-width: 600px) {
+      .inquiry-form-card {
+        padding: 1.8rem 1.2rem;
+      }
+    }
+    .inquiry-title {
+      font-family: var(--font-serif);
+      font-size: 1.8rem;
+      color: var(--color-burgundy);
+      margin-bottom: 0.5rem;
+    }
+    .inquiry-subtitle {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      margin-bottom: 2rem;
+      line-height: 1.6;
+    }
+
+    .atelier-aside-card {
+      background: var(--color-cream-soft);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 2.4rem 2rem;
+    }
+    .atelier-aside-title {
+      font-family: var(--font-serif);
+      font-size: 1.4rem;
+      color: var(--color-burgundy);
+      margin-bottom: 1rem;
+    }
+    .atelier-feature-item {
+      display: flex;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .atelier-feature-icon {
+      flex-shrink: 0;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      color: var(--color-gold-antique);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+    }
+    .atelier-feature-text h5 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-burgundy);
+      margin-bottom: 0.25rem;
+    }
+    .atelier-feature-text p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* FAQ Quick Accordion */
+    .faq-quick-section {
+      background: #FFFFFF;
+      border-top: 1px solid var(--border-color);
+      padding: 4.5rem 0;
+    }
+    .faq-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 2rem;
+      margin-top: 2.5rem;
+    }
+    .faq-card-item {
+      background: var(--color-ivory);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-xs);
+      padding: 1.8rem;
+    }
+    .faq-card-item h4 {
+      font-family: var(--font-serif);
+      font-size: 1.1rem;
+      color: var(--color-burgundy);
+      margin-bottom: 0.6rem;
+    }
+    .faq-card-item p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Notification Alert Box */
+    .contact-alert-success {
+      display: none;
+      background: rgba(46, 125, 50, 0.08);
+      border: 1px solid #2E7D32;
+      border-radius: var(--radius-xs);
+      padding: 1.2rem;
+      color: #1B5E20;
+      font-size: 0.92rem;
+      margin-bottom: 1.5rem;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- STICKY SITE HEADER (PALLUVO) -->
+  <header class="site-header-clean" id="siteHeader">
+    <div class="header-row-clean">
+      
+      <!-- Left: Logo & Tagline -->
+      <a href="index.html" class="brand-logo-clean" aria-label="PALLUVO Home">
+        <span class="brand-name-text">PALLUVO</span>
+        <span class="brand-tagline-sub">Every drape, a little magic.</span>
+      </a>
+
+      <!-- Center: Navigation (Curated Top Saree Models) -->
+      <nav class="header-nav-center" aria-label="Signature Models Navigation">
+        <div class="nav-item-clean">
+          <a href="sarees.html?sort=newest" class="nav-link-clean">NEW ARRIVALS</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Kanjivaram" class="nav-link-clean">KANJIVARAM</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Banarasi" class="nav-link-clean">BANARASI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Chanderi" class="nav-link-clean">CHANDERI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Paithani" class="nav-link-clean">PAITHANI</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Organza" class="nav-link-clean">ORGANZA</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html?category=Ready-to-Wear" class="nav-link-clean">READY-TO-WEAR</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="sarees.html" class="nav-link-clean">ALL SAREES</a>
+        </div>
+        <div class="nav-item-clean">
+          <a href="contact.html" class="nav-link-clean active" style="color: var(--color-burgundy); font-weight: 700;">CONTACT</a>
+        </div>
+      </nav>
+
+      <!-- Right: Action Icons -->
+      <div class="header-actions-clean">
+        <button class="header-action-icon js-search-trigger" aria-label="Search" onclick="SearchOverlay.open()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <a href="account.html" class="header-action-icon" aria-label="Account">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+        </a>
+
+        <a href="wishlist.html" class="header-action-icon" aria-label="Wishlist">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+          </svg>
+          <span class="header-action-badge wishlist-badge hidden">0</span>
+        </a>
+
+        <button class="header-action-icon js-cart-drawer-trigger" aria-label="Shopping Bag">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path>
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <path d="M16 10a4 4 0 0 1-8 0"></path>
+          </svg>
+          <span class="header-action-badge cart-badge hidden">0</span>
+        </button>
+
+        <!-- Mobile Menu Toggle Button -->
+        <button class="mobile-hamburger-btn" id="mobileMenuToggle" aria-label="Open mobile menu">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="3" y1="6" x2="21" y2="6"></line>
+            <line x1="3" y1="12" x2="21" y2="12"></line>
+            <line x1="3" y1="18" x2="21" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MOBILE NAVIGATION DRAWER -->
+  <div class="mobile-drawer" id="mobileMenuDrawer">
+    <div class="mobile-drawer-header">
+      <div>
+        <span class="brand-name-text" style="font-size: 1.5rem;">PALLUVO</span>
+        <div style="font-size: 0.72rem; color: var(--color-gold-antique); font-style: italic;">Every drape, a little magic.</div>
+      </div>
+      <button class="drawer-close-btn" id="mobileDrawerClose">&times;</button>
+    </div>
+    <div class="mobile-nav-links">
+      <a href="sarees.html?sort=newest" class="mobile-nav-link">New Arrivals</a>
+      <a href="sarees.html?category=Kanjivaram" class="mobile-nav-link">Kanjivaram Silk</a>
+      <a href="sarees.html?category=Banarasi" class="mobile-nav-link">Banarasi Brocade</a>
+      <a href="sarees.html?category=Chanderi" class="mobile-nav-link">Chanderi Tissue</a>
+      <a href="sarees.html?category=Paithani" class="mobile-nav-link">Paithani Silk</a>
+      <a href="sarees.html?category=Organza" class="mobile-nav-link">Contemporary Organza</a>
+      <a href="sarees.html?category=Ready-to-Wear" class="mobile-nav-link">Ready-to-Wear</a>
+      <a href="sarees.html" class="mobile-nav-link">All Sarees</a>
+      <a href="about.html" class="mobile-nav-link">Our Story</a>
+      <a href="contact.html" class="mobile-nav-link active">Contact Us</a>
+    </div>
+    <div style="padding: 1.5rem; border-top: 1px solid var(--border-color); background: var(--color-ivory);">
+      <div style="font-size: 0.82rem; font-weight: 600; color: var(--color-burgundy); margin-bottom: 0.5rem;">Concierge Inquiries:</div>
+      <a href="mailto:contact@palluvo.com" style="display: block; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.3rem;">contact@palluvo.com</a>
+      <a href="tel:+918498854323" style="display: block; font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 0.2rem;">+91 84988 54323</a>
+      <a href="tel:+918106789789" style="display: block; font-size: 0.88rem; color: var(--text-secondary);">+91 81067 89789</a>
+    </div>
+  </div>
+  <div class="mobile-backdrop" id="mobileMenuBackdrop"></div>
+
+  <!-- MAIN CONTACT CONTENT -->
+  <main>
+
+    <!-- HERO SECTION -->
+    <section class="contact-hero-section">
+      <div class="container">
+        <span class="contact-eyebrow">Atelier &amp; Client Concierge</span>
+        <h1 class="contact-title">We Are Here For Every Drape</h1>
+        <p class="contact-subtitle">
+          Whether you need personalized saree styling recommendations, private bridal appointments, or updates on your handcrafted heirloom order, our boutique concierge is dedicated to assisting you.
+        </p>
+      </div>
+    </section>
+
+    <!-- CONTACT DETAILS CARDS -->
+    <div class="container">
+      <div class="contact-details-grid">
+
+        <!-- Card 1: Email Support -->
+        <div class="contact-card">
+          <div class="contact-card-icon">
+            <i class="fa-regular fa-envelope"></i>
+          </div>
+          <h3 class="contact-card-title">Email Concierge</h3>
+          <p class="contact-card-desc">
+            Reach our atelier team for orders, styling guidance, certification, or press inquiries.
+          </p>
+          <div class="contact-card-content">
+            <a href="mailto:contact@palluvo.com" class="contact-main-link">contact@palluvo.com</a>
+            <span class="contact-sub-badge"><i class="fa-regular fa-clock" style="margin-right: 4px;"></i> Typical reply: within 4 hours</span>
+          </div>
+        </div>
+
+        <!-- Card 2: Phone Concierge 1 -->
+        <div class="contact-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-phone"></i>
+          </div>
+          <h3 class="contact-card-title">Direct Client Care</h3>
+          <p class="contact-card-desc">
+            Speak directly with our senior saree advisor for immediate assistance.
+          </p>
+          <div class="contact-card-content">
+            <a href="tel:+918498854323" class="contact-main-link">+91 84988 54323</a>
+            <a href="https://wa.me/918498854323?text=Hello%20Palluvo%20Team%2C%20I%20would%20like%20assistance%20with%20a%20saree%20inquiry" target="_blank" rel="noopener noreferrer" class="whatsapp-btn-inline">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp Stylist
+            </a>
+            <div class="contact-sub-badge">Mon–Sat, 10:00 AM – 7:00 PM IST</div>
+          </div>
+        </div>
+
+        <!-- Card 3: Phone Concierge 2 -->
+        <div class="contact-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-mobile-screen-button"></i>
+          </div>
+          <h3 class="contact-card-title">Bridal &amp; Orders Care</h3>
+          <p class="contact-card-desc">
+            Dedicated assistance for bridal consultations, bespoke blouses, and express tracking.
+          </p>
+          <div class="contact-card-content">
+            <a href="tel:+918106789789" class="contact-main-link">+91 81067 89789</a>
+            <a href="https://wa.me/918106789789?text=Hello%20Palluvo%20Team%2C%20I%20would%20like%20assistance%20with%20a%20saree%20inquiry" target="_blank" rel="noopener noreferrer" class="whatsapp-btn-inline">
+              <i class="fa-brands fa-whatsapp"></i> WhatsApp Support
+            </a>
+            <div class="contact-sub-badge">Priority Bridal &amp; Festive Line</div>
+          </div>
+        </div>
+
+        <!-- Card 4: Flagship Atelier -->
+        <div class="contact-card">
+          <div class="contact-card-icon">
+            <i class="fa-solid fa-location-dot"></i>
+          </div>
+          <h3 class="contact-card-title">Flagship Boutique</h3>
+          <p class="contact-card-desc">
+            Experience the tactile luster of authentic silks and handloom weaves in person.
+          </p>
+          <div class="contact-card-content">
+            <div style="font-size: 0.92rem; font-weight: 600; color: var(--color-burgundy); margin-bottom: 0.2rem;">PALLUVO Atelier</div>
+            <div style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5;">Kavuri Hills, Madhapur, Hitech City,<br>Hyderabad, Telangana 500081, India</div>
+            <span class="contact-sub-badge">Tue–Sun, 11:00 AM – 8:00 PM</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- MAIN CONTACT & CONSULTATION FORM SECTION -->
+      <div class="contact-layout-grid">
+
+        <!-- Form Card -->
+        <div class="inquiry-form-card">
+          <h2 class="inquiry-title">Send Us a Message</h2>
+          <p class="inquiry-subtitle">
+            Have a question about a particular drape, custom fall and pico finishing, or need assistance selecting a bridal weave? Fill out the details below.
+          </p>
+
+          <div id="formSuccessAlert" class="contact-alert-success">
+            <strong><i class="fa-solid fa-circle-check"></i> Thank you for reaching out!</strong><br>
+            Your inquiry has been received. Our senior saree stylist will contact you via email or phone within 4 business hours.
+          </div>
+
+          <form id="contactInquiryForm" onsubmit="handleContactSubmit(event)">
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="contactName">Full Name *</label>
+                <input type="text" id="contactName" class="form-input" placeholder="e.g. Ananya Deshmukh" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="contactEmail">Email Address *</label>
+                <input type="email" id="contactEmail" class="form-input" placeholder="your.name@example.com" required>
+              </div>
+            </div>
+
+            <div class="form-grid-2">
+              <div class="form-group">
+                <label class="form-label" for="contactPhone">Phone / WhatsApp Number *</label>
+                <input type="tel" id="contactPhone" class="form-input" placeholder="+91 98765 43210" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="inquiryType">Inquiry Type *</label>
+                <select id="inquiryType" class="form-select" required>
+                  <option value="" disabled selected>Select an inquiry type</option>
+                  <option value="Bridal Consultation">Private Bridal Styling Consultation</option>
+                  <option value="Order Tracking">Order Status &amp; Express Shipping</option>
+                  <option value="Custom Saree Inquiry">Weave Authenticity &amp; Custom Blouse</option>
+                  <option value="Video Call Drape View">Live HD Video Drape Preview</option>
+                  <option value="Corporate / Bulk Gifting">Corporate &amp; Festive Wedding Gifting</option>
+                  <option value="General Question">General Atelier Question</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="contactSubject">Subject</label>
+              <input type="text" id="contactSubject" class="form-input" placeholder="e.g. Inquiring about Royal Kanjivaram Bridal Drape">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="contactMessage">Your Message *</label>
+              <textarea id="contactMessage" class="form-input" rows="5" placeholder="Please share details about your requirement, preferred colors, event date, or any specific weaves you wish to explore..." required style="resize: vertical;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; padding: 1.1rem; font-size: 0.92rem; letter-spacing: 0.14em;">
+              SUBMIT INQUIRY <i class="fa-solid fa-arrow-right" style="margin-left: 8px;"></i>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right Side: Atelier Features & Trust -->
+        <div>
+          <div class="atelier-aside-card">
+            <h3 class="atelier-aside-title">The PALLUVO Concierge Experience</h3>
+            <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 2rem;">
+              We believe purchasing a luxury handcrafted saree should be as leisurely and memorable as the occasion for which it is woven.
+            </p>
+
+            <div class="atelier-feature-item">
+              <div class="atelier-feature-icon">
+                <i class="fa-solid fa-video"></i>
+              </div>
+              <div class="atelier-feature-text">
+                <h5>Live Video Call Drape Previews</h5>
+                <p>Can’t visit our boutique in person? Schedule a private 1-on-1 video call where our stylists drape the saree on a mannequin in natural daylight.</p>
+              </div>
+            </div>
+
+            <div class="atelier-feature-item">
+              <div class="atelier-feature-icon">
+                <i class="fa-solid fa-certificate"></i>
+              </div>
+              <div class="atelier-feature-text">
+                <h5>100% Silk Mark Certified</h5>
+                <p>Every pure silk saree comes with an individual Silk Mark tag verifying genuine mulberry, katan, tussar, or muga silk purity.</p>
+              </div>
+            </div>
+
+            <div class="atelier-feature-item">
+              <div class="atelier-feature-icon">
+                <i class="fa-solid fa-scissors"></i>
+              </div>
+              <div class="atelier-feature-text">
+                <h5>Complimentary Fall &amp; Pico</h5>
+                <p>All PALLUVO sarees include pre-stitched complimentary fall and precision pico edging so your drape arrives ready to wear.</p>
+              </div>
+            </div>
+
+            <div class="atelier-feature-item">
+              <div class="atelier-feature-icon">
+                <i class="fa-solid fa-plane-departure"></i>
+              </div>
+              <div class="atelier-feature-text">
+                <h5>Worldwide Insured Express Delivery</h5>
+                <p>Express air courier to over 40+ countries (USA, UK, Canada, UAE, Singapore, Australia) with full door-to-door transit insurance.</p>
+              </div>
+            </div>
+
+            <div style="margin-top: 2rem; padding-top: 1.5rem; border-top: 1px solid var(--border-color); text-align: center;">
+              <div style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.8rem;">Direct Stylist Assistance:</div>
+              <div style="display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap;">
+                <a href="tel:+918498854323" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.5rem 1rem;">
+                  <i class="fa-solid fa-phone" style="margin-right: 5px;"></i> +91 84988 54323
+                </a>
+                <a href="tel:+918106789789" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.5rem 1rem;">
+                  <i class="fa-solid fa-phone" style="margin-right: 5px;"></i> +91 81067 89789
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Quick Visit Card -->
+          <div style="margin-top: 2rem; background: #FFFFFF; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.8rem;">
+            <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.8rem;">
+              <i class="fa-solid fa-map-location-dot" style="font-size: 1.4rem; color: var(--color-burgundy);"></i>
+              <h4 style="font-family: var(--font-serif); font-size: 1.15rem; color: var(--color-burgundy); margin: 0;">Visiting Hyderabad?</h4>
+            </div>
+            <p style="font-size: 0.86rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.2rem;">
+              Our boutique atelier is situated in Kavuri Hills, Madhapur, close to Inorbit Mall and Jubilee Hills. Private valet parking available.
+            </p>
+            <a href="https://maps.google.com/?q=Madhapur+Hyderabad+Telangana" target="_blank" rel="noopener noreferrer" class="btn btn-outline" style="font-size: 0.82rem; width: 100%; text-align: center; display: block;">
+              GET DIRECTIONS ON GOOGLE MAPS <i class="fa-solid fa-arrow-up-right-from-square" style="margin-left: 6px;"></i>
+            </a>
+          </div>
+
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- FAQ SECTION -->
+    <section class="faq-quick-section">
+      <div class="container">
+        <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+          <span class="contact-eyebrow">Assistance &amp; Clarity</span>
+          <h2 style="font-family: var(--font-serif); font-size: 2rem; color: var(--color-burgundy);">Frequently Asked Inquiries</h2>
+        </div>
+
+        <div class="faq-grid">
+          <div class="faq-card-item">
+            <h4>Can I request video inspection before dispatch?</h4>
+            <p>Yes, absolutely. Once your saree is reserved, simply message us on WhatsApp at <strong>+91 84988 54323</strong> or <strong>+91 81067 89789</strong> and our team will share a 4K drape video or schedule a live video call.</p>
+          </div>
+
+          <div class="faq-card-item">
+            <h4>How do I know my saree is authentic Silk Mark?</h4>
+            <p>Every silk saree carries a verifiable Silk Mark tag backed by the Central Silk Board of India with a unique holographic security code.</p>
+          </div>
+
+          <div class="faq-card-item">
+            <h4>What is your return &amp; exchange window?</h4>
+            <p>We provide a seamless 7-day hassle-free return and exchange policy from the day of delivery with complimentary insured return pickup across India.</p>
+          </div>
+
+          <div class="faq-card-item">
+            <h4>Do you offer international shipping?</h4>
+            <p>Yes, we ship globally with express air couriers (DHL / FedEx) reaching the USA, UK, UAE, Canada, and Australia in 3 to 6 business days.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- LUXURY FOOTER (PALLUVO) -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-top-grid">
+        
+        <!-- Col 1: Brand Info -->
+        <div class="footer-col-brand">
+          <a href="index.html" class="brand-logo-clean" style="font-size: 1.5rem; margin-bottom: 0.4rem;">PALLUVO</a>
+          <p class="footer-tagline" style="font-style: italic; font-family: var(--font-serif); color: var(--color-burgundy); margin-bottom: 0.8rem;">“Every drape, a little magic.”</p>
+          <p style="font-size: 0.88rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 1.5rem;">
+            A contemporary luxury Indian saree fashion house dedicated exclusively to authentic sarees. Honoring India's master weavers with certified purity and unhurried slow craftsmanship.
+          </p>
+          <div class="footer-badges">
+            <span class="footer-badge">🌿 100% Handloom Saree Guild</span>
+            <span class="footer-badge">🎗️ Silk Mark Certified Pure Silk</span>
+          </div>
+        </div>
+
+        <!-- Col 2: Signature Weaves -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">SIGNATURE WEAVES</h4>
+          <ul class="footer-links-list">
+            <li><a href="sarees.html?category=Banarasi">Banarasi Brocade</a></li>
+            <li><a href="sarees.html?category=Kanjivaram">Kanjivaram Silk</a></li>
+            <li><a href="sarees.html?category=Pochampally">Pochampally Ikat</a></li>
+            <li><a href="sarees.html?category=Paithani">Paithani Silk</a></li>
+            <li><a href="sarees.html?category=Chanderi">Chanderi Tissue</a></li>
+            <li><a href="sarees.html?category=Organza">Organza Silk</a></li>
+            <li><a href="sarees.html">All Curated Sarees</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 3: Concierge & Help -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">CLIENT SERVICES</h4>
+          <ul class="footer-links-list">
+            <li><a href="contact.html">Contact Us</a></li>
+            <li><a href="account.html">Track Order</a></li>
+            <li><a href="about.html#shipping">Shipping &amp; Delivery</a></li>
+            <li><a href="about.html#returns">Returns &amp; Exchanges</a></li>
+            <li><a href="about.html#faq">Client FAQ</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: About & Heritage -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">OUR HOUSE</h4>
+          <ul class="footer-links-list">
+            <li><a href="about.html">The PALLUVO Story</a></li>
+            <li><a href="about.html#artisans">Master Weavers Guild</a></li>
+            <li><a href="about.html#sustainability">Ethical Values</a></li>
+            <li><a href="contact.html">Private Bridal Booking</a></li>
+            <li><a href="contact.html">Corporate Inquiries</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 5: Direct Contact Details -->
+        <div class="footer-col">
+          <h4 class="footer-col-title">CONTACT DETAILS</h4>
+          <p style="font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; margin-bottom: 0.8rem;">
+            Concierge Stylist Assistance available Mon–Sat, 10:00 AM – 7:00 PM IST.
+          </p>
+          <div style="margin-bottom: 1.2rem; font-size: 0.86rem; line-height: 1.8;">
+            <div><i class="fa-regular fa-envelope" style="color: var(--color-burgundy); width: 18px;"></i> <a href="mailto:contact@palluvo.com" style="color: inherit; font-weight: 600;">contact@palluvo.com</a></div>
+            <div><i class="fa-solid fa-phone" style="color: var(--color-burgundy); width: 18px;"></i> <a href="tel:+918498854323" style="color: inherit; font-weight: 600;">+91 84988 54323</a></div>
+            <div><i class="fa-solid fa-phone" style="color: var(--color-burgundy); width: 18px;"></i> <a href="tel:+918106789789" style="color: inherit; font-weight: 600;">+91 81067 89789</a></div>
+          </div>
+          <div style="font-size: 0.78rem; color: var(--text-muted);">
+            📍 Kavuri Hills, Madhapur, Hyderabad, India
+          </div>
+        </div>
+
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2026 PALLUVO Fashion House Private Limited. All rights reserved. “Every drape, a little magic.” Strictly Saree-Only Merchandising.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- SHARED CART DRAWER -->
+  <div class="cart-drawer-wrap" id="cartDrawer" role="dialog" aria-modal="true">
+    <div class="cart-drawer-header">
+      <h3 class="cart-drawer-title">Your Shopping Bag</h3>
+      <button class="drawer-close-btn" id="cartDrawerClose">&times;</button>
+    </div>
+    <div class="cart-shipping-indicator">
+      <div class="shipping-progress-text" id="cartFreeShippingText"></div>
+      <div class="shipping-progress-track">
+        <div class="shipping-progress-fill" id="cartFreeShippingProgress"></div>
+      </div>
+    </div>
+    <div class="cart-drawer-items" id="cartDrawerItems"></div>
+    <div class="cart-drawer-footer" id="cartDrawerFooter"></div>
+  </div>
+  <div class="cart-backdrop" id="cartDrawerBackdrop"></div>
+
+  <!-- SHARED SEARCH OVERLAY -->
+  <div class="search-overlay" id="searchOverlay" role="dialog" aria-modal="true">
+    <div class="search-overlay-header">
+      <div class="brand-logo" style="font-size: 1.6rem;">PALLUVO</div>
+      <button class="drawer-close-btn" id="searchOverlayClose">&times;</button>
+    </div>
+    <div class="search-input-wrap">
+      <input type="text" id="searchOverlayInput" class="search-big-input" placeholder="Search sarees, silks, fabrics...">
+    </div>
+    <div class="search-suggestions-wrap">
+      <div id="searchResultsContainer"></div>
+    </div>
+  </div>
+
+  <!-- FLOATING WHATSAPP CONCIERGE BUTTON -->
+  <a href="https://wa.me/918498854323?text=Hello%20Palluvo%20Team%2C%20I%20would%20like%20to%20know%20more%20about%20your%20handcrafted%20drapes" 
+     class="whatsapp-floating-btn" 
+     target="_blank" 
+     rel="noopener noreferrer" 
+     aria-label="Chat with our Saree Stylist on WhatsApp"
+     title="Stylist Concierge on WhatsApp">
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.23 8.23 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.19.53-1.1 1.04-1.53 1.1-.38.05-.88.08-2.58-.62-1.89-.78-3.32-2.73-3.42-2.86-.09-.13-.76-1.02-.76-1.94 0-.92.48-1.37.65-1.56.17-.19.38-.24.5-.24.13 0 .26 0 .38.01.12.01.29-.05.45.34.17.41.58 1.41.63 1.51.05.1.09.22.02.35-.07.13-.1.21-.2.32-.1.12-.22.26-.31.35-.1.1-.21.21-.09.41.12.21.53.88 1.14 1.43.79.7 1.45.92 1.66 1.02.21.1.33.09.46-.05.12-.15.53-.62.67-.83.14-.22.28-.18.47-.11.19.07 1.2.57 1.41.67.21.1.35.15.4.24.05.09.05.53-.14 1.06z"/>
+    </svg>
+  </a>
+
+  <!-- SCRIPTS -->
+  <script src="js/products.js"></script>
+  <script src="js/store.js"></script>
+  <script>
+    function handleContactSubmit(e) {
+      e.preventDefault();
+      const form = document.getElementById('contactInquiryForm');
+      const alertBox = document.getElementById('formSuccessAlert');
+      
+      alertBox.style.display = 'block';
+      alertBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      form.reset();
+      
+      setTimeout(() => {
+        // keep alert visible but softly scroll if needed
+      }, 500);
+    }
+  </script>
+</body>
+</html>
