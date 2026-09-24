@@ -917,44 +917,45 @@ const SAREE_PRODUCTS = [
   },
   {
     id: "saree-017",
-    slug: "rare-royal-assam-muga-wild-silk-saree",
-    name: "Royal Assam Muga Wild Silk Saree",
-    sareeType: "Assam Muga",
-    tagline: "Natural Golden Luster Wild Silk with Woven Kingkhap Motifs",
-    price: 12499,
-    compareAtPrice: 16999,
-    discount: "26% OFF",
-    badge: "Rare Heritage",
-    category: "Assam Muga",
-    fabric: "100% Golden Muga Silk",
-    color: "Natural Champagne Gold",
-    colorHex: "#D4AF37",
+    slug: "imperial-emerald-kanchipuram-silk-saree",
+    name: "Imperial Emerald Kanchipuram Silk Saree",
+    sareeType: "Kanjivaram",
+    tagline: "Pure Mulberry Silk with Antique Gold Zari Paisley Brocade & Korvai Temple Pallu",
+    price: 9499,
+    compareAtPrice: 12999,
+    discount: "27% OFF",
+    badge: "Royal Heirloom",
+    category: "Kanjivaram",
+    fabric: "Pure Mulberry Silk",
+    color: "Imperial Emerald Green",
+    colorHex: "#0B4F35",
     swatches: [
-      { name: "Natural Champagne Gold", hex: "#D4AF37", inStock: true },
-      { name: "Honey Amber", hex: "#C68B59", inStock: true }
+      { name: "Imperial Emerald Green", hex: "#0B4F35", inStock: true },
+      { name: "Ruby Crimson Gold", hex: "#881337", inStock: true },
+      { name: "Midnight Teal Gold", hex: "#004D40", inStock: true }
     ],
     occasion: "Wedding",
     rating: 5.0,
-    reviewsCount: 15,
-    stock: 3,
+    reviewsCount: 38,
+    stock: 6,
     images: [
-      "images/categories/assam-muga.jpg",
-      "images/coll_silk.jpg",
-      "images/categories/chanderi.jpg",
+      "images/products/kanjivaram_emerald.jpg",
+      "images/categories/kanjivaram.jpg",
+      "images/coll_wedding.jpg",
       "images/craftsmanship.jpg"
     ],
-    description: "Endemic exclusively to the Brahmaputra valley of Assam. Muga silk is naturally golden and famously outlasts its owner, growing more lustrous with every decade and gentle wash. Woven with auspicious Kingkhap royal motifs and red-black meenakari.",
+    description: "An imperial heirloom masterpiece. Handcrafted in Kanchipuram from pure mulberry silk, crowned with exquisite antique gold zari paisley jaal and traditional Korvai temple borders. Radiates sovereign elegance for landmark weddings and grand celebrations.",
     specifications: {
       length: "5.5 meters",
-      width: "45 inches",
-      blouseLength: "0.8 meter pure muga silk running blouse piece",
-      weave: "Throw-Shuttle Handloom Weave",
-      origin: "Sualkuchi, Assam",
-      weight: "610 grams",
-      zariType: "Natural Golden Silk Sheen & Tested Zari",
+      width: "46 inches",
+      blouseLength: "0.8 meter matching pure silk blouse piece with gold zari border",
+      weave: "Authentic Korvai Handloom Weave",
+      origin: "Kanchipuram, Tamil Nadu",
+      weight: "740 grams",
+      zariType: "Certified Pure Tested Gold Zari",
       transparency: "Opaque",
       fallPico: "Complimentary fall and pico edging done",
-      care: "Dry clean recommended for first wash. Wrap in fine cotton."
+      care: "Strictly dry clean only. Wrap in pure cotton cloth."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
   },
@@ -1323,7 +1324,7 @@ const HANDLOOM_REGIONS = [
   { name: "Kanjivaram", state: "Tamil Nadu", weave: "Pure Korvai Temple Zari", image: "images/categories/kanjivaram.jpg" },
   { name: "Ilkal", state: "Karnataka", weave: "Tope Teni Heritage Pallu", image: "images/categories/ilkal.jpg" },
   { name: "Bomkai", state: "Odisha", weave: "Tribal Extra-Weft Ikat", image: "images/categories/bomkai.jpg" },
-  { name: "Assam / Muga", state: "Assam", weave: "Golden Wild Silk", image: "images/categories/assam-muga.jpg" }
+  { name: "Sualkuchi", state: "Assam", weave: "Golden Wild Silk", image: "images/categories/kanjivaram.jpg" }
 ];
 
 // Helper functions for easy querying

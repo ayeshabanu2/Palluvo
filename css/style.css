@@ -3140,15 +3140,15 @@ h1, h2, h3, h4, h5, h6 {
 .plp-header {
   position: relative;
   width: 100%;
-  min-height: 420px;
-  background-image: url('../images/banner_traditional_saree.jpg');
+  min-height: 480px;
+  background-image: url('../images/banner_luxury_hero.jpg');
   background-size: cover;
-  background-position: center 26%;
+  background-position: right top;
   background-repeat: no-repeat;
   display: flex;
   align-items: center;
   border-bottom: 1px solid rgba(176, 141, 87, 0.4);
-  padding: 5rem 0 4rem;
+  padding: 5.5rem 0 4.5rem;
   overflow: hidden;
 }
 
@@ -3257,9 +3257,9 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 768px) {
   .plp-header {
-    min-height: 340px;
+    min-height: 380px;
     padding: 3.5rem 0 3rem;
-    background-position: 70% center;
+    background-position: 80% top;
   }
   .plp-header-scrim {
     background: linear-gradient(
