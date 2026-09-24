@@ -95,46 +95,94 @@
 
 ---
 
-## 📁 Repository Structure
+## 📁 Repository Structure (Next.js & React Architecture)
 
 ```
-├── index.html            # Homepage (Hero, 27 Categories, 8 Occasions, 12 Products, Handlooms)
-├── sarees.html           # Multi-filter Saree Catalog
-├── product.html          # Product Detail Page with authentic 5.5m+0.8m specs
-├── cart.html             # Cart Page & Drawer state
-├── checkout.html         # Secure Indian payment checkout
-├── wishlist.html         # Customer saved sarees
-├── account.html          # Order tracking & account portal
-├── about.html            # Brand & Artisan heritage story
-├── css/
-│   └── style.css         # Complete Luxury Design System & Component Styles
-├── js/
-│   ├── products.js       # 27 Categories, 8 Occasions, 12 Products, 10 Loom Clusters
-│   └── store.js          # Cart, Wishlist, Search, Modals, Toasts, Checkout logic
-├── images/
-│   ├── categories/       # 27 Regional & Fabric Saree Category Photography
-│   ├── occasions/        # 8 Saree Occasion Photography Assets
-│   ├── hero_saree_art.jpg# Master 16:9 Art of the Saree Hero Image
-│   └── *.jpg, *.png      # Additional Curated Editorial Saree Assets
-├── server.ps1            # Lightweight Local HTTP Dev Server
-└── README.md             # Platform Documentation
+├── app/
+│   ├── layout.tsx             # Root Layout (ShopProvider, Header, Announcement, Modals, Drawers, Footer)
+│   ├── page.tsx               # Homepage (Editorial Hero, 8 Top Models, Festive Edit, Occasions, Looms)
+│   ├── sarees/
+│   │   └── page.tsx           # Saree Catalog & Faceted Filters (Type, Fabric, Occasion, Price, Colors)
+│   ├── product/
+│   │   ├── page.tsx           # Query param redirect fallback (?id=... / ?slug=...)
+│   │   └── [slug]/
+│   │       └── page.tsx       # Product Detail Page (5.5m+0.8m Specs, Gallery, Blouse Options, Pincode)
+│   ├── cart/
+│   │   └── page.tsx           # Full Shopping Bag (Free shipping meter, Gift packaging, Price breakdown)
+│   ├── checkout/
+│   │   └── page.tsx           # Streamlined Indian Checkout (Address, UPI, Cards, NetBanking, COD)
+│   ├── wishlist/
+│   │   └── page.tsx           # Saved Sarees (1-Click Move to Bag & Persistent State)
+│   ├── account/
+│   │   └── page.tsx           # Customer Dashboard & Live Courier Tracking (Blue Dart Air Timeline)
+│   ├── about/
+│   │   └── page.tsx           # Weaver Story & Brand Heritage Manifesto (Silk Mark Certified Purity)
+│   ├── contact/
+│   │   └── page.tsx           # Luxury Atelier & Concierge Hub (+91 84988 54323, Appointment Booking)
+│   └── globals.css            # Complete Luxury Fashion Design System & Responsive Breakpoints
+├── components/
+│   ├── layout/
+│   │   ├── AnnouncementBar.tsx # Top promotional banner
+│   │   ├── Header.tsx          # Brand wordmark, desktop navigation, action icons & mobile hamburger
+│   │   ├── MobileNavDrawer.tsx # Responsive slide-out navigation drawer (active at <=991px)
+│   │   ├── CartDrawer.tsx      # Slide-out shopping bag drawer with free shipping progress meter
+│   │   ├── SearchModal.tsx     # Live typeahead search modal with instant query matching
+│   │   ├── WhatsAppConcierge.tsx # Floating stylist concierge link (+91 84988 54323)
+│   │   └── Footer.tsx          # Customer care, collections, atelier address, payment badges, newsletter
+│   ├── product/
+│   │   ├── ProductCard.tsx     # Editorial product card with swatches, hover swap, quick view, bag add
+│   │   └── QuickViewModal.tsx  # Quick preview modal with color & blouse customization
+│   └── ui/
+│       └── ToastContainer.tsx  # Floating action toast alerts (Add to bag, Wishlist updates)
+├── context/
+│   └── ShopContext.tsx        # React Context for Cart, Wishlist, Drawers, Modals, Coupons & Orders
+├── data/
+│   └── products.ts            # Saree catalog dataset, top models, occasions, loom regions & helpers
+├── public/
+│   └── images/                # High-definition editorial saree assets, category & occasion photography
+├── next.config.js             # Next.js configuration
+├── tsconfig.json              # TypeScript compiler configuration
+├── package.json               # Next.js & React dependencies and scripts
+└── README.md                  # Platform Documentation
 ```
 
 ---
 
 ## 🚀 Running Locally
 
-To run the lightweight PowerShell server locally:
-```powershell
-powershell -ExecutionPolicy Bypass -File server.ps1
+### 1. Prerequisites
+- **Node.js**: v18.0.0 or higher (v20+ recommended)
+- **npm**: v9.0.0 or higher
+
+### 2. Installation
+Install project dependencies:
+```bash
+npm install
 ```
-Navigate to `http://localhost:3000/` in your browser.
+
+### 3. Development Server
+Start the Next.js local development server:
+```bash
+npm run dev
+```
+
+Navigate to `http://localhost:3001/` (or `http://localhost:3000/`) in your browser to view the digital boutique.
+
+### 4. Production Build & Start
+To test the optimized production build:
+```bash
+npm run build
+npm start
+```
 
 ---
 
-## 🛠️ Technologies
+## 🛠️ Technology Stack
 
-- **HTML5**: Semantic tags, ARIA accessibility, rich snippet structured data.
-- **Vanilla CSS3**: Custom design tokens, luxury typography, fluid CSS Grid, Flexbox, responsive breakpoints.
-- **Vanilla JavaScript (ES6+)**: `localStorage` persistent state management, dynamic DOM rendering, debounce live search, and modal workflows.
+- **Framework**: [Next.js](https://nextjs.org/) (App Router, React Server Components & Client Components)
+- **UI Library**: [React 18](https://react.dev/)
+- **Type Safety**: [TypeScript](https://www.typescriptlang.org/)
+- **Design System & Styling**: Custom Vanilla CSS with luxury design tokens, HSL tailored palettes, fluid CSS Grid, and responsive media queries.
+- **State Management**: React Context (`ShopContext`) with hydration-safe `localStorage` synchronization for Cart, Wishlist, and Order Tracking.
+- **Typography**: Google Fonts (*Playfair Display*, *Cormorant Garamond*, *Alex Brush*, and *Plus Jakarta Sans*).
 

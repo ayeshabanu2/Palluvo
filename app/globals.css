@@ -786,7 +786,7 @@ h1, h2, h3, h4, h5, h6 {
   min-height: 680px;
   height: calc(88vh - 72px);
   max-height: 820px;
-  background-image: url('../images/hero_navratri_motion.jpg');
+  background-image: url('/images/hero_navratri_motion.jpg');
   background-size: cover;
   background-position: center 25%;
   background-repeat: no-repeat;
@@ -1318,8 +1318,25 @@ h1, h2, h3, h4, h5, h6 {
 /* Mobile Header Controls */
 .mobile-hamburger-btn {
   display: none;
+  background: transparent;
+  border: none;
   color: var(--text-primary);
   padding: 0.5rem;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--transition-fast);
+}
+
+.mobile-hamburger-btn:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+@media (max-width: 991px) {
+  .mobile-hamburger-btn {
+    display: flex !important;
+  }
 }
 
 /* ==========================================================================
@@ -4026,7 +4043,7 @@ h1, h2, h3, h4, h5, h6 {
   max-height: 820px;
   display: flex;
   align-items: center;
-  background-image: url('../images/hero_saree_model.jpg');
+  background-image: url('/images/hero_saree_model.jpg');
   background-size: cover;
   background-position: 60% 18%;
   background-repeat: no-repeat;
