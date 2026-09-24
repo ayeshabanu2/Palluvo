@@ -763,8 +763,8 @@ const SAREE_PRODUCTS = [
     reviewsCount: 27,
     stock: 8,
     images: [
-      "images/categories/bandhani.jpg",
       "images/products/bandhani_gharchola.jpg",
+      "images/categories/bandhani.jpg",
       "images/occasions/festive.jpg",
       "images/coll_silk.jpg"
     ],
@@ -982,10 +982,10 @@ const SAREE_PRODUCTS = [
     reviewsCount: 25,
     stock: 14,
     images: [
+      "images/saree_ruhani_1.jpg",
       "images/categories/tussar.jpg",
       "images/categories/handloom.jpg",
-      "images/coll_everyday.jpg",
-      "images/categories/cotton.jpg"
+      "images/coll_everyday.jpg"
     ],
     description: "Revered as the 'Peace Silk' of Bihar. Wild cocoons cultivated by forest communities yield a distinct tactile texture and breathable thermal insulation. Draped with organic vegetable block-print borders and subtle zari stripes.",
     specifications: {
@@ -1158,10 +1158,10 @@ const SAREE_PRODUCTS = [
     reviewsCount: 24,
     stock: 11,
     images: [
+      "images/products/ilkal_silk.jpg",
       "images/categories/ilkal.jpg",
       "images/occasions/traditional.jpg",
-      "images/coll_silk.jpg",
-      "images/craftsmanship.jpg"
+      "images/coll_silk.jpg"
     ],
     description: "Rooted in Karnataka's 8th-century weaving legacy. Handcrafted with the iconic Kondi interlocking technique where the cotton warp joins the crimson silk pallu. Features the legendary Tope Teni temple spearheads and Kasuti embroidery motifs.",
     specifications: {

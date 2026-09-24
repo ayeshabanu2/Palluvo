@@ -685,8 +685,25 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 @media (max-width: 1024px) {
-  .header-nav-center {
-    display: none;
+  .header-nav-center,
+  .header-nav-left {
+    display: none !important;
+  }
+  .mobile-hamburger-btn,
+  #mobileMenuToggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #1A1A1A;
+    padding: 0.35rem;
+    cursor: pointer;
+    line-height: 1;
+    z-index: 10;
+  }
+  .header-row-clean {
+    padding: 0 1.5rem;
   }
 }
 
@@ -1316,10 +1333,20 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Mobile Header Controls */
-.mobile-hamburger-btn {
+.mobile-hamburger-btn,
+#mobileMenuToggle {
   display: none;
-  color: var(--text-primary);
+  background: transparent;
+  border: none;
+  color: var(--text-primary, #1A1A1A);
   padding: 0.5rem;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.mobile-hamburger-btn:hover,
+#mobileMenuToggle:hover {
+  color: var(--color-gold);
 }
 
 /* ==========================================================================
@@ -3963,16 +3990,34 @@ h1, h2, h3, h4, h5, h6 {
 
 @media (max-width: 768px) {
   :root {
-    --header-height: 68px;
+    --header-height: 64px;
   }
+  .header-nav-center,
   .header-nav-left {
-    display: none;
+    display: none !important;
   }
-  .mobile-hamburger-btn {
-    display: flex;
+  .mobile-hamburger-btn,
+  #mobileMenuToggle {
+    display: inline-flex !important;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: #1A1A1A;
+    padding: 0.35rem;
+    cursor: pointer;
+    z-index: 10;
   }
+  .header-row-clean {
+    padding: 0 1rem;
+    height: 64px;
+  }
+  .brand-logo-clean,
   .brand-logo {
-    font-size: 1.6rem;
+    font-size: 1.45rem;
+  }
+  .header-actions-clean {
+    gap: 0.85rem;
   }
   .product-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -4024,6 +4069,29 @@ h1, h2, h3, h4, h5, h6 {
   .section-spacing {
     padding-top: 3.5rem;
     padding-bottom: 3.5rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-row-clean {
+    padding: 0 0.75rem;
+    height: 60px;
+  }
+  .brand-logo-clean,
+  .brand-logo {
+    font-size: 1.3rem;
+  }
+  .brand-tagline-sub {
+    font-size: 0.5rem;
+  }
+  .header-actions-clean {
+    gap: 0.65rem;
+  }
+  .header-action-icon svg,
+  .mobile-hamburger-btn svg,
+  #mobileMenuToggle svg {
+    width: 20px;
+    height: 20px;
   }
 }
 
