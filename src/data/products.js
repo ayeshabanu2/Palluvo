@@ -5,7 +5,7 @@
  */
 
 // Curated Top Signature Saree Models for PALLUVO
-const PALLUVO_TOP_MODELS = [
+export const PALLUVO_TOP_MODELS = [
   {
     id: "banarasi",
     slug: "banarasi",
@@ -129,10 +129,10 @@ const PALLUVO_TOP_MODELS = [
 ];
 
 // Reference the curated top models as the primary saree categories
-const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
+export const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
 
 // Colorful Festive Sarees for "THE FESTIVE EDIT"
-const FESTIVE_SAREES = [
+export const FESTIVE_SAREES = [
   { name: "Bandhani Silk", region: "Gujarat", image: "images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
   { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
   { name: "Traditional Paithani", region: "Maharashtra", image: "images/saree_paithani_royal.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
@@ -142,7 +142,7 @@ const FESTIVE_SAREES = [
 ];
 
 // 8 Occasions (Saree-Only Curations)
-const SAREE_OCCASIONS = [
+export const SAREE_OCCASIONS = [
   {
     id: "wedding",
     name: "Wedding",
@@ -210,7 +210,7 @@ const SAREE_OCCASIONS = [
 ];
 
 // Complete 25-Product Catalog of Authentic Luxury Sarees
-const SAREE_PRODUCTS = [
+export const SAREE_PRODUCTS = [
   {
     id: "saree-001",
     slug: "royal-banarasi-silk-saree",
@@ -1311,6 +1311,174 @@ const SAREE_PRODUCTS = [
       care: "Strictly dry clean only. Change folds every 6 months."
     },
     deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-026",
+    slug: "regal-patan-patola-double-ikat-saree",
+    name: "Regal Patan Patola Double Ikat Saree",
+    sareeType: "Patola",
+    tagline: "Authentic Gujarati Double Ikat Pure Silk with Tested Real Gold Zari Border",
+    price: 18499,
+    compareAtPrice: 24999,
+    discount: "26% OFF",
+    badge: "Collector Edition",
+    category: "Patola",
+    fabric: "Pure Mulberry Double Ikat Silk",
+    color: "Imperial Ruby & Emerald",
+    colorHex: "#8B1E2B",
+    swatches: [
+      { name: "Imperial Ruby & Emerald", hex: "#8B1E2B", inStock: true },
+      { name: "Peacock Blue Gold", hex: "#0E4C92", inStock: true }
+    ],
+    occasion: "Bridal",
+    rating: 5.0,
+    reviewsCount: 52,
+    stock: 3,
+    images: [
+      "images/saree_patola_regal.jpg",
+      "images/categories/patola.jpg",
+      "images/craftsmanship.jpg"
+    ],
+    description: "The crown jewel of Indian textile mathematics. Mastercrafted in Patan, Gujarat, using genuine double-ikat resist techniques where both warp and weft yarns are tied and dyed before weaving. Adorned with heritage Nari Kunj elephant and parrot motifs with tested 24-karat gold zari edging.",
+    specifications: {
+      length: "5.5 meters",
+      width: "46 inches",
+      blouseLength: "0.8 meter matching heavy silk blouse piece included",
+      weave: "Authentic Patan Double Ikat Handloom Weave",
+      origin: "Patan, Gujarat",
+      weight: "790 grams",
+      zariType: "Certified Pure Gold Bullion Zari",
+      transparency: "Opaque",
+      fallPico: "Complimentary heirloom fall and pico edging done",
+      care: "Strictly dry clean only. Wrap in breathable unbleached muslin."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery with museum guarantee."
+  },
+  {
+    id: "saree-027",
+    slug: "liquid-gold-tissue-kanjivaram-saree",
+    name: "Liquid Gold Tissue Kanjivaram Saree",
+    sareeType: "Kanjivaram",
+    tagline: "Pure Metallic Gold Tissue with Ganga Jamuna Korvai Plum Border",
+    price: 16999,
+    compareAtPrice: 22999,
+    discount: "26% OFF",
+    badge: "Royalty Heirloom",
+    category: "Kanjivaram",
+    fabric: "Metallic Gold Silk Tissue",
+    color: "Liquid Champagne Gold",
+    colorHex: "#D4AF37",
+    swatches: [
+      { name: "Liquid Champagne Gold", hex: "#D4AF37", inStock: true },
+      { name: "Rose Gold Lustre", hex: "#B76E79", inStock: true }
+    ],
+    occasion: "Wedding",
+    rating: 4.9,
+    reviewsCount: 44,
+    stock: 4,
+    images: [
+      "images/saree_tissue_kanjivaram.jpg",
+      "images/products/kanjivaram_royal.jpg",
+      "images/categories/kanjivaram.jpg"
+    ],
+    description: "A monumental weave woven with pure metallic gold tissue warp interlocked with heavy mulberry silk. Features Ganga-Jamuna silver and gold floral creepers, crowned with an opulent contrast royal plum magenta Korvai border.",
+    specifications: {
+      length: "5.5 meters",
+      width: "47 inches",
+      blouseLength: "0.8 meter rich contrast brocade blouse fabric",
+      weave: "Interlocking Triple Korvai Handloom Weave",
+      origin: "Kanchipuram, Tamil Nadu",
+      weight: "890 grams",
+      zariType: "Pure Silver Wrapped in 24K Liquid Gold",
+      transparency: "Opaque",
+      fallPico: "Complimentary heavy fall and pico edging done",
+      care: "Dry clean only. Store flat in velvet lined box."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-028",
+    slug: "midnight-shikargah-banarasi-saree",
+    name: "Midnight Shikargah Katan Banarasi Saree",
+    sareeType: "Banarasi",
+    tagline: "Pure Katan Silk with Historic Royal Wildlife Hunter Jaal in Antique Gold Zari",
+    price: 15499,
+    compareAtPrice: 20999,
+    discount: "26% OFF",
+    badge: "Heritage Masterpiece",
+    category: "Banarasi",
+    fabric: "Pure Katan Silk",
+    color: "Midnight Navy Blue",
+    colorHex: "#121A38",
+    swatches: [
+      { name: "Midnight Navy Blue", hex: "#121A38", inStock: true },
+      { name: "Royal Forest Emerald", hex: "#0D382B", inStock: true }
+    ],
+    occasion: "Reception",
+    rating: 5.0,
+    reviewsCount: 39,
+    stock: 5,
+    images: [
+      "images/saree_shikargah_banarasi.jpg",
+      "images/categories/banarasi.jpg",
+      "images/coll_silk.jpg"
+    ],
+    description: "One of the most complex weaving techniques in Indian history. Woven in Varanasi using unhurried kadhwa artistry over 260 hours, depicting an elaborate Persian-influenced Shikargah royal hunting forest scene with elephants, deer, and blooming flora in tested gold zari.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter pure katan silk matching brocade fabric",
+      weave: "Authentic Kadhwa Shikargah Tapestry Weave",
+      origin: "Varanasi, Uttar Pradesh",
+      weight: "820 grams",
+      zariType: "Certified Antique Bullion Gold Zari",
+      transparency: "Opaque",
+      fallPico: "Complimentary fall and pico edging done",
+      care: "Strictly dry clean only. Wrap in breathable muslin."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+  },
+  {
+    id: "saree-029",
+    slug: "kashmiri-tilla-embroidered-pashmina-saree",
+    name: "Kashmiri Tilla Pashmina Silk Saree",
+    sareeType: "Pashmina Silk",
+    tagline: "Pure Mulberry Pashmina with Authentic Hand-Embroidered 24K Metallic Tilla Threadwork",
+    price: 19999,
+    compareAtPrice: 26999,
+    discount: "26% OFF",
+    badge: "Couture Atelier",
+    category: "Chanderi",
+    fabric: "Pure Pashmina Silk Blend",
+    color: "Ivory Cream & Antique Gold",
+    colorHex: "#F5F2EB",
+    swatches: [
+      { name: "Ivory Cream & Antique Gold", hex: "#F5F2EB", inStock: true },
+      { name: "Powder Blush Gold", hex: "#F2D8D5", inStock: true }
+    ],
+    occasion: "Wedding",
+    rating: 5.0,
+    reviewsCount: 31,
+    stock: 2,
+    images: [
+      "images/saree_pashmina_tilla.jpg",
+      "images/coll_festive.jpg",
+      "images/craftsmanship.jpg"
+    ],
+    description: "An aristocratic heirloom crafted in the Kashmir Valley. Spun from ultra-fine pashmina silk yarn and adorned with centuries-old needlepoint Tilla hand-embroidery using real silver-gilt and metallic gold threads across scalloped borders and traditional badam paisley medallions.",
+    specifications: {
+      length: "5.5 meters",
+      width: "45 inches",
+      blouseLength: "0.8 meter matching pure pashmina silk with tilla cuffs",
+      weave: "Fine Kashmiri Handloom with Needlework Tilla",
+      origin: "Srinagar, Kashmir",
+      weight: "620 grams",
+      zariType: "Authentic Hand-Applied Metallic Tilla Wire",
+      transparency: "Opaque",
+      fallPico: "Complimentary soft satin fall and pico edging done",
+      care: "Strictly specialist dry clean only."
+    },
+    deliveryInfo: "Dispatched within 24 hours. Insured white-glove courier delivery."
   }
 ];
 
@@ -1329,7 +1497,7 @@ const HANDLOOM_REGIONS = [
 ];
 
 // Helper functions for easy querying
-const SareeCatalog = {
+export const SareeCatalog = {
   getAllProducts: () => SAREE_PRODUCTS,
   getProductById: (id) => SAREE_PRODUCTS.find(p => p.id === id || p.slug === id),
   getProductsByCategory: (cat) => SAREE_PRODUCTS.filter(p => p.category.toLowerCase() === cat.toLowerCase() || p.sareeType.toLowerCase() === cat.toLowerCase()),
@@ -1365,7 +1533,7 @@ SAREE_PRODUCTS.forEach(p => {
 });
 
 // Backward and cross-compatibility aliases
-const ProductsCatalog = {
+export const ProductsCatalog = {
   getAll: () => SAREE_PRODUCTS,
   getById: (id) => SareeCatalog.getProductById(id),
   getBySlug: (slug) => SAREE_PRODUCTS.find(p => p.slug === slug || p.id === slug),
@@ -1376,4 +1544,4 @@ const ProductsCatalog = {
   search: (query) => SareeCatalog.search(query)
 };
 
-const PALLUVO_PRODUCTS = SAREE_PRODUCTS;
+export const PALLUVO_PRODUCTS = SAREE_PRODUCTS;

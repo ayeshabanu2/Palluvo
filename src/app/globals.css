@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-body: #F8F5EF;
+    --bg-card: #FFFFFF;
+    --bg-secondary: #EDE3D5;
+    --bg-sand: #EDE3D5;
+    --bg-dark: #2B211D;
+    
+    --color-burgundy: #641C2D;
+    --color-wine: #7A3043;
+    --color-dark-brown: #2B211D;
+    --bg-royal-wine: #641C2D;
+    --bg-wine-hover: #4E1422;
+
+    --color-gold: #B08D57;
+    --color-gold-antique: #B08D57;
+    --color-gold-champagne: #D6B878;
+    --color-gold-bright: #D6B878;
+    --color-gold-btn: #B08D57;
+    --color-gold-hover: #8C6A35;
+    --color-gold-soft: #F4EFE6;
+    --color-gold-border: #B08D57;
+    --color-muted-rose: #B98282;
+
+    --text-primary: #241F1D;
+    --text-secondary: #6D625D;
+    --text-muted: #8E857B;
+    --text-light: #B8B0A5;
+    --text-inverse: #FFFFFF;
+  }
+
+  body {
+    background-color: var(--bg-body);
+    color: var(--text-primary);
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+    letter-spacing: -0.01em;
+  }
+}
+
+.font-serif {
+  font-family: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+}
+
+.font-display {
+  font-family: 'Playfair Display', Georgia, serif;
+}
+
+.font-script {
+  font-family: 'Alex Brush', cursive;
+}
+
+.font-sans {
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1ede6;
+}
+::-webkit-scrollbar-thumb {
+  background: #B08D57;
+  border-radius: 3px;
+}

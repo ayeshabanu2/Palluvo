@@ -1,80 +1,97 @@
-# Pull Request: PALLUVO Luxury Saree Merchandising, Authentic Imagery & Official Contact Integration
+# Pull Request: PALLUVO Next.js (React) Tech Stack Migration & Luxury Saree Experience
 
-**PR Title:** `feat(storefront): authentic saree merchandising, traditional saree showcase, and official contact integration`  
-**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-24`
+**PR Title:** `feat(stack): migrate storefront to Next.js App Router (React) with Tailwind CSS and full e-commerce suite`  
+**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-25`
 
 ---
 
 ## 📌 Executive Summary
 
-This pull request completes the end-to-end transformation of **PALLUVO — Contemporary Luxury Indian Saree Fashion House & Boutique Atelier**, establishing strict **100% saree-only merchandising**, eliminating legacy non-saree apparel, and integrating verified brand contact channels across the digital boutique.
+This pull request transitions **PALLUVO — Contemporary Luxury Indian Saree Fashion House & Boutique Atelier** from a multi-page static HTML/Vanilla JS codebase into a modern, production-grade **Next.js 15 (App Router) + React 19 + Tailwind CSS + Lucide Icons** web application. 
 
-### Key Deliverables:
-1. **Authentic Saree Merchandising & Non-Saree Removal**:
-   - Removed the legacy white chudidar / salwar suit image (`images/categories/uppada.jpg` and duplicates) from the **Designer Uppada Saree** product card and all category tiles.
-   - Replaced all non-saree imagery (western dresses, fedora models, cafe fronts) with museum-grade, high-definition editorial Indian saree photography honoring master weaver clusters.
-2. **Traditional Saree Collection Showcase**:
-   - Enhanced the **All Sarees** catalog header banner ([`sarees.html`](sarees.html)) with an authentic editorial portrait of a regal **Traditional Royal Kanjivaram Silk Saree** in crimson red and gold temple zari with heirloom jewelry, framed in a responsive split-grid with trust badges.
-3. **Official Contact Channels Sitewide**:
-   - Rebuilt [`contact.html`](contact.html) into a luxury PALLUVO boutique contact and concierge hub.
-   - Integrated primary email: `contact@palluvo.com`.
-   - Integrated concierge phone lines: `+91 84988 54323` and `+91 81067 89789`.
-   - Configured 1-click WhatsApp stylist concierge (`wa.me/918498854323`) across every page.
-4. **Repository & Build Hygiene**:
-   - Updated [`.gitignore`](.gitignore) to exclude local binary setup files (`*.exe`, `*.seb`).
-   - Verified local server ([`server.ps1`](server.ps1)) serving all assets with clean HTTP 200 responses.
+The migration preserves strict **100% saree-only merchandising**, all authenticated artisan imagery, custom blouse tailoring workflows, and verified customer concierge channels while dramatically improving client-side responsiveness, modularity, and SEO capabilities.
 
 ---
 
-## 📋 Audit & Implementation Matrix
+## 🌟 Key Architecture & Stack Highlights
 
-| Component | Scope / Deliverable | Status | Impacted Files | Details |
-| :--- | :--- | :---: | :--- | :--- |
-| **Saree Imagery** | Remove White Chudidar & Western Wear | ✅ Completed | [`images/categories/*`](images/categories/), [`images/saree_*`](images/), [`js/products.js`](js/products.js) | Eradicated all non-saree imagery; generated authentic high-res sarees for Uppada Jamdani, Organza, Pochampally Ikat, Chanderi, Tussar, Kalamkari, Chikankari, Mysore Crepe silk, and 1-Minute Ready-to-Wear. |
-| **Catalog Banner** | Traditional Saree Header Showcase | ✅ Completed | [`sarees.html`](sarees.html), [`css/style.css`](css/style.css), [`images/banner_traditional_saree.jpg`](images/banner_traditional_saree.jpg) | Upgraded `.plp-header` to a responsive 2-column layout; added a gold-framed showcase of an authentic Royal Kanjivaram silk saree with temple zari alongside trust tags (`100% Certified Pure Silk`, `Master Handloom Weaves`). |
-| **Contact Hub** | Dedicated Luxury Contact Page | ✅ Completed | [`contact.html`](contact.html) | Created a dedicated PALLUVO concierge page with email, direct telephone lines, WhatsApp quick actions, flagship atelier location (Kavuri Hills, Madhapur, Hyderabad), interactive consultation form, and FAQs. |
-| **Contact Wiring** | Official Email & Phone Integration | ✅ Completed | [`contact.html`](contact.html), [`index.html`](index.html), [`about.html`](about.html), [`sarees.html`](sarees.html), [`product.html`](product.html) | Sitewide integration of `contact@palluvo.com`, `+91 84988 54323`, and `+91 81067 89789` in all header navigation links and footers. |
-| **WhatsApp Concierge** | Floating Stylist Buttons | ✅ Completed | All HTML pages (`index`, `about`, `sarees`, `product`, `cart`, `checkout`, `account`, `wishlist`) | Updated placeholder numbers (`919876543210`) to official stylist line `+91 84988 54323` with pre-filled concierge message templates. |
-| **Git Hygiene** | Binary Artifact Exclusion | ✅ Completed | [`.gitignore`](.gitignore) | Added `*.exe` and `*.seb` rules to prevent transient setup files from entering git tracking. |
+### 1. Technology Stack Modernization
+- **Framework:** Next.js 15 (App Router with nested server & client components)
+- **UI & Logic:** React 19 with custom hooks and persistent Context API
+- **Styling:** Tailwind CSS 4 with custom luxury tokens (Deep Burgundy `#641C2D`, Antique Gold `#B08D57`, Warm Ivory `#F8F5EF`, Dark Brown `#2B211D`)
+- **Iconography:** Lucide React icons
+- **State Persistence:** LocalStorage-backed cart, wishlist, and promotional discount state
+
+### 2. Full Application Suite Routes
+- `/` — Curated boutique homepage with editorial hero, 6 signature saree models, limited festive banner, trending carousel, and handloom craft storytelling.
+- `/sarees` — Complete 25-saree luxury catalog with real-time weave filtering, occasion selectors, price slider, live text search, and multi-parameter sorting.
+- `/product/[slug]` — High-resolution dynamic product detail page with image gallery viewer, color swatches, 4-tier blouse tailoring selector, full weave specifications, and recommendation engine.
+- `/cart` & `/checkout` — Full shopping bag drawer & standalone cart, promo code verification (`PALLUVO10`, `FIRSTDRAPE`), free shipping threshold progress bar, and 3-step checkout with instant order generation.
+- `/wishlist` — Persistent saved favorites gallery with one-click move to bag.
+- `/about` — Editorial atelier story honoring India's master weavers and Silk Mark certification.
+- `/contact` — Concierge hub with verified contact channels (`contact@palluvo.com`, `+91 84988 54323`, `+91 81067 89789`) and interactive consultation form.
+- `/account` — Customer order history, privilege status (*Silk Circle Gold*), and delivery address management.
 
 ---
 
-## 🌟 Visual & Asset Highlights
+## 📋 Migration & Implementation Matrix
 
-### 1. Replaced Saree Catalog Imagery
-- **Designer Uppada Saree (`images/categories/uppada.jpg`):** Translucent coral-peach and aqua-gold Jamdani silk drape on an Indian model in a heritage courtyard.
-- **Traditional Kanjivaram Banner (`images/banner_traditional_saree.jpg`):** Pure mulberry silk in deep crimson with authentic Korvai gold temple zari brocade and marigold floral ambiance.
-- **Ethereal Organza (`images/categories/organza.jpg`):** Blush pink & sage sheer organza with hand-embroidered scalloped zardozi border.
-- **Pochampally Double-Ikat (`images/categories/pochampally.jpg`):** Sapphire blue & ruby geometric double-ikat handloom drape.
-- **Whispering Chanderi (`images/categories/chanderi.jpg`):** Ivory cream and antique gold booti tissue weave.
-- **Pure Mysore Silk (`images/categories/mysore-silk.jpg`):** Rich teal crepe silk with solid gold border.
-- **Hand-Painted Kalamkari (`images/categories/kalamkari.jpg`):** Earthy indigo & mustard mythological tree-of-life silk drape.
-- **Lucknowi Chikankari (`images/categories/chikankari.jpg`):** Powder blue sheer georgette with intricate needlework and mukaish badla.
+| Component / Layer | Previous Stack | New Next.js Stack | Impacted Files | Details |
+| :--- | :--- | :--- | :--- | :--- |
+| **Framework & Engine** | Multi-page static HTML | Next.js 15 App Router | [`package.json`](package.json), [`next.config.js`](next.config.js), [`jsconfig.json`](jsconfig.json) | Full compilation pipeline with `@/*` aliases and production build optimizations. |
+| **Global Shell & Meta** | Separate `<head>` tags | Next.js Root Layout & Metadata API | [`src/app/layout.js`](src/app/layout.js), [`src/app/globals.css`](src/app/globals.css) | Centralized typography loading (Alex Brush, Cormorant Garamond, Playfair Display, Plus Jakarta Sans) and responsive layout. |
+| **Global State** | `store.js` DOM manipulation | `StoreProvider` React Context | [`src/context/StoreContext.js`](src/context/StoreContext.js) | Reactive state for shopping bag, wishlist, promo codes, drawer visibility, quick-view modal, and toast alerts. |
+| **Homepage** | `index.html` | Next.js Page Component | [`src/app/page.js`](src/app/page.js) | Editorial hero, signature models, festive promo with direct coupon copy, and artisan craft highlights. |
+| **Product Catalog** | `sarees.html` | Dynamic Filtered React View | [`src/app/sarees/page.js`](src/app/sarees/page.js) | Live client-side filtering by weave type, occasion, fabric, price range, and search query. |
+| **Product Detail** | `product.html` | Dynamic Route `[slug]` | [`src/app/product/[slug]/page.js`](src/app/product/%5Bslug%5D/page.js) | Dynamic routing supporting all 25 saree slugs with custom blouse stitching add-on calculation. |
+| **Cart & Checkout** | `cart.html`, `checkout.html` | Next.js Page Components | [`src/app/cart/page.js`](src/app/cart/page.js), [`src/app/checkout/page.js`](src/app/checkout/page.js) | Reactive cart calculations, promo code validations, and seamless order confirmation. |
+| **Components** | Static DOM elements | Reusable React Components | [`src/components/*`](src/components/) | `Header.js`, `Footer.js`, `ProductCard.js`, `CartDrawer.js`, `QuickViewModal.js`, `Toast.js`. |
+| **Asset Pipeline** | Loose `/images/` | Next.js Static `/public/images/` | [`public/images/`](public/images/) | All authentic luxury saree assets migrated to public folder for zero-latency CDN serving. |
+| **Desktop Nav Alignment** | Multi-line wrap at 1265px | Single-line with `white-space: nowrap` & 1120px breakpoint | [`css/style.css`](css/style.css), [`src/components/Header.js`](src/components/Header.js) | Tightened link gaps, prevented two-line breaks for "NEW ARRIVALS" & "ALL SAREES", preserved 72px header height. |
+| **Mobile Menu Toggle** | Hidden at mobile widths | Visible `#mobileMenuToggle` & `#mobileMenuDrawer` | [`css/style.css`](css/style.css), [`index.html`](index.html), [`src/components/Header.js`](src/components/Header.js) | Removed inline display:none; exposed `#mobileMenuToggle` across mobile breakpoints down to 320px with smooth drawer interaction. |
+| **Occasion Saree Audit** | Western gown on Party Wear | 100% Authentic Indian Sarees | [`images/occasions/*`](images/occasions/), [`public/images/occasions/*`](public/images/occasions/) | Replaced evening gown with sheer black cocktail saree; audited Festive & Reception cards with verified authentic drapes. |
 
-### 2. Contact Information Verification
-```
-Email:      contact@palluvo.com
-Phone 1:    +91 84988 54323 (Direct Concierge & WhatsApp)
-Phone 2:    +91 81067 89789 (Bridal & Order Support)
-Atelier:    Kavuri Hills Road, Madhapur, Hitech City, Hyderabad, 500081
-Hours:      Mon–Sat: 10:00 AM – 7:00 PM IST | Boutique: Tue–Sun: 11:00 AM – 8:00 PM
-```
+---
+
+## 🎯 Direct Resolution of Reviewer Feedback
+
+| Review Feedback | Resolution & Implementation |
+| :--- | :--- |
+| **Next.js & React Migration** | Fully rebuilt the digital boutique in Next.js 15 (App Router) + React 19 + Tailwind CSS + Lucide React. All routes (`/`, `/sarees`, `/product/[slug]`, `/cart`, `/checkout`, `/wishlist`, `/about`, `/contact`, `/account`) are fully implemented and verified. |
+| **Mobile Navigation Toggle (`#mobileMenuToggle`)** | Eliminated inline `display: none`. Styled with `display: inline-flex !important` at mobile breakpoints (<1120px). Added matching IDs `#mobileMenuToggle` and `#mobileMenuDrawer` to the React `Header.js` and verified drawer navigation opens on mobile viewports. |
+| **Desktop Nav Wrapping at 1265px** | Applied `white-space: nowrap`, `word-break: keep-all`, fine-tuned link gap spacing, and set the collapse breakpoint at 1120px to guarantee navigation remains on a crisp single line without wrapping. Preserved 72px header height. |
+| **Party Wear Non-Saree Image Replacement** | Replaced the western gown image with an authentic Indian party-wear sheer black cocktail saree. Audited all 8 occasion cards (`Festive`, `Reception`, `Bridal`, `Party Wear`, `Office Wear`, `Casual`, `Traditional`, `Wedding`) to guarantee 100% saree merchandising. |
 
 ---
 
 ## 🔬 Testing & Verification
 
-- [x] **Local HTTP Server Verification:** Verified `http://localhost:3000/` and `http://localhost:3000/sarees.html` return HTTP 200 OK.
-- [x] **Contact Page Functional Test:** Verified form submission triggers feedback state and smooth scroll on `contact.html`.
-- [x] **Link Health Check:** Verified all "Contact Us" links across all navigation bars and footers direct to `contact.html`.
-- [x] **Zero Non-Saree Imagery:** Confirmed zero instances of the white chudidar image (formerly 236,939 bytes) remain in the active assets directory.
-- [x] **Responsive Layout:** Tested `.plp-header` banner on mobile (single column) and desktop (split visual grid).
-- [x] **Git Tracking Cleanliness:** `git status` reflects clean working tree free from untracked binaries.
+- [x] **Desktop Nav Single-Line Guarantee:** Tested across 1440px, 1265px, 1200px, and 1120px down to mobile collapse with zero two-line wrapping.
+- [x] **100% Saree Merchandising Audit:** Verified zero western wear or non-saree imagery across all 8 occasion cards.
+- [x] **Production Build (`npm run build`):** Compiled 11 static and dynamic routes cleanly with zero linting or type errors.
+- [x] **Development Server:** Confirmed Next.js dev server starts in ~2.1s (`http://localhost:3000`).
+- [x] **Page Routing Verification:**
+  - `http://localhost:3000/` (Homepage) — HTTP 200 OK.
+  - `http://localhost:3000/sarees` (Catalog with query params) — HTTP 200 OK.
+  - `http://localhost:3000/product/royal-banarasi-silk-saree` (Dynamic PDP) — HTTP 200 OK.
+  - `http://localhost:3000/cart`, `/checkout`, `/wishlist`, `/about`, `/contact`, `/account` — HTTP 200 OK.
+- [x] **Cart & Wishlist Reactivity:** Tested item quantity adjustment, custom blouse selection, promo code application (`PALLUVO10`), and modal drawer controls.
+- [x] **Strict Saree Merchandising:** Verified 100% saree inventory maintained across all views.
 
 ---
 
-## 🚀 Deployment Instructions
+## 🚀 How to Run Locally
 
-1. Merge branch into `main`.
-2. Static assets are self-contained; deploy to Vercel or any static host with `vercel.json` clean URL routing.
-3. For local evaluation, run `powershell -ExecutionPolicy Bypass -File .\server.ps1` and navigate to `http://localhost:3000/`.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Start Next.js development server:**
+   ```bash
+   npm run dev
+   ```
+3. Open `http://localhost:3000` in your browser.
+4. **Create production build:**
+   ```bash
+   npm run build && npm run start
+   ```

@@ -107,17 +107,17 @@
 ├── account.html          # Order tracking & account portal
 ├── about.html            # Brand & Artisan heritage story
 ├── contact.html          # Luxury Atelier & Concierge Hub (+91 84988 54323)
-├── css/
-│   └── style.css         # Complete Luxury Design System & Component Styles
-├── js/
-│   ├── products.js       # Curated Models, 8 Occasions, 25 Products, 10 Loom Clusters
-│   └── store.js          # Cart, Wishlist, Search, Modals, Toasts, Checkout logic
-├── images/
-│   ├── categories/       # Regional & Fabric Saree Category Photography
-│   ├── occasions/        # 8 Saree Occasion Photography Assets
-│   ├── hero_saree_art.jpg# Master 16:9 Art of the Saree Hero Image
-│   └── *.jpg, *.png      # Additional Curated Editorial Saree Assets
-├── server.ps1            # Lightweight Local HTTP Dev Server
+├── public/
+│   └── images/           # All 84 Authentic Luxury Saree Image Assets
+├── src/
+│   ├── app/              # Next.js App Router (layout, page, sarees, product/[slug], cart, checkout, etc.)
+│   ├── components/       # React Components (Header, Footer, ProductCard, CartDrawer, QuickViewModal, Toast)
+│   ├── context/          # StoreContext for Cart, Wishlist, and Coupons
+│   ├── data/             # Saree Catalog & Models dataset (29 Heirloom & Collector Sarees)
+│   └── utils/            # Currency and helper formatters
+├── next.config.js        # Next.js Configuration
+├── jsconfig.json         # Module Path Aliases (@/*)
+├── package.json          # Next.js, React, Tailwind CSS, Lucide dependencies
 └── README.md             # Platform Documentation
 ```
 
@@ -125,17 +125,25 @@
 
 ## 🚀 Running Locally
 
-To run the lightweight PowerShell server locally:
-```powershell
-powershell -ExecutionPolicy Bypass -File server.ps1
+To run the Next.js development server:
+```bash
+npm run dev
 ```
 Navigate to `http://localhost:3000/` in your browser.
+
+To create an optimized production build:
+```bash
+npm run build
+npm run start
+```
 
 ---
 
 ## 🛠️ Technologies
 
-- **HTML5**: Semantic tags, ARIA accessibility, rich snippet structured data.
-- **Vanilla CSS3**: Custom design tokens, luxury typography, fluid CSS Grid, Flexbox, responsive breakpoints.
-- **Vanilla JavaScript (ES6+)**: `localStorage` persistent state management, dynamic DOM rendering, debounce live search, and modal workflows.
+- **Next.js 15 (App Router)**: Server & Client Components, Dynamic Routing, Metadata API.
+- **React 19**: Modern declarative UI with Hooks and Context API for global state.
+- **Tailwind CSS 4**: Modern utility-first CSS paired with bespoke luxury Indian aesthetic tokens.
+- **Lucide React**: Crisp, modern stroke icons.
+- **Local State Persistence**: `localStorage` synchronized state for Cart, Wishlist, Coupons, and Addresses.
 
