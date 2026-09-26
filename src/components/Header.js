@@ -92,7 +92,7 @@ export default function Header() {
           THE FESTIVE EDIT
         </Link>
         <span className="shrink-0 text-[#D6B878]/60">—</span> 
-        <span className="text-white/90 truncate">Complimentary Insured Shipping &gt; ₹999</span>
+        <span className="text-white/90 truncate">Free insured shipping on orders ₹999+</span>
         <span className="hidden md:inline text-white/50">| Use Code: </span>
         <button
           onClick={copyPromoCode}

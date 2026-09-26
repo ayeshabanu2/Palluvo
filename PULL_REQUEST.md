@@ -60,6 +60,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **[P2] Hero trust-badge copy** | `"Direct Master Weaver Clustered"` (grammatically incomplete) | `"Direct from master weavers"` | [`src/app/page.js`](src/app/page.js) | Corrected trust-badge fragment in hero section line 80 to clean, natural phrasing. |
 | **[P2] “Explore Top Models” Anchor Scroll Offset** | Sticky header occluded section eyebrow and title on arrival | Added scroll margin offset (`scroll-mt-28 sm:scroll-mt-36` and CSS fallback `scroll-margin-top: 110px / 140px`) | [`src/app/page.js`](src/app/page.js), [`src/app/globals.css`](src/app/globals.css) | Jumping to `#signature-models` leaves full breathing room beneath the sticky header with eyebrow, title, and gold rule completely unobstructed. |
 | **[P2] Collection Intro Copy** | Mentioned internal redesign ("We eliminated cluttered 20-category directories...") | Customer-facing intro describing the eight signature handloom weaves | [`src/app/page.js`](src/app/page.js) | Replaced internal refactor narrative with: "Explore our eight signature handloom weaves, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry." |
+| **[P2] Shipping Threshold Copy in Announcement Bar** | Mathematical operator `"Complimentary Insured Shipping > ₹999"` | Natural promotional copy: `"Free insured shipping on orders ₹999+"` | [`src/components/Header.js`](src/components/Header.js) | Polished top announcement bar copy to natural conversational English. |
+| **[P2] Newsletter Accessible Label** | Input had only placeholder `"Enter your email"` without `<label>` or `aria-label` | Added `<label htmlFor="newsletter-email" className="sr-only">` and `aria-label` | [`src/components/Footer.js`](src/components/Footer.js) | Persistent accessible name for screen readers and assistive technology even after user typing. |
 | **[P2] Duplicate copy word** | `"the sacred sacred pheras"` | `"the sacred pheras"` | [`src/app/page.js`](src/app/page.js) | Removed the repeated word from the occasion-section intro paragraph (line 230). Proofread surrounding copy — no other duplicates found. |
 | **[P2] Footer assurance row mobile reflow** | Three labels forced into one rigid row at 555px — crowded, low contrast | Labels wrap to a second line; each badge has a gold Lucide icon anchor | [`src/components/Footer.js`](src/components/Footer.js) | `flex gap-6` → `flex flex-wrap gap-x-5 gap-y-2`; `whitespace-nowrap` per badge keeps individual labels intact; `ShieldCheck`, `Award`, `Sparkles` icons add contrast against the dark footer. |
 | **[P2] Legacy HTML cleanup** | 9 standalone HTML pages tracked at repo root | Deleted — App Router is the canonical storefront | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` | All content and behaviour represented by Next.js routes. Required assets (`images/`, `css/`, `js/`) remain intact. |
@@ -96,6 +98,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **[P2] Hero trust badge copy** | Corrected `Direct Master Weaver Clustered` to `Direct from master weavers` in `src/app/page.js:80`. |
 | **[P2] Anchor scroll offset for sticky header** | Added `scroll-mt-28 sm:scroll-mt-36` to `#signature-models` in `src/app/page.js` and CSS fallback `scroll-margin-top: 110px / 140px` in `src/app/globals.css`. Section eyebrow and title are now completely clear of the sticky header upon jump. |
 | **[P2] Customer-facing collection intro copy** | Replaced internal refactoring copy with: *"Explore our eight signature handloom weaves, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry."* |
+| **[P2] Shipping threshold copy** | Changed `"Complimentary Insured Shipping > ₹999"` to natural promotional English: `"Free insured shipping on orders ₹999+"` in `src/components/Header.js:95`. |
+| **[P2] Accessible newsletter email label** | Added `<label htmlFor="newsletter-email" className="sr-only">Email address for newsletter</label>` and `aria-label="Email address for newsletter"` to `src/components/Footer.js`. |
 | **[P2] Duplicate word in occasion intro** | `"the sacred sacred pheras"` corrected to `"the sacred pheras"` in `src/app/page.js`. Full copy proofread — no other duplicates found. |
 | **[P2] Footer assurance row crowded on mobile** | Row now uses `flex-wrap` so badges reflow at ~555px. Each badge has a small gold icon for contrast. Individual label text protected with `whitespace-nowrap`. |
 | **[P2] Nine legacy HTML pages** | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` removed via `git rm`. App Router routes are now the sole storefront source. |
@@ -105,6 +109,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 
 ## 🔬 Testing & Verification
 
+- [x] **[P2] Shipping Threshold Copy:** Verified `"Free insured shipping on orders ₹999+"` renders cleanly in the announcement bar without mathematical operators.
+- [x] **[P2] Newsletter Accessible Label:** Verified `<label htmlFor="newsletter-email">` and `aria-label` provide accessible naming for screen readers.
 - [x] **[P2] Anchor Scroll Offset:** Tested clicking "Explore Top Models"; `#signature-models` opens with eyebrow, title, and divider perfectly visible below the sticky header on both mobile and desktop.
 - [x] **[P2] Collection Intro Copy:** Verified new customer-centric copy renders cleanly without mentions of 20 categories or internal refactors.
 - [x] **[P1] Narrow Mobile Screen Fit (360–375px):** Shopping-bag control, wishlist, search, and hamburger menu verified fully visible with zero clipping or horizontal overflow.
@@ -126,10 +132,10 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | File | Status | Summary |
 | :--- | :--- | :--- |
 | [`postcss.config.mjs`](postcss.config.mjs) | ✅ **Added** | Activates `@tailwindcss/postcss`; fixes the CSS pipeline |
-| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened with active states; adapted for 360–375px mobile screens; shopping bag control fully visible without clipping |
+| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened with active states; adapted for 360–375px mobile screens; shopping bag control fully visible without clipping; polished shipping threshold copy |
 | [`src/app/globals.css`](src/app/globals.css) | ✅ **Modified** | CSS fallback: `nav[aria-label="Saree Collections"]` forced single-row; responsive `.header-main-row` height (64px mobile, 72px desktop); `#signature-models` scroll margin fallback |
 | [`src/app/page.js`](src/app/page.js) | ✅ **Modified** | [P2] Scroll offset added to `#signature-models`; updated collection intro copy; fixed hero trust badge copy; removed duplicate word "sacred" |
-| [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons; readable at all widths |
+| [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Added accessible label to newsletter field; assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons |
 | [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips |
 | `about.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/about` Next.js route |
 | `account.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/account` Next.js route |

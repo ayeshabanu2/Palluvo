@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import Link from 'next/link';
 import { ShieldCheck, Award, Truck, RotateCcw, Lock, Sparkles, Heart } from 'lucide-react';
@@ -82,16 +84,25 @@ export default function Footer() {
             <p className="text-xs text-[#8E857B] mb-4">
               Receive private preview invitations, silk care guides, and exclusive festive privileges.
             </p>
-            <div className="flex">
+            <form onSubmit={(e) => e.preventDefault()} className="flex">
+              <label htmlFor="newsletter-email" className="sr-only">
+                Email address for newsletter
+              </label>
               <input
+                id="newsletter-email"
+                name="email"
                 type="email"
+                aria-label="Email address for newsletter"
                 placeholder="Enter your email"
                 className="bg-[#1F1714] border border-[#3D302A] px-3 py-2 text-xs text-white placeholder-[#8E857B] rounded-l-md focus:outline-none focus:border-[#D6B878] flex-1"
               />
-              <button className="bg-[#B08D57] hover:bg-[#8C6A35] text-white px-4 py-2 text-xs font-semibold rounded-r-md transition tracking-wider uppercase">
+              <button 
+                type="submit"
+                className="bg-[#B08D57] hover:bg-[#8C6A35] text-white px-4 py-2 text-xs font-semibold rounded-r-md transition tracking-wider uppercase cursor-pointer"
+              >
                 Join
               </button>
-            </div>
+            </form>
           </div>
         </div>
 
