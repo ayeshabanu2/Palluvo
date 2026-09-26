@@ -98,7 +98,7 @@ export default function HomePage() {
           </h2>
           <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
           <p className="text-xs sm:text-sm text-[#6D625D]">
-            Explore our eight signature handloom weaves, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry.
+            Explore our eight signature saree styles, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry.
           </p>
         </div>
 

@@ -1,10 +1,24 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
+import { useStore } from '@/context/StoreContext';
 import { ShieldCheck, Award, Truck, RotateCcw, Lock, Sparkles, Heart } from 'lucide-react';
 
 export default function Footer() {
+  const { showToast } = useStore();
+  const [newsletterEmail, setNewsletterEmail] = useState('');
+  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
+
+  const handleNewsletterSubmit = (e) => {
+    e.preventDefault();
+    if (newsletterEmail && newsletterEmail.includes('@')) {
+      setNewsletterSubscribed(true);
+      if (showToast) {
+        showToast('Thank you for subscribing to The Saree Circle!');
+      }
+    }
+  };
   return (
     <footer className="bg-[#2B211D] text-[#EDE3D5] pt-16 pb-12 border-t border-[#3D302A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -84,25 +98,35 @@ export default function Footer() {
             <p className="text-xs text-[#8E857B] mb-4">
               Receive private preview invitations, silk care guides, and exclusive festive privileges.
             </p>
-            <form onSubmit={(e) => e.preventDefault()} className="flex">
-              <label htmlFor="newsletter-email" className="sr-only">
-                Email address for newsletter
-              </label>
-              <input
-                id="newsletter-email"
-                name="email"
-                type="email"
-                aria-label="Email address for newsletter"
-                placeholder="Enter your email"
-                className="bg-[#1F1714] border border-[#3D302A] px-3 py-2 text-xs text-white placeholder-[#8E857B] rounded-l-md focus:outline-none focus:border-[#D6B878] flex-1"
-              />
-              <button 
-                type="submit"
-                className="bg-[#B08D57] hover:bg-[#8C6A35] text-white px-4 py-2 text-xs font-semibold rounded-r-md transition tracking-wider uppercase cursor-pointer"
-              >
-                Join
-              </button>
-            </form>
+            {newsletterSubscribed ? (
+              <div className="bg-[#1F1714] border border-[#B08D57]/40 rounded-md p-3 text-xs text-[#D6B878] flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#B08D57] shrink-0" />
+                <span>Thank you for subscribing! Welcome to The Saree Circle.</span>
+              </div>
+            ) : (
+              <form onSubmit={handleNewsletterSubmit} className="flex">
+                <label htmlFor="newsletter-email" className="sr-only">
+                  Email address for newsletter
+                </label>
+                <input
+                  id="newsletter-email"
+                  name="email"
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  aria-label="Email address for newsletter"
+                  placeholder="Enter your email"
+                  required
+                  className="bg-[#1F1714] border border-[#3D302A] px-3 py-2 text-xs text-white placeholder-[#8E857B] rounded-l-md focus:outline-none focus:border-[#D6B878] flex-1"
+                />
+                <button 
+                  type="submit"
+                  className="bg-[#B08D57] hover:bg-[#8C6A35] text-white px-4 py-2 text-xs font-semibold rounded-r-md transition tracking-wider uppercase cursor-pointer shrink-0"
+                >
+                  Join
+                </button>
+              </form>
+            )}
           </div>
         </div>
 
