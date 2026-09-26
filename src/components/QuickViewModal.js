@@ -89,11 +89,20 @@ export default function QuickViewModal() {
           <div>
             <div className="flex items-center gap-2 text-xs text-[#8E857B] uppercase tracking-wider mb-2">
               <span>{product.sareeType}</span>
-              <span>•</span>
-              <div className="flex items-center gap-1 text-amber-600 font-semibold">
-                <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                <span>{product.rating || '4.9'}</span>
-              </div>
+              {product.rating && (
+                <>
+                  <span>•</span>
+                  <div className="flex items-center gap-1 text-amber-600 font-semibold">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                    <span>{product.rating}</span>
+                    {product.reviewsCount && (
+                      <span className="text-[#8E857B] font-normal text-xs">
+                        ({product.reviewsCount} reviews)
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
 
             <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#2B211D] leading-tight">

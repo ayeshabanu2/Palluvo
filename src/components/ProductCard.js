@@ -74,11 +74,18 @@ export default function ProductCard({ product }) {
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between text-[11px] text-[#8E857B] uppercase tracking-wider mb-1">
-            <span>{product.sareeType || product.category}</span>
-            <div className="flex items-center gap-1 text-amber-600 font-semibold">
-              <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-              <span>{product.rating || '4.9'}</span>
-            </div>
+            <span className="truncate pr-1.5">{product.sareeType || product.category}</span>
+            {product.rating && (
+              <div className="flex items-center gap-1 text-amber-600 font-semibold shrink-0">
+                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span>{product.rating}</span>
+                {product.reviewsCount && (
+                  <span className="text-[#8E857B] font-normal text-[10px]">
+                    ({product.reviewsCount})
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           <Link href={`/product/${product.slug || product.id}`} className="block">

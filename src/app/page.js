@@ -102,7 +102,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
           {PALLUVO_TOP_MODELS.map((model) => (
             <Link
               key={model.id}
@@ -116,32 +116,32 @@ export default function HomePage() {
                   className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute top-4 left-4">
-                  <span className="bg-[#641C2D]/90 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded uppercase tracking-wider">
+                <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4">
+                  <span className="bg-[#641C2D]/90 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded uppercase tracking-wider">
                     {model.tag}
                   </span>
                 </div>
-                <div className="absolute bottom-4 left-4 right-4 text-white">
-                  <span className="text-[11px] uppercase tracking-wider text-[#D6B878] font-medium block">
+                <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-4 sm:left-4 sm:right-4 text-white">
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium block">
                     {model.region}
                   </span>
-                  <h3 className="font-serif text-2xl font-bold mt-1 text-white">
+                  <h3 className="font-serif text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white leading-tight line-clamp-1">
                     {model.name}
                   </h3>
-                  <p className="text-xs text-[#EDE3D5]/90 line-clamp-1 mt-0.5 font-light">
+                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-1 mt-0.5 font-light">
                     {model.subtitle}
                   </p>
                 </div>
               </div>
 
-              <div className="p-5 flex-1 flex flex-col justify-between">
-                <p className="text-xs text-[#6D625D] leading-relaxed mb-4">
+              <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
+                <p className="text-[11px] sm:text-xs text-[#6D625D] leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
                   {model.desc}
                 </p>
-                <div className="flex items-center justify-between text-xs pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
+                <div className="flex items-center justify-between text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
                   <span className="text-[#B08D57] font-semibold">{model.artisanHours}</span>
-                  <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-1">
-                    Explore Drapes <ArrowRight className="w-3.5 h-3.5" />
+                  <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1">
+                    Explore <span className="hidden xs:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </span>
                 </div>
               </div>
