@@ -1,24 +1,8 @@
-'use client';
-
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useStore } from '@/context/StoreContext';
 import { ShieldCheck, Award, Truck, RotateCcw, Lock, Sparkles, Heart } from 'lucide-react';
 
 export default function Footer() {
-  const { showToast } = useStore();
-  const [newsletterEmail, setNewsletterEmail] = useState('');
-  const [newsletterSubscribed, setNewsletterSubscribed] = useState(false);
-
-  const handleNewsletterSubmit = (e) => {
-    e.preventDefault();
-    if (newsletterEmail && newsletterEmail.includes('@')) {
-      setNewsletterSubscribed(true);
-      if (showToast) {
-        showToast('Thank you for subscribing to The Saree Circle!');
-      }
-    }
-  };
   return (
     <footer className="bg-[#2B211D] text-[#EDE3D5] pt-16 pb-12 border-t border-[#3D302A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -94,39 +78,38 @@ export default function Footer() {
 
           {/* Newsletter */}
           <div>
-            <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-3">Join The Saree Circle</h4>
+            <div className="flex items-center gap-2 mb-3">
+              <h4 className="text-sm font-semibold tracking-wider uppercase text-white">Join The Saree Circle</h4>
+              <span className="bg-[#B08D57]/20 text-[#D6B878] text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded border border-[#B08D57]/30">
+                Coming Soon
+              </span>
+            </div>
             <p className="text-xs text-[#8E857B] mb-4">
-              Receive private preview invitations, silk care guides, and exclusive festive privileges.
+              Private preview invitations, silk care guides, and exclusive festive privileges launching soon.
             </p>
-            {newsletterSubscribed ? (
-              <div className="bg-[#1F1714] border border-[#B08D57]/40 rounded-md p-3 text-xs text-[#D6B878] flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#B08D57] shrink-0" />
-                <span>Thank you for subscribing! Welcome to The Saree Circle.</span>
-              </div>
-            ) : (
-              <form onSubmit={handleNewsletterSubmit} className="flex">
-                <label htmlFor="newsletter-email" className="sr-only">
-                  Email address for newsletter
-                </label>
-                <input
-                  id="newsletter-email"
-                  name="email"
-                  type="email"
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  aria-label="Email address for newsletter"
-                  placeholder="Enter your email"
-                  required
-                  className="bg-[#1F1714] border border-[#3D302A] px-3 py-2 text-xs text-white placeholder-[#8E857B] rounded-l-md focus:outline-none focus:border-[#D6B878] flex-1"
-                />
-                <button 
-                  type="submit"
-                  className="bg-[#B08D57] hover:bg-[#8C6A35] text-white px-4 py-2 text-xs font-semibold rounded-r-md transition tracking-wider uppercase cursor-pointer shrink-0"
-                >
-                  Join
-                </button>
-              </form>
-            )}
+            <div className="flex" aria-disabled="true">
+              <label htmlFor="newsletter-email" className="sr-only">
+                Email address for newsletter (Subscriptions launching soon)
+              </label>
+              <input
+                id="newsletter-email"
+                name="email"
+                type="email"
+                disabled
+                aria-disabled="true"
+                aria-label="Newsletter subscriptions opening soon"
+                placeholder="Subscriptions opening soon..."
+                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#8E857B] placeholder-[#8E857B]/70 rounded-l-md cursor-not-allowed flex-1 focus:outline-none"
+              />
+              <button 
+                type="button"
+                disabled
+                aria-disabled="true"
+                className="bg-[#3D302A] text-[#8E857B] px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
+              >
+                Join
+              </button>
+            </div>
           </div>
         </div>
 
