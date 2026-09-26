@@ -1,15 +1,67 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { Search, Heart, ShoppingBag, User, Menu, X, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, Menu, X, ArrowRight, ShieldCheck, Sparkles, Copy, Check } from 'lucide-react';
 import { PALLUVO_TOP_MODELS } from '@/data/products';
+
+function CategoryNav() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentType = searchParams?.get('type') || null;
+  const currentBadge = searchParams?.get('badge') || null;
+
+  const isNavActive = (type, badge, isAll) => {
+    if (isAll) {
+      return pathname === '/sarees' && !currentType && !currentBadge;
+    }
+    if (badge) {
+      return currentBadge === badge;
+    }
+    if (type) {
+      return currentType?.toLowerCase() === type?.toLowerCase();
+    }
+    return false;
+  };
+
+  const navItems = [
+    { label: 'New Arrivals', href: '/sarees?badge=New+Arrival', badge: 'New Arrival', type: null, isAll: false, special: 'text-[#8C6A35]' },
+    { label: 'Kanjivaram', href: '/sarees?type=Kanjivaram', badge: null, type: 'Kanjivaram', isAll: false },
+    { label: 'Banarasi', href: '/sarees?type=Banarasi', badge: null, type: 'Banarasi', isAll: false },
+    { label: 'Paithani', href: '/sarees?type=Paithani', badge: null, type: 'Paithani', isAll: false },
+    { label: 'Chanderi', href: '/sarees?type=Chanderi', badge: null, type: 'Chanderi', isAll: false },
+    { label: 'Organza', href: '/sarees?type=Organza', badge: null, type: 'Organza', isAll: false },
+    { label: 'Ready-To-Wear', href: '/sarees?type=Ready-to-Wear', badge: null, type: 'Ready-to-Wear', isAll: false, special: 'text-[#641C2D]' },
+    { label: 'All Sarees', href: '/sarees', badge: null, type: null, isAll: true }
+  ];
+
+  return (
+    <nav aria-label="Saree Collections" className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 py-2 border-t border-[#EDE3D5]/80 text-[12px] xl:text-[13px] tracking-[0.12em] xl:tracking-[0.14em] uppercase font-medium text-[#2B211D] whitespace-nowrap overflow-x-auto flex-nowrap">
+      {navItems.map((item) => {
+        const active = isNavActive(item.type, item.badge, item.isAll);
+        return (
+          <Link
+            key={item.label}
+            href={item.href}
+            className={`transition shrink-0 whitespace-nowrap pb-0.5 border-b-2 ${
+              active
+                ? 'text-[#641C2D] border-[#641C2D] font-bold'
+                : `border-transparent hover:text-[#641C2D] hover:border-[#641C2D]/40 ${item.special || 'text-[#2B211D]'}`
+            }`}
+          >
+            {item.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
 export default function Header() {
   const router = useRouter();
-  const { totalCartCount, wishlist, setIsCartOpen } = useStore();
+  const { totalCartCount, wishlist, setIsCartOpen, showToast } = useStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -22,14 +74,34 @@ export default function Header() {
     }
   };
 
+  const copyPromoCode = () => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText('PALLUVO10');
+    }
+    if (showToast) {
+      showToast('Promo code "PALLUVO10" copied to clipboard!');
+    }
+  };
+
   return (
     <>
       {/* Top Luxury Announcement Bar */}
       <aside aria-label="Announcement" className="bg-[#2B211D] text-[#D6B878] text-xs py-2 px-4 tracking-wider text-center flex items-center justify-center gap-2 border-b border-[#3D302A]">
-        <Sparkles className="w-3.5 h-3.5 text-[#B08D57] animate-pulse" />
-        <span className="font-medium">THE FESTIVE EDIT</span> — 
+        <Sparkles className="w-3.5 h-3.5 text-[#B08D57] animate-pulse shrink-0" />
+        <Link href="/sarees?occasion=Festive" className="font-medium hover:underline text-[#D6B878] transition">
+          THE FESTIVE EDIT
+        </Link>
+        <span>—</span> 
         <span className="text-white/90">Complimentary Insured Shipping on Orders Above ₹999</span>
-        <span className="hidden md:inline text-white/50">| Use Code: <span className="text-[#D6B878] font-bold">PALLUVO10</span> for 10% Off</span>
+        <span className="hidden md:inline text-white/50">| Use Code: </span>
+        <button
+          onClick={copyPromoCode}
+          title="Click to copy coupon code"
+          className="hidden md:inline-flex items-center gap-1 bg-[#3D302A] hover:bg-[#641C2D] text-[#D6B878] hover:text-white px-2 py-0.5 rounded text-[11px] font-bold tracking-wider transition cursor-pointer border border-[#B08D57]/40"
+        >
+          PALLUVO10
+        </button>
+        <span className="hidden md:inline text-white/50">for 10% Off</span>
       </aside>
 
       {/* Main Luxury Header */}
@@ -69,9 +141,15 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Kanjivaram, Banarasi, Organza..."
-                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-4 py-2.5 text-sm text-[#241F1D] placeholder-[#8E857B] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
+                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#8E857B] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
                 />
-                <Search className="w-4 h-4 text-[#8E857B] absolute left-4 top-3.5" />
+                <button
+                  type="submit"
+                  className="absolute left-3.5 top-3 text-[#8E857B] hover:text-[#641C2D] transition"
+                  aria-label="Submit search"
+                >
+                  <Search className="w-4 h-4" />
+                </button>
                 {searchQuery && (
                   <button
                     type="submit"
@@ -116,7 +194,7 @@ export default function Header() {
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white px-3.5 sm:px-4 py-2.5 rounded-full text-xs font-semibold tracking-wider transition shadow-sm"
+                className="relative flex items-center gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white px-3.5 sm:px-4 py-2.5 rounded-full text-xs font-semibold tracking-wider transition shadow-sm cursor-pointer"
                 aria-label="Shopping bag"
               >
                 <ShoppingBag className="w-4 h-4" />
@@ -129,32 +207,16 @@ export default function Header() {
           </div>
 
           {/* Saree-Only Curated Category Sub-Nav Bar */}
-          <nav aria-label="Saree Collections" className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 py-2 border-t border-[#EDE3D5]/80 text-[12px] xl:text-[13px] tracking-[0.12em] xl:tracking-[0.14em] uppercase font-medium text-[#2B211D] whitespace-nowrap overflow-x-auto flex-nowrap">
-            <Link href="/sarees?badge=New+Arrival" className="hover:text-[#641C2D] text-[#8C6A35] font-semibold transition shrink-0 whitespace-nowrap">
-              New Arrivals
-            </Link>
-            <Link href="/sarees?type=Kanjivaram" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
-              Kanjivaram
-            </Link>
-            <Link href="/sarees?type=Banarasi" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
-              Banarasi
-            </Link>
-            <Link href="/sarees?type=Paithani" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
-              Paithani
-            </Link>
-            <Link href="/sarees?type=Chanderi" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
-              Chanderi
-            </Link>
-            <Link href="/sarees?type=Organza" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
-              Organza
-            </Link>
-            <Link href="/sarees?type=Ready-to-Wear" className="hover:text-[#641C2D] transition text-[#641C2D] font-semibold shrink-0 whitespace-nowrap">
-              Ready-To-Wear
-            </Link>
-            <Link href="/sarees" className="hover:text-[#641C2D] transition border-b border-transparent hover:border-[#641C2D] shrink-0 whitespace-nowrap">
-              All Sarees
-            </Link>
-          </nav>
+          <Suspense fallback={
+            <nav aria-label="Saree Collections" className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 py-2 border-t border-[#EDE3D5]/80 text-[12px] xl:text-[13px] tracking-[0.12em] uppercase font-medium text-[#2B211D]">
+              <span className="shrink-0">New Arrivals</span>
+              <span className="shrink-0">Kanjivaram</span>
+              <span className="shrink-0">Banarasi</span>
+              <span className="shrink-0">All Sarees</span>
+            </nav>
+          }>
+            <CategoryNav />
+          </Suspense>
         </div>
       </header>
 

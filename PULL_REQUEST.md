@@ -90,6 +90,7 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **[P2] Duplicate word in occasion intro** | `"the sacred sacred pheras"` corrected to `"the sacred pheras"` in `src/app/page.js`. Full copy proofread — no other duplicates found. |
 | **[P2] Footer assurance row crowded on mobile** | Row now uses `flex-wrap` so badges reflow at ~555px. Each badge has a small gold icon for contrast. Individual label text protected with `whitespace-nowrap`. |
 | **[P2] Nine legacy HTML pages** | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` removed via `git rm`. App Router routes are now the sole storefront source. |
+| **Top Category Buttons Reactivity & Search Sync** | Synchronized `useSearchParams()` with filter state in `src/app/sarees/page.js` via `useEffect` so clicking any category button ("New Arrivals", "Kanjivaram", "Banarasi", "Paithani", "Chanderi", "Organza", "Ready-to-Wear", "All Sarees") instantly filters catalog without full page reload. Added active visual indicators in `Header.js`, interactive promo code copy in top announcement bar, and removable active filter chips. |
 
 ---
 
@@ -112,7 +113,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | File | Status | Summary |
 | :--- | :--- | :--- |
 | [`postcss.config.mjs`](postcss.config.mjs) | ✅ **Added** | Activates `@tailwindcss/postcss`; fixes the CSS pipeline |
-| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened: `flex-nowrap`, `whitespace-nowrap` on every link, `h-[72px]` main row |
+| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened with active states, interactive coupon copy in announcement bar |
+| [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips |
 | [`src/app/globals.css`](src/app/globals.css) | ✅ **Modified** | CSS fallback: `nav[aria-label="Saree Collections"]` forced single-row; `.header-main-row` 72px lock |
 | [`src/app/page.js`](src/app/page.js) | ✅ **Modified** | [P2] Removed duplicate word `"sacred sacred"` → `"sacred"` in occasion intro |
 | [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons; readable at all widths |

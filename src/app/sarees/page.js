@@ -16,10 +16,28 @@ function SareesContent() {
   const [selectedType, setSelectedType] = useState(initialType);
   const [selectedOccasion, setSelectedOccasion] = useState(initialOccasion);
   const [selectedFabric, setSelectedFabric] = useState('All');
+  const [selectedBadge, setSelectedBadge] = useState(initialBadge);
   const [sortBy, setSortBy] = useState('featured');
   const [priceRange, setPriceRange] = useState(15000);
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+
+  // Sync state whenever URL searchParams change (clicking header buttons, category links, or searching)
+  React.useEffect(() => {
+    const qType = searchParams.get('type');
+    const qOccasion = searchParams.get('occasion');
+    const qBadge = searchParams.get('badge');
+    const qSearch = searchParams.get('q');
+
+    setSelectedType(qType || 'All');
+    setSelectedOccasion(qOccasion || 'All');
+    setSelectedBadge(qBadge || '');
+    if (qSearch !== null) {
+      setSearchQuery(qSearch);
+    } else if (!searchParams.has('q')) {
+      setSearchQuery('');
+    }
+  }, [searchParams]);
 
   // Extract distinct fabrics
   const fabrics = useMemo(() => {
@@ -34,11 +52,27 @@ function SareesContent() {
   const filteredSarees = useMemo(() => {
     return SAREE_PRODUCTS.filter((saree) => {
       // Type
-      if (selectedType !== 'All' && saree.sareeType !== selectedType && saree.category !== selectedType) {
-        return false;
+      if (selectedType !== 'All') {
+        if (selectedType === 'Ready-to-Wear') {
+          const isReady =
+            saree.category === 'Ready-to-Wear' ||
+            saree.sareeType === 'Ready-to-Wear' ||
+            saree.sareeType === 'Georgette' ||
+            saree.sareeType === 'Nauvari' ||
+            (saree.specifications && saree.specifications.weave && saree.specifications.weave.toLowerCase().includes('tissue')) ||
+            saree.id === 'saree-012' ||
+            saree.id === 'saree-020' ||
+            saree.id === 'saree-027';
+          if (!isReady) return false;
+        } else if (
+          saree.sareeType.toLowerCase() !== selectedType.toLowerCase() &&
+          saree.category.toLowerCase() !== selectedType.toLowerCase()
+        ) {
+          return false;
+        }
       }
       // Occasion
-      if (selectedOccasion !== 'All' && saree.occasion !== selectedOccasion) {
+      if (selectedOccasion !== 'All' && saree.occasion.toLowerCase() !== selectedOccasion.toLowerCase()) {
         return false;
       }
       // Fabric
@@ -50,8 +84,12 @@ function SareesContent() {
         return false;
       }
       // Badge (e.g. New Arrival)
-      if (initialBadge && saree.badge !== initialBadge) {
-        return false;
+      if (selectedBadge) {
+        const badgeNorm = selectedBadge.toLowerCase().replace(/\s+/g, '');
+        const sareeBadgeNorm = (saree.badge || '').toLowerCase().replace(/\s+/g, '');
+        if (sareeBadgeNorm !== badgeNorm && !sareeBadgeNorm.includes(badgeNorm) && !badgeNorm.includes(sareeBadgeNorm)) {
+          return false;
+        }
       }
       // Search
       if (searchQuery.trim()) {
@@ -62,7 +100,7 @@ function SareesContent() {
           saree.fabric.toLowerCase().includes(q) ||
           saree.color.toLowerCase().includes(q) ||
           saree.occasion.toLowerCase().includes(q) ||
-          (saree.specifications && saree.specifications.origin.toLowerCase().includes(q));
+          (saree.specifications && saree.specifications.origin && saree.specifications.origin.toLowerCase().includes(q));
         if (!matches) return false;
       }
       return true;
@@ -72,12 +110,13 @@ function SareesContent() {
       if (sortBy === 'rating') return (b.rating || 0) - (a.rating || 0);
       return 0; // featured default
     });
-  }, [selectedType, selectedOccasion, selectedFabric, priceRange, searchQuery, sortBy, initialBadge]);
+  }, [selectedType, selectedOccasion, selectedFabric, selectedBadge, priceRange, searchQuery, sortBy]);
 
   const clearAllFilters = () => {
     setSelectedType('All');
     setSelectedOccasion('All');
     setSelectedFabric('All');
+    setSelectedBadge('');
     setPriceRange(15000);
     setSearchQuery('');
   };
@@ -229,6 +268,49 @@ function SareesContent() {
 
         {/* PRODUCT GRID */}
         <div className="lg:col-span-3">
+          {/* Active Filter Chips */}
+          {(selectedType !== 'All' || selectedOccasion !== 'All' || selectedFabric !== 'All' || selectedBadge || searchQuery) && (
+            <div className="flex flex-wrap items-center gap-2 mb-6 p-3 bg-white rounded-xl border border-[#EDE3D5]">
+              <span className="text-xs text-[#8E857B] font-semibold uppercase tracking-wider mr-1">Active:</span>
+              {selectedType !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#641C2D]/10 text-[#641C2D] border border-[#641C2D]/30 rounded-full text-xs font-semibold">
+                  Model: {selectedType}
+                  <button onClick={() => setSelectedType('All')} className="hover:text-black" aria-label="Remove model filter"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {selectedBadge && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#B08D57]/15 text-[#8C6A35] border border-[#B08D57]/40 rounded-full text-xs font-semibold">
+                  Badge: {selectedBadge}
+                  <button onClick={() => setSelectedBadge('')} className="hover:text-black" aria-label="Remove badge filter"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {selectedOccasion !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
+                  Occasion: {selectedOccasion}
+                  <button onClick={() => setSelectedOccasion('All')} className="hover:text-black" aria-label="Remove occasion filter"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {selectedFabric !== 'All' && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
+                  Fabric: {selectedFabric}
+                  <button onClick={() => setSelectedFabric('All')} className="hover:text-black" aria-label="Remove fabric filter"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              {searchQuery && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#EDE3D5] text-[#241F1D] border border-[#B08D57]/30 rounded-full text-xs font-semibold">
+                  Search: "{searchQuery}"
+                  <button onClick={() => setSearchQuery('')} className="hover:text-black" aria-label="Remove search filter"><X className="w-3 h-3" /></button>
+                </span>
+              )}
+              <button
+                onClick={clearAllFilters}
+                className="text-xs text-[#641C2D] hover:underline font-semibold ml-auto"
+              >
+                Clear All
+              </button>
+            </div>
+          )}
+
           {filteredSarees.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl border border-[#EDE3D5]">
               <div className="text-4xl mb-3">🔍</div>
