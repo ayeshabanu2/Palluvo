@@ -102,7 +102,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {PALLUVO_TOP_MODELS.map((model) => (
             <Link
               key={model.id}
@@ -159,10 +159,10 @@ export default function HomePage() {
               Limited Festive Edit
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold mb-4 leading-tight">
-              Celebrate in Heirloom Grandeur with up to 25% Off
+              Celebrate in Heirloom Grandeur with up to 28% Off
             </h2>
             <p className="text-xs sm:text-sm text-[#EDE3D5] mb-6 leading-relaxed">
-              From auspicious Bandhani dots to Kadhwa real-gold zari brocades, adorn your festive moments with certified pure silk.
+              From auspicious Bandhani dots to Kadhwa real-gold zari brocades, enjoy catalog savings up to 28% off, plus an extra 10% stackable discount at checkout with code PALLUVO10.
             </p>
             <div className="flex flex-wrap items-center gap-4">
               <Link
@@ -172,7 +172,7 @@ export default function HomePage() {
                 Shop The Festive Edit
               </Link>
               <div className="border border-[#D6B878]/40 px-4 py-2 rounded-full text-xs text-[#D6B878] tracking-widest font-mono">
-                USE CODE: <span className="font-bold text-white">PALLUVO10</span>
+                STACKABLE 10% OFF: <span className="font-bold text-white">PALLUVO10</span>
               </div>
             </div>
           </div>
