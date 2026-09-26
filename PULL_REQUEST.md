@@ -56,6 +56,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **Top Category Nav Reactivity** | Stale state on route changes | Synchronized `useSearchParams()` with state + active indicators | [`src/app/sarees/page.js`](src/app/sarees/page.js), [`src/components/Header.js`](src/components/Header.js) | Live filter reactivity across all 8 category buttons, badges, and search queries; active indicator styling; removable filter chips. |
 | **Mobile Menu Toggle** | Hidden at mobile widths | Visible `#mobileMenuToggle` & `#mobileMenuDrawer` | [`src/components/Header.js`](src/components/Header.js) | Removed inline `display:none`; exposed `#mobileMenuToggle` across mobile breakpoints down to 320px with smooth drawer interaction. |
 | **Occasion Saree Audit** | Western gown on Party Wear | 100% Authentic Indian Sarees | [`public/images/occasions/*`](public/images/occasions/) | Replaced evening gown with sheer black cocktail saree; audited all 8 occasion cards with verified authentic drapes. |
+| **[P1] Narrow Mobile Viewport Control Clipping** | Shopping-bag control clipped at ~365px, announcement & tagline wrapping awkwardly | Adapted header layout for 360–375px viewports: responsive paddings, min-width containment, truncated tagline & compact announcement with zero clipping | [`src/components/Header.js`](src/components/Header.js), [`src/app/globals.css`](src/app/globals.css) | Actions cluster uses compact gap (`gap-1 sm:gap-4`) and padding (`px-2.5 sm:px-4`); logo container uses `flex-1 min-w-0` to avoid pushing right actions; announcement bar has `overflow-hidden whitespace-nowrap` + compact text; header height adapts cleanly (64px mobile / 72px desktop). |
+| **[P2] Hero trust-badge copy** | `"Direct Master Weaver Clustered"` (grammatically incomplete) | `"Direct from master weavers"` | [`src/app/page.js`](src/app/page.js) | Corrected trust-badge fragment in hero section line 80 to clean, natural phrasing. |
 | **[P2] Duplicate copy word** | `"the sacred sacred pheras"` | `"the sacred pheras"` | [`src/app/page.js`](src/app/page.js) | Removed the repeated word from the occasion-section intro paragraph (line 230). Proofread surrounding copy — no other duplicates found. |
 | **[P2] Footer assurance row mobile reflow** | Three labels forced into one rigid row at 555px — crowded, low contrast | Labels wrap to a second line; each badge has a gold Lucide icon anchor | [`src/components/Footer.js`](src/components/Footer.js) | `flex gap-6` → `flex flex-wrap gap-x-5 gap-y-2`; `whitespace-nowrap` per badge keeps individual labels intact; `ShieldCheck`, `Award`, `Sparkles` icons add contrast against the dark footer. |
 | **[P2] Legacy HTML cleanup** | 9 standalone HTML pages tracked at repo root | Deleted — App Router is the canonical storefront | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` | All content and behaviour represented by Next.js routes. Required assets (`images/`, `css/`, `js/`) remain intact. |
@@ -88,6 +90,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **Mobile Navigation Toggle (`#mobileMenuToggle`)** | `display: none` removed. `display: inline-flex !important` applied at `<1120px`. IDs `#mobileMenuToggle` and `#mobileMenuDrawer` present in `Header.js` and verified functional. |
 | **Desktop Nav Wrapping at 1265px** | Root cause fixed via `postcss.config.mjs`. CSS pipeline now emits `.whitespace-nowrap`, `.lg:flex`, `.hidden`, `.flex-nowrap`, `.shrink-0` and all responsive variants. Nav hardened at JSX and CSS layers. Single-line confirmed at 1440px, 1265px, 1200px, and 1024px. Header compact at 72px. |
 | **Party Wear Non-Saree Image** | Western gown replaced with authentic sheer black cocktail saree. All 8 occasion cards audited — 100% saree imagery confirmed. |
+| **[P1] Shopping-bag control clipped at narrow mobile widths (360–375px)** | Adapted header layout: `gap-1 xs:gap-1.5 sm:gap-4` in action cluster, `px-2.5 sm:px-4` on bag button with `shrink-0`, `min-w-0` on logo container with truncated tagline, single-line compact announcement bar. Confirmed shopping-bag control, wishlist, search, and hamburger menu are 100% visible and unclipped at 360px and 365px. |
+| **[P2] Hero trust badge copy** | Corrected `Direct Master Weaver Clustered` to `Direct from master weavers` in `src/app/page.js:80`. |
 | **[P2] Duplicate word in occasion intro** | `"the sacred sacred pheras"` corrected to `"the sacred pheras"` in `src/app/page.js`. Full copy proofread — no other duplicates found. |
 | **[P2] Footer assurance row crowded on mobile** | Row now uses `flex-wrap` so badges reflow at ~555px. Each badge has a small gold icon for contrast. Individual label text protected with `whitespace-nowrap`. |
 | **[P2] Nine legacy HTML pages** | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` removed via `git rm`. App Router routes are now the sole storefront source. |
@@ -97,6 +101,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 
 ## 🔬 Testing & Verification
 
+- [x] **[P1] Narrow Mobile Screen Fit (360–375px):** Shopping-bag control, wishlist, search, and hamburger menu verified fully visible with zero clipping or horizontal overflow.
+- [x] **[P2] Hero trust badge copy:** Verified line 80 renders `"Direct from master weavers"` cleanly.
 - [x] **PostCSS Pipeline:** `postcss.config.mjs` confirmed present. Bundle: **47 KB** prod / **61 KB** dev. All utilities (`whitespace-nowrap`, `lg:flex`, `flex-nowrap`, `shrink-0`) confirmed in emitted CSS.
 - [x] **Desktop Nav Single-Line:** Verified at 1440px, 1265px, 1200px, and 1024px — no wrapping. Header compact at 72px.
 - [x] **[P2] Copy proofread:** Occasion intro corrected (`sacred sacred` → `sacred`). No other duplicate words found in `src/app/page.js` or component copy.
@@ -114,11 +120,11 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | File | Status | Summary |
 | :--- | :--- | :--- |
 | [`postcss.config.mjs`](postcss.config.mjs) | ✅ **Added** | Activates `@tailwindcss/postcss`; fixes the CSS pipeline |
-| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened with active states, interactive coupon copy in announcement bar |
-| [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips |
-| [`src/app/globals.css`](src/app/globals.css) | ✅ **Modified** | CSS fallback: `nav[aria-label="Saree Collections"]` forced single-row; `.header-main-row` 72px lock |
-| [`src/app/page.js`](src/app/page.js) | ✅ **Modified** | [P2] Removed duplicate word `"sacred sacred"` → `"sacred"` in occasion intro |
+| [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened with active states; adapted for 360–375px mobile screens; shopping bag control fully visible without clipping |
+| [`src/app/globals.css`](src/app/globals.css) | ✅ **Modified** | CSS fallback: `nav[aria-label="Saree Collections"]` forced single-row; responsive `.header-main-row` height (64px mobile, 72px desktop) |
+| [`src/app/page.js`](src/app/page.js) | ✅ **Modified** | [P2] Fixed hero trust badge copy to "Direct from master weavers"; removed duplicate word "sacred" |
 | [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons; readable at all widths |
+| [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips |
 | `about.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/about` Next.js route |
 | `account.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/account` Next.js route |
 | `cart.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/cart` Next.js route |
@@ -128,7 +134,7 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | `product.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/product/[slug]` Next.js route |
 | `sarees.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/sarees` Next.js route |
 | `wishlist.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/wishlist` Next.js route |
-| [`PULL_REQUEST.md`](PULL_REQUEST.md) | ✅ **Updated** | Reflects all fixes across both commits |
+| [`PULL_REQUEST.md`](PULL_REQUEST.md) | ✅ **Updated** | Reflects all fixes across all reviews |
 
 ---
 

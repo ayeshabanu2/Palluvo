@@ -77,7 +77,7 @@ export default function HomePage() {
               <ShieldCheck className="w-4 h-4 text-[#D6B878]" /> Silk Mark Certified Purity
             </span>
             <span className="flex items-center gap-2">
-              <HeartHandshake className="w-4 h-4 text-[#D6B878]" /> Direct Master Weaver Clustered
+              <HeartHandshake className="w-4 h-4 text-[#D6B878]" /> Direct from master weavers
             </span>
             <span className="flex items-center gap-2">
               <Scissors className="w-4 h-4 text-[#D6B878]" /> Custom Blouse Tailoring Service
