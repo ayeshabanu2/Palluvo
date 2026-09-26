@@ -87,8 +87,8 @@ export default function HomePage() {
       </section>
 
 
-      {/* 2. THE TOP SAREE MODELS (Signature 6 Curation) */}
-      <section id="signature-models" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* 2. THE TOP SAREE MODELS (Signature 8 Curation) */}
+      <section id="signature-models" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 sm:scroll-mt-36">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
             The Atelier Showcase
@@ -98,7 +98,7 @@ export default function HomePage() {
           </h2>
           <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
           <p className="text-xs sm:text-sm text-[#6D625D]">
-            We eliminated cluttered 20-category directories to focus exclusively on the 8 timeless drape archetypes of Indian nobility.
+            Explore our eight signature handloom weaves, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry.
           </p>
         </div>
 
