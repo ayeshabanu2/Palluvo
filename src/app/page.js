@@ -141,7 +141,7 @@ export default function HomePage() {
                 <div className="flex items-center justify-between text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
                   <span className="text-[#B08D57] font-semibold">{model.artisanHours}</span>
                   <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1">
-                    Explore <span className="hidden xs:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                    Explore <span className="hidden sm:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </span>
                 </div>
               </div>
@@ -275,7 +275,7 @@ export default function HomePage() {
               Honoring India’s Master Handloom Weavers
             </h2>
             <p className="text-xs sm:text-sm text-[#6D625D] leading-relaxed">
-              Every Palluvo saree is an artistic conversation that takes between 75 to 210 meticulous weaving hours on traditional pit looms. From the Kadhwa jaals of Varanasi to the interlocking Korvai temple borders of Kanchipuram, each fold preserves sacred Indian cultural artistry.
+              Every Palluvo saree is an artistic conversation that takes between 75 and 210 meticulous weaving hours on traditional pit looms. From the Kadhwa jaals of Varanasi to the interlocking Korvai temple borders of Kanchipuram, each fold preserves sacred Indian cultural artistry.
             </p>
 
             <div className="grid grid-cols-2 gap-4 pt-2">
