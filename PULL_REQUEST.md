@@ -1,7 +1,7 @@
 # Pull Request: PALLUVO Next.js (React) Tech Stack Migration & Luxury Saree Experience
 
-**PR Title:** `fix(nav): add postcss.config.mjs, enforce single-line category nav, harden Tailwind CSS pipeline`  
-**Base Branch:** `feat(stack): migrate storefront to Next.js App Router (React) with Tailwind CSS and full e-commerce suite`  
+**PR Title:** `fix(p2): remove duplicate copy word, reflow footer badges on mobile, delete 9 legacy HTML pages`  
+**Base Branch:** `fix(nav): add postcss.config.mjs, enforce single-line category nav, harden Tailwind CSS pipeline`  
 **Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-26`
 
 ---
@@ -12,7 +12,7 @@ This pull request transitions **PALLUVO — Contemporary Luxury Indian Saree Fas
 
 The migration preserves strict **100% saree-only merchandising**, all authenticated artisan imagery, custom blouse tailoring workflows, and verified customer concierge channels while dramatically improving client-side responsiveness, modularity, and SEO capabilities.
 
-**This revision also closes the open desktop-navigation finding:** the root cause (`postcss.config.mjs` missing → `@tailwindcss/postcss` never ran → all Tailwind utilities absent from emitted CSS) has been fixed, and the category nav is now hardened with a three-layer approach (PostCSS pipeline + Tailwind utility classes + CSS fallback rules in `globals.css`).
+**Previous revision** closed the desktop-navigation finding (missing `postcss.config.mjs`). **This revision** addresses three further [P2] items: a conspicuous duplicate word in the homepage copy, a crowded footer assurance row on mobile (~555 px), and removal of nine obsolete legacy HTML pages that were still tracked at the repo root.
 
 ---
 
@@ -53,8 +53,11 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **Components** | Static DOM elements | Reusable React Components | [`src/components/*`](src/components/) | `Header.js`, `Footer.js`, `ProductCard.js`, `CartDrawer.js`, `QuickViewModal.js`, `Toast.js`. |
 | **Asset Pipeline** | Loose `/images/` | Next.js Static `/public/images/` | [`public/images/`](public/images/) | All authentic luxury saree assets migrated to public folder for zero-latency CDN serving. |
 | **Desktop Nav Alignment** | Multi-line wrap at 1265px | Strict single-line, 72px header | [`postcss.config.mjs`](postcss.config.mjs), [`src/app/globals.css`](src/app/globals.css), [`src/components/Header.js`](src/components/Header.js) | Three-layer fix: (1) PostCSS now emits all utility classes; (2) nav uses `flex-nowrap overflow-x-auto` + `whitespace-nowrap shrink-0` on every `<Link>`; (3) CSS attribute-selector fallback rules in `globals.css` hard-stop any wrap. Header main row locked at 72px via `h-[72px]` + `.header-main-row`. |
-| **Mobile Menu Toggle** | Hidden at mobile widths | Visible `#mobileMenuToggle` & `#mobileMenuDrawer` | [`css/style.css`](css/style.css), [`index.html`](index.html), [`src/components/Header.js`](src/components/Header.js) | Removed inline `display:none`; exposed `#mobileMenuToggle` across mobile breakpoints down to 320px with smooth drawer interaction. |
-| **Occasion Saree Audit** | Western gown on Party Wear | 100% Authentic Indian Sarees | [`images/occasions/*`](images/occasions/), [`public/images/occasions/*`](public/images/occasions/) | Replaced evening gown with sheer black cocktail saree; audited all 8 occasion cards with verified authentic drapes. |
+| **Mobile Menu Toggle** | Hidden at mobile widths | Visible `#mobileMenuToggle` & `#mobileMenuDrawer` | [`src/components/Header.js`](src/components/Header.js) | Removed inline `display:none`; exposed `#mobileMenuToggle` across mobile breakpoints down to 320px with smooth drawer interaction. |
+| **Occasion Saree Audit** | Western gown on Party Wear | 100% Authentic Indian Sarees | [`public/images/occasions/*`](public/images/occasions/) | Replaced evening gown with sheer black cocktail saree; audited all 8 occasion cards with verified authentic drapes. |
+| **[P2] Duplicate copy word** | `"the sacred sacred pheras"` | `"the sacred pheras"` | [`src/app/page.js`](src/app/page.js) | Removed the repeated word from the occasion-section intro paragraph (line 230). Proofread surrounding copy — no other duplicates found. |
+| **[P2] Footer assurance row mobile reflow** | Three labels forced into one rigid row at 555px — crowded, low contrast | Labels wrap to a second line; each badge has a gold Lucide icon anchor | [`src/components/Footer.js`](src/components/Footer.js) | `flex gap-6` → `flex flex-wrap gap-x-5 gap-y-2`; `whitespace-nowrap` per badge keeps individual labels intact; `ShieldCheck`, `Award`, `Sparkles` icons add contrast against the dark footer. |
+| **[P2] Legacy HTML cleanup** | 9 standalone HTML pages tracked at repo root | Deleted — App Router is the canonical storefront | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` | All content and behaviour represented by Next.js routes. Required assets (`images/`, `css/`, `js/`) remain intact. |
 
 ---
 
@@ -84,34 +87,45 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **Mobile Navigation Toggle (`#mobileMenuToggle`)** | `display: none` removed. `display: inline-flex !important` applied at `<1120px`. IDs `#mobileMenuToggle` and `#mobileMenuDrawer` present in `Header.js` and verified functional. |
 | **Desktop Nav Wrapping at 1265px** | Root cause fixed via `postcss.config.mjs`. CSS pipeline now emits `.whitespace-nowrap`, `.lg:flex`, `.hidden`, `.flex-nowrap`, `.shrink-0` and all responsive variants. Nav hardened at JSX and CSS layers. Single-line confirmed at 1440px, 1265px, 1200px, and 1024px. Header compact at 72px. |
 | **Party Wear Non-Saree Image** | Western gown replaced with authentic sheer black cocktail saree. All 8 occasion cards audited — 100% saree imagery confirmed. |
+| **[P2] Duplicate word in occasion intro** | `"the sacred sacred pheras"` corrected to `"the sacred pheras"` in `src/app/page.js`. Full copy proofread — no other duplicates found. |
+| **[P2] Footer assurance row crowded on mobile** | Row now uses `flex-wrap` so badges reflow at ~555px. Each badge has a small gold icon for contrast. Individual label text protected with `whitespace-nowrap`. |
+| **[P2] Nine legacy HTML pages** | `about.html`, `account.html`, `cart.html`, `checkout.html`, `contact.html`, `index.html`, `product.html`, `sarees.html`, `wishlist.html` removed via `git rm`. App Router routes are now the sole storefront source. |
 
 ---
 
 ## 🔬 Testing & Verification
 
-- [x] **PostCSS Pipeline:** `postcss.config.mjs` confirmed present and loaded. `@tailwindcss/postcss` emits full **47 KB** production bundle (vs. 22 KB before fix) including `.whitespace-nowrap`, `.hidden`, `.lg:flex`, `.flex-nowrap`, `.shrink-0`, and all `sm:` / `md:` / `lg:` / `xl:` responsive variants.
-- [x] **Dev CSS Verified via HTTP:** `GET /_next/static/css/app/layout.css` → **61 KB**, confirmed `whitespace-nowrap`, `lg:flex`, `shrink-0`, `flex-nowrap` all present in stylesheet.
-- [x] **Desktop Nav Single-Line:** Category nav (`New Arrivals` → `All Sarees`) renders on one line at **1440px**, **1265px**, **1200px**, and **1024px** (collapses to mobile drawer below 1024px).
-- [x] **Header Compact at 72px:** Main header row locked to `height: 72px` via Tailwind `h-[72px]` + `.header-main-row` CSS fallback rule.
-- [x] **Production Build:** `npm run build` — `✓ Compiled successfully`. 11 routes generated (10 static + 1 dynamic). Zero lint or type errors.
+- [x] **PostCSS Pipeline:** `postcss.config.mjs` confirmed present. Bundle: **47 KB** prod / **61 KB** dev. All utilities (`whitespace-nowrap`, `lg:flex`, `flex-nowrap`, `shrink-0`) confirmed in emitted CSS.
+- [x] **Desktop Nav Single-Line:** Verified at 1440px, 1265px, 1200px, and 1024px — no wrapping. Header compact at 72px.
+- [x] **[P2] Copy proofread:** Occasion intro corrected (`sacred sacred` → `sacred`). No other duplicate words found in `src/app/page.js` or component copy.
+- [x] **[P2] Footer assurance row:** At ~555px badges wrap cleanly to a second line. Each badge is visually anchored with a gold icon. No crowding.
+- [x] **[P2] Legacy HTML deleted:** `git rm` confirmed all 9 root-level `.html` files removed. `git status` clean after commit. Assets (`images/`, `css/`, `js/`) verified present.
+- [x] **Production Build:** `npm run build` — `✓ Compiled successfully`. 11 routes (10 static + 1 dynamic). Zero errors.
 - [x] **100% Saree Merchandising Audit:** Zero non-saree imagery across all 8 occasion cards and 25-item catalog.
-- [x] **Page Routing Verification:**
-  - `http://localhost:3000/` — HTTP 200 OK
-  - `http://localhost:3000/sarees` (with query params) — HTTP 200 OK
-  - `http://localhost:3000/product/royal-banarasi-silk-saree` — HTTP 200 OK
-  - `http://localhost:3000/cart`, `/checkout`, `/wishlist`, `/about`, `/contact`, `/account` — HTTP 200 OK
+- [x] **All Routes HTTP 200:** `/`, `/sarees`, `/product/[slug]`, `/cart`, `/checkout`, `/wishlist`, `/about`, `/contact`, `/account`.
 - [x] **Cart & Wishlist Reactivity:** Item quantity, blouse selection, promo code (`PALLUVO10`), and cart drawer verified.
 
 ---
 
-## 📁 Files Changed in This Revision
+## 📁 All Files Changed Across This PR
 
 | File | Status | Summary |
 | :--- | :--- | :--- |
 | [`postcss.config.mjs`](postcss.config.mjs) | ✅ **Added** | Activates `@tailwindcss/postcss`; fixes the CSS pipeline |
 | [`src/components/Header.js`](src/components/Header.js) | ✅ **Modified** | Nav hardened: `flex-nowrap`, `whitespace-nowrap` on every link, `h-[72px]` main row |
 | [`src/app/globals.css`](src/app/globals.css) | ✅ **Modified** | CSS fallback: `nav[aria-label="Saree Collections"]` forced single-row; `.header-main-row` 72px lock |
-| [`PULL_REQUEST.md`](PULL_REQUEST.md) | ✅ **Updated** | Documents root cause, three-layer fix, and all verification results |
+| [`src/app/page.js`](src/app/page.js) | ✅ **Modified** | [P2] Removed duplicate word `"sacred sacred"` → `"sacred"` in occasion intro |
+| [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons; readable at all widths |
+| `about.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/about` Next.js route |
+| `account.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/account` Next.js route |
+| `cart.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/cart` Next.js route |
+| `checkout.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/checkout` Next.js route |
+| `contact.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/contact` Next.js route |
+| `index.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/` Next.js route |
+| `product.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/product/[slug]` Next.js route |
+| `sarees.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/sarees` Next.js route |
+| `wishlist.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/wishlist` Next.js route |
+| [`PULL_REQUEST.md`](PULL_REQUEST.md) | ✅ **Updated** | Reflects all fixes across both commits |
 
 ---
 
