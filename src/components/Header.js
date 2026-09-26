@@ -35,7 +35,7 @@ export default function Header() {
       {/* Main Luxury Header */}
       <header className="sticky top-0 z-40 bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20 gap-4">
+          <div className="flex items-center justify-between h-[72px] gap-4 header-main-row">
             
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden">
@@ -129,29 +129,29 @@ export default function Header() {
           </div>
 
           {/* Saree-Only Curated Category Sub-Nav Bar */}
-          <nav aria-label="Saree Collections" className="hidden lg:flex items-center justify-center gap-5 xl:gap-8 py-2.5 border-t border-[#EDE3D5]/80 text-[12px] xl:text-[13px] tracking-[0.12em] xl:tracking-[0.14em] uppercase font-medium text-[#2B211D] whitespace-nowrap overflow-hidden">
-            <Link href="/sarees?badge=New+Arrival" className="hover:text-[#641C2D] text-[#8C6A35] font-semibold transition shrink-0">
+          <nav aria-label="Saree Collections" className="hidden lg:flex items-center justify-center gap-4 xl:gap-8 py-2 border-t border-[#EDE3D5]/80 text-[12px] xl:text-[13px] tracking-[0.12em] xl:tracking-[0.14em] uppercase font-medium text-[#2B211D] whitespace-nowrap overflow-x-auto flex-nowrap">
+            <Link href="/sarees?badge=New+Arrival" className="hover:text-[#641C2D] text-[#8C6A35] font-semibold transition shrink-0 whitespace-nowrap">
               New Arrivals
             </Link>
-            <Link href="/sarees?type=Kanjivaram" className="hover:text-[#641C2D] transition shrink-0">
+            <Link href="/sarees?type=Kanjivaram" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
               Kanjivaram
             </Link>
-            <Link href="/sarees?type=Banarasi" className="hover:text-[#641C2D] transition shrink-0">
+            <Link href="/sarees?type=Banarasi" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
               Banarasi
             </Link>
-            <Link href="/sarees?type=Paithani" className="hover:text-[#641C2D] transition shrink-0">
+            <Link href="/sarees?type=Paithani" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
               Paithani
             </Link>
-            <Link href="/sarees?type=Chanderi" className="hover:text-[#641C2D] transition shrink-0">
+            <Link href="/sarees?type=Chanderi" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
               Chanderi
             </Link>
-            <Link href="/sarees?type=Organza" className="hover:text-[#641C2D] transition shrink-0">
+            <Link href="/sarees?type=Organza" className="hover:text-[#641C2D] transition shrink-0 whitespace-nowrap">
               Organza
             </Link>
-            <Link href="/sarees?type=Ready-to-Wear" className="hover:text-[#641C2D] transition text-[#641C2D] font-semibold shrink-0">
+            <Link href="/sarees?type=Ready-to-Wear" className="hover:text-[#641C2D] transition text-[#641C2D] font-semibold shrink-0 whitespace-nowrap">
               Ready-To-Wear
             </Link>
-            <Link href="/sarees" className="hover:text-[#641C2D] transition border-b border-transparent hover:border-[#641C2D] shrink-0">
+            <Link href="/sarees" className="hover:text-[#641C2D] transition border-b border-transparent hover:border-[#641C2D] shrink-0 whitespace-nowrap">
               All Sarees
             </Link>
           </nav>

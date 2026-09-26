@@ -74,3 +74,38 @@
   background: #B08D57;
   border-radius: 3px;
 }
+
+/* App Router Header & Navigation: Strict Single-Line and Compact Layout */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+}
+
+header .header-main-row {
+  height: 72px !important;
+  min-height: 72px !important;
+}
+
+header nav[aria-label="Saree Collections"] {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  white-space: nowrap !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+header nav[aria-label="Saree Collections"] a {
+  white-space: nowrap !important;
+  word-break: keep-all !important;
+  flex-shrink: 0 !important;
+  display: inline-block !important;
+}
+
+@media (max-width: 1023px) {
+  header nav[aria-label="Saree Collections"] {
+    display: none !important;
+  }
+}
+
