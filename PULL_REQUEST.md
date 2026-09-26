@@ -1,6 +1,6 @@
 # Pull Request: PALLUVO Next.js (React) Tech Stack Migration & Luxury Saree Experience
 
-**PR Title:** `fix(p2): remove duplicate copy word, reflow footer badges on mobile, delete 9 legacy HTML pages`  
+**PR Title:** `fix(nav,sarees): reactively sync top category buttons with filter state, add active indicators, reflow footer, cleanup`  
 **Base Branch:** `fix(nav): add postcss.config.mjs, enforce single-line category nav, harden Tailwind CSS pipeline`  
 **Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-26`
 
@@ -12,7 +12,7 @@ This pull request transitions **PALLUVO — Contemporary Luxury Indian Saree Fas
 
 The migration preserves strict **100% saree-only merchandising**, all authenticated artisan imagery, custom blouse tailoring workflows, and verified customer concierge channels while dramatically improving client-side responsiveness, modularity, and SEO capabilities.
 
-**Previous revision** closed the desktop-navigation finding (missing `postcss.config.mjs`). **This revision** addresses three further [P2] items: a conspicuous duplicate word in the homepage copy, a crowded footer assurance row on mobile (~555 px), and removal of nine obsolete legacy HTML pages that were still tracked at the repo root.
+**Latest revisions** resolve the desktop-navigation styling (`postcss.config.mjs`), fix top category buttons reactivity & search synchronization (`sarees/page.js` & `Header.js`), address three [P2] items (copy duplicate word, mobile footer assurance row reflow), and clean up nine deprecated standalone HTML pages.
 
 ---
 
@@ -53,6 +53,7 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | **Components** | Static DOM elements | Reusable React Components | [`src/components/*`](src/components/) | `Header.js`, `Footer.js`, `ProductCard.js`, `CartDrawer.js`, `QuickViewModal.js`, `Toast.js`. |
 | **Asset Pipeline** | Loose `/images/` | Next.js Static `/public/images/` | [`public/images/`](public/images/) | All authentic luxury saree assets migrated to public folder for zero-latency CDN serving. |
 | **Desktop Nav Alignment** | Multi-line wrap at 1265px | Strict single-line, 72px header | [`postcss.config.mjs`](postcss.config.mjs), [`src/app/globals.css`](src/app/globals.css), [`src/components/Header.js`](src/components/Header.js) | Three-layer fix: (1) PostCSS now emits all utility classes; (2) nav uses `flex-nowrap overflow-x-auto` + `whitespace-nowrap shrink-0` on every `<Link>`; (3) CSS attribute-selector fallback rules in `globals.css` hard-stop any wrap. Header main row locked at 72px via `h-[72px]` + `.header-main-row`. |
+| **Top Category Nav Reactivity** | Stale state on route changes | Synchronized `useSearchParams()` with state + active indicators | [`src/app/sarees/page.js`](src/app/sarees/page.js), [`src/components/Header.js`](src/components/Header.js) | Live filter reactivity across all 8 category buttons, badges, and search queries; active indicator styling; removable filter chips. |
 | **Mobile Menu Toggle** | Hidden at mobile widths | Visible `#mobileMenuToggle` & `#mobileMenuDrawer` | [`src/components/Header.js`](src/components/Header.js) | Removed inline `display:none`; exposed `#mobileMenuToggle` across mobile breakpoints down to 320px with smooth drawer interaction. |
 | **Occasion Saree Audit** | Western gown on Party Wear | 100% Authentic Indian Sarees | [`public/images/occasions/*`](public/images/occasions/) | Replaced evening gown with sheer black cocktail saree; audited all 8 occasion cards with verified authentic drapes. |
 | **[P2] Duplicate copy word** | `"the sacred sacred pheras"` | `"the sacred pheras"` | [`src/app/page.js`](src/app/page.js) | Removed the repeated word from the occasion-section intro paragraph (line 230). Proofread surrounding copy — no other duplicates found. |
