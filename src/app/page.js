@@ -227,7 +227,7 @@ export default function HomePage() {
             </h2>
             <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
             <p className="text-xs sm:text-sm text-[#6D625D]">
-              Whether it is the sacred sacred pheras of a wedding or a contemporary evening cocktail, discover your ideal silhouette.
+              Whether it is the sacred pheras of a wedding or a contemporary evening cocktail, discover your ideal silhouette.
             </p>
           </div>
 

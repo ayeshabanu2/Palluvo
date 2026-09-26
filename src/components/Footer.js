@@ -98,12 +98,22 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#8E857B] gap-4">
           <p>© {new Date().getFullYear()} PALLUVO Luxury Fashion House. All Rights Reserved.</p>
-          <div className="flex items-center gap-6">
-            <span>100% Pure Saree Merchandising</span>
-            <span>Handloom Certified</span>
-            <span>Silk Mark Guarantee</span>
+          <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              100% Pure Saree Merchandising
+            </span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Award className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              Handloom Certified
+            </span>
+            <span className="flex items-center gap-1.5 whitespace-nowrap">
+              <Sparkles className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              Silk Mark Guarantee
+            </span>
           </div>
         </div>
+
       </div>
     </footer>
   );
