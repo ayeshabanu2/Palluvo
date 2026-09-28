@@ -277,8 +277,8 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
-                <h4 className="font-serif text-lg font-bold text-[#641C2D]">Silk Mark Certified</h4>
-                <p className="text-xs text-[#665E57] mt-1">100% natural pure silk fibers tested for authentic thread density.</p>
+                <h4 className="font-serif text-lg font-bold text-[#641C2D]">Pure Zari & Natural Fibers</h4>
+                <p className="text-xs text-[#665E57] mt-1">Lab-tested zari threads and authentic pure mulberry silk for enduring heirloom luster.</p>
               </div>
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
                 <h4 className="font-serif text-lg font-bold text-[#641C2D]">Complimentary Fall & Pico</h4>

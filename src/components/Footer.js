@@ -7,32 +7,22 @@ export default function Footer() {
     <footer className="bg-[#2B211D] text-[#EDE3D5] pt-16 pb-12 border-t border-[#3D302A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
-        {/* 5 Core Trust Pillars */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 pb-14 border-b border-[#3D302A] text-center">
-          <div className="flex flex-col items-center">
-            <Award className="w-8 h-8 text-[#D6B878] mb-2" />
-            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Authentic Weaves</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">Direct from master artisan clusters</p>
-          </div>
-          <div className="flex flex-col items-center">
-            <ShieldCheck className="w-8 h-8 text-[#D6B878] mb-2" />
-            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Silk Mark Assured</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">100% natural pure silk certified</p>
-          </div>
+        {/* Core Customer Guarantees (Fulfillment & Protection) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-14 border-b border-[#3D302A] text-center">
           <div className="flex flex-col items-center">
             <Truck className="w-8 h-8 text-[#D6B878] mb-2" />
-            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Express Insured</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">Dispatched within 24 hours</p>
+            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Express Insured Delivery</h4>
+            <p className="text-xs text-[#B8B0A5] mt-1">Complimentary dispatch within 24 hours across India</p>
           </div>
           <div className="flex flex-col items-center">
             <RotateCcw className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Easy 7-Day Returns</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">Hassle-free doorstep pickup</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">Hassle-free doorstep pickup & exchange</p>
           </div>
-          <div className="col-span-2 md:col-span-1 flex flex-col items-center">
+          <div className="flex flex-col items-center">
             <Lock className="w-8 h-8 text-[#D6B878] mb-2" />
-            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Secure Checkout</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">UPI, Cards, NetBanking & COD</p>
+            <h4 className="text-white text-sm font-semibold tracking-wider uppercase">100% Secure Checkout</h4>
+            <p className="text-xs text-[#B8B0A5] mt-1">256-bit encrypted UPI, Cards, NetBanking & COD</p>
           </div>
         </div>
 
@@ -119,15 +109,15 @@ export default function Footer() {
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             <span className="flex items-center gap-1.5 whitespace-nowrap">
               <ShieldCheck className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
-              100% Pure Saree Merchandising
+              Verified Boutique Atelier
             </span>
             <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <Award className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
-              Handloom Certified
+              <Lock className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              SSL Encrypted Transactions
             </span>
             <span className="flex items-center gap-1.5 whitespace-nowrap">
-              <Sparkles className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
-              Silk Mark Guarantee
+              <Truck className="w-3.5 h-3.5 text-[#B08D57] shrink-0" />
+              Pan-India & Global Dispatch
             </span>
           </div>
         </div>
