@@ -189,10 +189,12 @@ export default function QuickViewModal() {
               </button>
               <button
                 onClick={() => toggleWishlist(product.id)}
-                className={`p-3.5 rounded-full border border-[#EDE3D5] transition shadow-xs ${
+                className={`p-3.5 min-w-[44px] min-h-[44px] rounded-full border border-[#EDE3D5] transition shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${
                   isWishlisted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-[#2B211D] hover:bg-[#F8F5EF]'
                 }`}
-                aria-label="Wishlist toggle"
+                aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+                aria-pressed={isWishlisted}
+                title={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
               >
                 <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-600' : ''}`} />
               </button>

@@ -11,7 +11,7 @@ export default function ProductCard({ product }) {
   const isWishlisted = wishlist.includes(product.id);
 
   return (
-    <div className="group relative bg-white rounded-lg overflow-hidden border border-[#EDE3D5]/80 hover:border-[#B08D57] transition-all duration-300 hover:shadow-xl flex flex-col">
+    <div className="group relative bg-white rounded-lg overflow-hidden border border-[#EDE3D5]/80 hover:border-[#B08D57] focus-within:border-[#B08D57] transition-all duration-300 hover:shadow-xl focus-within:shadow-xl flex flex-col">
       {/* Saree Image Container */}
       <div className="relative aspect-[3/4] bg-[#EDE3D5]/40 overflow-hidden">
         <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full">
@@ -37,33 +37,37 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Wishlist Button */}
+        {/* Wishlist Button - 44x44px touch target, product-specific label, and aria-pressed */}
         <button
           onClick={(e) => {
             e.preventDefault();
             toggleWishlist(product.id);
           }}
-          className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] hover:bg-white transition shadow-sm z-10"
-          aria-label="Wishlist toggle"
+          className="absolute top-2.5 right-2.5 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/95 backdrop-blur-xs flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] hover:bg-white transition shadow-sm z-10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+          aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+          aria-pressed={isWishlisted}
+          title={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
         >
-          <Heart className={`w-4 h-4 ${isWishlisted ? 'fill-[#641C2D] text-[#641C2D]' : ''}`} />
+          <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-[#641C2D] text-[#641C2D]' : ''}`} />
         </button>
 
-        {/* Quick Action Overlay (Desktop) */}
-        <div className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/60 to-transparent translate-y-full group-hover:translate-y-0 transition-transform duration-300 flex items-center gap-2">
+        {/* Quick Action Overlay (Touch-visible, Keyboard focus-within & Desktop hover) */}
+        <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent flex items-center gap-2 transition-transform duration-300 md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0 focus-within:translate-y-0 z-10">
           <button
             onClick={() => {
               addToCart(product.id);
               setIsCartOpen(true);
             }}
-            className="flex-1 bg-white text-[#2B211D] hover:bg-[#641C2D] hover:text-white py-2 rounded-full text-xs font-semibold tracking-wider uppercase transition flex items-center justify-center gap-1.5 shadow-md"
+            className="flex-1 min-h-[44px] bg-white text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white py-2 px-3 rounded-full text-xs font-semibold tracking-wider uppercase transition flex items-center justify-center gap-1.5 shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label={`Quick add ${product.name} to bag`}
           >
             <ShoppingBag className="w-3.5 h-3.5" /> Quick Add
           </button>
           <button
             onClick={() => setQuickViewProduct(product)}
-            className="w-9 h-9 rounded-full bg-white/90 text-[#2B211D] hover:bg-white flex items-center justify-center transition shadow-md"
-            title="Quick view"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/95 text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white flex items-center justify-center transition shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            aria-label={`Quick view details for ${product.name}`}
+            title={`Quick view details for ${product.name}`}
           >
             <Eye className="w-4 h-4" />
           </button>

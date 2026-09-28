@@ -253,10 +253,12 @@ export default function ProductDetailPage() {
             </button>
             <button
               onClick={() => toggleWishlist(product.id)}
-              className={`p-4 rounded-full border transition shadow-sm ${
+              className={`p-4 min-w-[44px] min-h-[44px] rounded-full border transition shadow-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${
                 isWishlisted ? 'bg-red-50 text-red-600 border-red-200' : 'bg-white text-[#2B211D] border-[#EDE3D5] hover:bg-[#F8F5EF]'
               }`}
-              aria-label="Wishlist toggle"
+              aria-label={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
+              aria-pressed={isWishlisted}
+              title={isWishlisted ? `Remove ${product.name} from wishlist` : `Add ${product.name} to wishlist`}
             >
               <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-red-600' : ''}`} />
             </button>
