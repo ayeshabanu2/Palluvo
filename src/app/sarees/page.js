@@ -4,7 +4,7 @@ import React, { useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SAREE_PRODUCTS, PALLUVO_TOP_MODELS } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-import { Filter, SlidersHorizontal, ArrowUpDown, X, Search } from 'lucide-react';
+import { Filter, SlidersHorizontal, ArrowUpDown, X, Search, Sparkles, ShieldCheck } from 'lucide-react';
 
 function SareesContent() {
   const searchParams = useSearchParams();
@@ -124,18 +124,48 @@ function SareesContent() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
       
-      {/* Title & Editorial Description */}
-      <div className="text-center max-w-2xl mx-auto mb-10">
-        <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
-          The Pure Silk Repertory
-        </span>
-        <h1 className="font-serif text-3xl sm:text-5xl font-bold text-[#2B211D]">
-          Curated Saree Catalog
-        </h1>
-        <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
-        <p className="text-xs sm:text-sm text-[#6D625D]">
-          Explore {SAREE_PRODUCTS.length} signature handloom sarees — 100% pure silk mark guaranteed with complimentary fall and pico finishing.
-        </p>
+      {/* Editorial Luxury Catalog Hero Banner with Saree Photo Background */}
+      <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden mb-10 border border-[#EDE3D5] shadow-lg">
+        {/* Background Saree Image */}
+        <div className="absolute inset-0">
+          <img
+            src="/images/catalog_hero_banner.jpg"
+            alt="Palluvo Luxury Handloom Saree Collection"
+            className="w-full h-full object-cover object-[center_28%]"
+          />
+          {/* Luxury Atelier Gradient Overlay */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#1F1612]/92 via-[#2B211D]/75 to-[#1F1612]/85" />
+          <div className="absolute inset-0 bg-black/20" />
+        </div>
+
+        {/* Content Container */}
+        <div className="relative z-10 text-center max-w-2xl mx-auto py-12 sm:py-16 px-6">
+          <span className="text-xs uppercase tracking-[0.3em] text-[#D6B878] font-bold block mb-2 drop-shadow-xs">
+            The Pure Silk Repertory
+          </span>
+          <h1 className="font-serif text-3xl sm:text-5xl font-bold text-white tracking-tight drop-shadow-sm">
+            Curated Saree Catalog
+          </h1>
+          <div className="w-16 h-0.5 bg-[#D6B878] mx-auto mt-4 mb-4" />
+          <p className="text-xs sm:text-sm text-[#F4EFE6] leading-relaxed max-w-xl mx-auto drop-shadow-xs">
+            Explore {SAREE_PRODUCTS.length} signature handloom sarees — 100% pure silk mark guaranteed with complimentary fall and pico finishing.
+          </p>
+
+          {/* Luxury Highlights Bar */}
+          <div className="mt-6 pt-5 border-t border-[#D6B878]/30 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-[11px] sm:text-xs text-[#EDE3D5]">
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#D6B878]" /> 100% Pure Silk Certified
+            </span>
+            <span className="hidden sm:inline text-[#D6B878]/50">•</span>
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" /> Handwoven by Master Clusters
+            </span>
+            <span className="hidden sm:inline text-[#D6B878]/50">•</span>
+            <span className="flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" /> Complimentary Fall & Pico
+            </span>
+          </div>
+        </div>
       </div>
 
       {/* Control Bar: Search, Count, Mobile Filter Button, Sort Dropdown */}

@@ -159,7 +159,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 | [`src/components/ProductCard.js`](src/components/ProductCard.js) | ✅ **Modified** | [P2] Added review-count context `({product.reviewsCount})` beside numeric score; graceful omission if rating unavailable; title truncation protection |
 | [`src/components/QuickViewModal.js`](src/components/QuickViewModal.js) | ✅ **Modified** | [P2] Added review-count context `({product.reviewsCount} reviews)` in header rating section |
 | [`src/components/Footer.js`](src/components/Footer.js) | ✅ **Modified** | [P2] Clearly marked "Coming Soon" newsletter state with disabled affordance to prevent false confirmation; assurance row: `flex-wrap gap-x-5 gap-y-2` + per-badge icons |
-| [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips |
+| [`src/app/sarees/page.js`](src/app/sarees/page.js) | ✅ **Modified** | Reactively syncs URL search params with filter state; handles top category clicks, badges, Ready-to-Wear, and filter chips; editorial luxury saree photo background hero banner |
+| [`public/images/catalog_hero_banner.jpg`](public/images/catalog_hero_banner.jpg) | ✅ **Added** | High-fashion editorial royal crimson & gold handloom saree photography for catalog hero banner |
 | `about.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/about` Next.js route |
 | `account.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/account` Next.js route |
 | `cart.html` | 🗑️ **Deleted** | Legacy standalone page — replaced by `/cart` Next.js route |
