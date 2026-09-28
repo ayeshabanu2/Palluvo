@@ -70,29 +70,35 @@ export default function HomePage() {
               Explore Top Models
             </a>
           </div>
+        </div>
+      </section>
 
-          {/* Quick trust strip */}
-          <div className="mt-14 pt-8 border-t border-white/15 flex flex-wrap items-center justify-center gap-8 text-xs text-[#EDE3D5]/80">
-            <span className="flex items-center gap-2">
-              <ShieldCheck className="w-4 h-4 text-[#D6B878]" /> Silk Mark Certified Purity
-            </span>
-            <span className="flex items-center gap-2">
-              <HeartHandshake className="w-4 h-4 text-[#D6B878]" /> Direct from master weavers
-            </span>
-            <span className="flex items-center gap-2">
-              <Scissors className="w-4 h-4 text-[#D6B878]" /> Custom Blouse Tailoring Service
-            </span>
+      {/* 2. TRUST ASSURANCES BAND (Immediate post-hero strip) */}
+      <section className="!mt-0 border-y border-[#EDE3D5] bg-[#F8F5EF] py-4 sm:py-5 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-around gap-3 sm:gap-6 text-xs sm:text-sm text-[#2B211D]">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-4 h-4 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Silk Mark Certified Purity</span>
+            </div>
+            <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40" />
+            <div className="flex items-center gap-2.5">
+              <HeartHandshake className="w-4 h-4 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Direct from master weavers</span>
+            </div>
+            <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40" />
+            <div className="flex items-center gap-2.5">
+              <Scissors className="w-4 h-4 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Custom Blouse Tailoring Service</span>
+            </div>
           </div>
         </div>
       </section>
 
 
-      {/* 2. THE TOP SAREE MODELS (Signature 8 Curation) */}
+      {/* 3. THE TOP SAREE MODELS (Signature 8 Curation) */}
       <section id="signature-models" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 sm:scroll-mt-36">
         <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
-            The Atelier Showcase
-          </span>
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
             The Top Saree Models
           </h2>
@@ -155,9 +161,6 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#641C2D] via-[#7A3043] to-[#4E1422] text-white p-8 sm:p-12 shadow-xl">
           <div className="relative z-10 max-w-xl">
-            <span className="text-xs font-semibold tracking-[0.25em] text-[#D6B878] uppercase block mb-2">
-              Limited Festive Edit
-            </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold mb-4 leading-tight">
               Celebrate in Heirloom Grandeur with up to 28% Off
             </h2>
@@ -192,9 +195,6 @@ export default function HomePage() {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
           <div>
-            <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
-              Most Loved Drapes
-            </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
               Trending In Atelier
             </h2>
@@ -219,9 +219,6 @@ export default function HomePage() {
       <section className="bg-[#EDE3D5]/50 py-16 border-y border-[#EDE3D5]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto mb-12">
-            <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
-              Curated Moments
-            </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
               Drapes For Every Occasion
             </h2>
