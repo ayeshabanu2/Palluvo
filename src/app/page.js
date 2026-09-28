@@ -26,49 +26,53 @@ export default function HomePage() {
     <div className="space-y-20 pb-20">
       
       {/* 1. EDITORIAL HERO SECTION */}
-      <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden bg-[#2B211D]">
-        {/* Background Image with Dark Vignette */}
+      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[#2B211D]">
+        {/* Background Image: Model placed in open right space, left side clear */}
         <div className="absolute inset-0">
           <img
             src="/images/hero_campaign.jpg"
             alt="Palluvo Luxury Saree Muse"
-            className="w-full h-full object-cover object-center opacity-45 scale-105 transition-transform duration-1000 ease-out"
+            className="w-full h-full object-cover object-[75%_center] lg:object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#2B211D] via-[#2B211D]/40 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-[#2B211D]/80 via-transparent to-[#2B211D]/80" />
+          {/* Protected text backdrop gradient on the left, clear open saree view on the right */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#2B211D] via-[#2B211D]/80 md:via-[#2B211D]/65 lg:via-[#2B211D]/40 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#2B211D] via-transparent to-black/30" />
         </div>
 
-        <div className="relative z-10 max-w-5xl mx-auto px-4 sm:px-6 text-center text-white py-16">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/60 backdrop-blur-md mb-6">
-            <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" />
-            <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium">
-              Autumn / Festive 2026 Collection
-            </span>
-          </div>
+        {/* Protected Left-Aligned Editorial Text Column */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+          <div className="max-w-xl lg:max-w-2xl text-left text-white">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
+              <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" />
+              <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium">
+                Autumn / Festive 2026 Collection
+              </span>
+            </div>
 
-          <h1 className="font-serif text-4xl sm:text-6xl md:text-7xl font-bold tracking-tight text-white mb-6 leading-[1.1]">
-            Every drape, <br />
-            <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
-          </h1>
+            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6 leading-[1.15] drop-shadow-sm">
+              Every drape, <br />
+              <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
+            </h1>
 
-          <p className="max-w-2xl mx-auto text-sm sm:text-base text-[#EDE3D5]/90 font-light tracking-wide leading-relaxed mb-10">
-            India's most celebrated handwoven traditions reimagined for the modern muse. 
-            Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
-          </p>
+            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-lg">
+              India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
+              Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
+            </p>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link
-              href="/sarees"
-              className="w-full sm:w-auto bg-[#641C2D] hover:bg-[#7A3043] text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B]"
-            >
-              Shop Curated Collection <ArrowRight className="w-4 h-4" />
-            </Link>
-            <a
-              href="#signature-models"
-              className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center"
-            >
-              Explore Top Models
-            </a>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+              <Link
+                href="/sarees"
+                className="bg-[#641C2D] hover:bg-[#7A3043] text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B]"
+              >
+                Shop Curated Collection <ArrowRight className="w-4 h-4" />
+              </Link>
+              <a
+                href="#signature-models"
+                className="bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center"
+              >
+                Explore Top Models
+              </a>
+            </div>
           </div>
         </div>
       </section>
@@ -76,20 +80,20 @@ export default function HomePage() {
       {/* 2. TRUST ASSURANCES BAND (Immediate post-hero strip) */}
       <section className="!mt-0 border-y border-[#EDE3D5] bg-[#F8F5EF] py-4 sm:py-5 shadow-xs">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-center sm:justify-around gap-3 sm:gap-6 text-xs sm:text-sm text-[#2B211D]">
-            <div className="flex items-center gap-2.5">
+          <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-3.5 md:gap-6 text-xs md:text-sm text-[#2B211D]">
+            <div className="flex items-center gap-2.5 whitespace-nowrap">
               <ShieldCheck className="w-4 h-4 text-[#B08D57] shrink-0" />
               <span className="font-medium tracking-wide">Silk Mark Certified Purity</span>
             </div>
-            <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40" />
-            <div className="flex items-center gap-2.5">
+            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
+            <div className="flex items-center gap-2.5 whitespace-nowrap">
               <HeartHandshake className="w-4 h-4 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Direct from master weavers</span>
+              <span className="font-medium tracking-wide">Direct from Master Weavers</span>
             </div>
-            <div className="hidden sm:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40" />
-            <div className="flex items-center gap-2.5">
+            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
+            <div className="flex items-center gap-2.5 whitespace-nowrap">
               <Scissors className="w-4 h-4 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Custom Blouse Tailoring Service</span>
+              <span className="font-medium tracking-wide">Custom Blouse Tailoring</span>
             </div>
           </div>
         </div>
