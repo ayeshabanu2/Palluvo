@@ -149,11 +149,11 @@ function SareesContent() {
             placeholder="Filter by name, color, origin..."
             className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] focus:outline-none focus:border-[#641C2D]"
           />
-          <Search className="w-3.5 h-3.5 text-[#8E857B] absolute left-3.5 top-3" />
+          <Search className="w-3.5 h-3.5 text-[#665E57] absolute left-3.5 top-3" />
         </div>
 
         {/* Results Counter */}
-        <div className="text-xs text-[#8E857B] font-medium">
+        <div className="text-xs text-[#665E57] font-medium">
           Showing <span className="text-[#2B211D] font-bold">{filteredSarees.length}</span> sarees
         </div>
 
@@ -271,7 +271,7 @@ function SareesContent() {
           {/* Active Filter Chips */}
           {(selectedType !== 'All' || selectedOccasion !== 'All' || selectedFabric !== 'All' || selectedBadge || searchQuery) && (
             <div className="flex flex-wrap items-center gap-2 mb-6 p-3 bg-white rounded-xl border border-[#EDE3D5]">
-              <span className="text-xs text-[#8E857B] font-semibold uppercase tracking-wider mr-1">Active:</span>
+              <span className="text-xs text-[#665E57] font-semibold uppercase tracking-wider mr-1">Active:</span>
               {selectedType !== 'All' && (
                 <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#641C2D]/10 text-[#641C2D] border border-[#641C2D]/30 rounded-full text-xs font-semibold">
                   Model: {selectedType}
@@ -315,7 +315,7 @@ function SareesContent() {
             <div className="text-center py-20 bg-white rounded-xl border border-[#EDE3D5]">
               <div className="text-4xl mb-3">🔍</div>
               <h3 className="font-serif text-2xl text-[#2B211D]">No sarees match your filters</h3>
-              <p className="text-xs text-[#8E857B] mt-2 mb-6">
+              <p className="text-xs text-[#665E57] mt-2 mb-6">
                 Try loosening your filters or resetting to discover our full catalogue.
               </p>
               <button

@@ -19,7 +19,7 @@ export default function AccountPage() {
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
             My Atelier Account
           </h1>
-          <p className="text-xs text-[#8E857B] mt-1">Ananya Sharma • ananya.sharma@example.com</p>
+          <p className="text-xs text-[#665E57] mt-1">Ananya Sharma • ananya.sharma@example.com</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="bg-[#B08D57]/15 text-[#8C6A35] text-xs font-bold px-3 py-1.5 rounded-full border border-[#B08D57]/30 flex items-center gap-1.5">
@@ -45,7 +45,7 @@ export default function AccountPage() {
             className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-[#6D625D] hover:bg-[#F8F5EF] transition"
           >
             <span className="flex items-center gap-2.5"><Heart className="w-4 h-4" /> Wishlist</span>
-            <span className="bg-[#B08D57] text-white text-[10px] px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
+            <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
           </Link>
           <button
             onClick={() => setActiveTab('addresses')}
@@ -66,11 +66,11 @@ export default function AccountPage() {
               <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between text-xs pb-3 border-b border-[#EDE3D5] gap-2">
                   <div>
-                    <span className="text-[#8E857B]">Order #</span>
+                    <span className="text-[#665E57]">Order #</span>
                     <strong className="text-[#2B211D] font-mono ml-1">PLV-849201</strong>
                   </div>
                   <div>
-                    <span className="text-[#8E857B]">Placed On: </span>
+                    <span className="text-[#665E57]">Placed On: </span>
                     <span className="text-[#2B211D] font-medium">18 Sep 2026</span>
                   </div>
                   <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
@@ -84,7 +84,7 @@ export default function AccountPage() {
                   </div>
                   <div className="flex-1 text-xs">
                     <h4 className="font-serif text-base font-bold text-[#2B211D]">Royal Banarasi Silk Saree</h4>
-                    <p className="text-[#8E857B]">Deep Crimson • Custom Tailored Blouse</p>
+                    <p className="text-[#665E57]">Deep Crimson • Custom Tailored Blouse</p>
                     <p className="font-bold text-[#641C2D] mt-1">₹8,199</p>
                   </div>
                   <Link
@@ -99,11 +99,11 @@ export default function AccountPage() {
               <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] shadow-xs space-y-4">
                 <div className="flex flex-wrap items-center justify-between text-xs pb-3 border-b border-[#EDE3D5] gap-2">
                   <div>
-                    <span className="text-[#8E857B]">Order #</span>
+                    <span className="text-[#665E57]">Order #</span>
                     <strong className="text-[#2B211D] font-mono ml-1">PLV-712049</strong>
                   </div>
                   <div>
-                    <span className="text-[#8E857B]">Placed On: </span>
+                    <span className="text-[#665E57]">Placed On: </span>
                     <span className="text-[#2B211D] font-medium">02 Aug 2026</span>
                   </div>
                   <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase">
@@ -117,7 +117,7 @@ export default function AccountPage() {
                   </div>
                   <div className="flex-1 text-xs">
                     <h4 className="font-serif text-base font-bold text-[#2B211D]">Elegant Organza Saree</h4>
-                    <p className="text-[#8E857B]">Sage Green • Unstitched Blouse</p>
+                    <p className="text-[#665E57]">Sage Green • Unstitched Blouse</p>
                     <p className="font-bold text-[#641C2D] mt-1">₹3,899</p>
                   </div>
                   <Link

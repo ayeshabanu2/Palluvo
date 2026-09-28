@@ -87,7 +87,7 @@ export default function QuickViewModal() {
         {/* Product Details Side */}
         <div className="p-6 md:p-8 flex flex-col justify-between overflow-y-auto bg-white">
           <div>
-            <div className="flex items-center gap-2 text-xs text-[#8E857B] uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-xs text-[#665E57] uppercase tracking-wider mb-2">
               <span>{product.sareeType}</span>
               {product.rating && (
                 <>
@@ -96,7 +96,7 @@ export default function QuickViewModal() {
                     <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
                     <span>{product.rating}</span>
                     {product.reviewsCount && (
-                      <span className="text-[#8E857B] font-normal text-xs">
+                      <span className="text-[#665E57] font-normal text-xs">
                         ({product.reviewsCount} reviews)
                       </span>
                     )}
@@ -112,7 +112,7 @@ export default function QuickViewModal() {
             <div className="flex items-baseline gap-3 my-3">
               <span className="text-2xl font-bold text-[#641C2D]">{formatINR(product.price + currentBlouse.price)}</span>
               {product.compareAtPrice && (
-                <span className="text-sm text-[#8E857B] line-through">{formatINR(product.compareAtPrice)}</span>
+                <span className="text-sm text-[#665E57] line-through">{formatINR(product.compareAtPrice)}</span>
               )}
               {product.discount && (
                 <span className="text-xs bg-[#B08D57]/20 text-[#8C6A35] font-bold px-2 py-0.5 rounded">
@@ -198,7 +198,7 @@ export default function QuickViewModal() {
               </button>
             </div>
 
-            <div className="mt-4 pt-3 border-t border-[#EDE3D5] flex items-center justify-between text-[11px] text-[#8E857B]">
+            <div className="mt-4 pt-3 border-t border-[#EDE3D5] flex items-center justify-between text-[11px] text-[#665E57]">
               <span className="flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#B08D57]" /> Silk Mark Certified
               </span>

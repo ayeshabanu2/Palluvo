@@ -30,7 +30,7 @@ export default function WishlistPage() {
             <Heart className="w-8 h-8" />
           </div>
           <h2 className="font-serif text-2xl font-bold text-[#2B211D]">Your Wishlist is Empty</h2>
-          <p className="text-xs text-[#8E857B] mt-2 mb-6">
+          <p className="text-xs text-[#665E57] mt-2 mb-6">
             Explore our curated luxury handloom sarees and tap the heart icon to save your favorites.
           </p>
           <Link
@@ -42,7 +42,7 @@ export default function WishlistPage() {
         </div>
       ) : (
         <div>
-          <p className="text-xs text-[#8E857B] mb-6">
+          <p className="text-xs text-[#665E57] mb-6">
             Showing <strong className="text-[#2B211D]">{wishlistedProducts.length}</strong> saved saree(s)
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

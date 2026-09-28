@@ -32,7 +32,8 @@
 
   --text-primary: #241F1D;    /* Primary Text: Dark Brown */
   --text-secondary: #6D625D;  /* Secondary Text */
-  --text-muted: #8E857B;
+  --text-muted: #665E57;
+  --text-muted-dark: #B8B0A5;
   --text-light: #B8B0A5;
   --text-inverse: #FFFFFF;
 

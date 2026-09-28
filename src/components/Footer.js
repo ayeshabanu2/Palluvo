@@ -12,27 +12,27 @@ export default function Footer() {
           <div className="flex flex-col items-center">
             <Award className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Authentic Weaves</h4>
-            <p className="text-xs text-[#8E857B] mt-1">Direct from master artisan clusters</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">Direct from master artisan clusters</p>
           </div>
           <div className="flex flex-col items-center">
             <ShieldCheck className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Silk Mark Assured</h4>
-            <p className="text-xs text-[#8E857B] mt-1">100% natural pure silk certified</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">100% natural pure silk certified</p>
           </div>
           <div className="flex flex-col items-center">
             <Truck className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Express Insured</h4>
-            <p className="text-xs text-[#8E857B] mt-1">Dispatched within 24 hours</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">Dispatched within 24 hours</p>
           </div>
           <div className="flex flex-col items-center">
             <RotateCcw className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Easy 7-Day Returns</h4>
-            <p className="text-xs text-[#8E857B] mt-1">Hassle-free doorstep pickup</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">Hassle-free doorstep pickup</p>
           </div>
           <div className="col-span-2 md:col-span-1 flex flex-col items-center">
             <Lock className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Secure Checkout</h4>
-            <p className="text-xs text-[#8E857B] mt-1">UPI, Cards, NetBanking & COD</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">UPI, Cards, NetBanking & COD</p>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default function Footer() {
             <p className="text-xs tracking-[0.16em] uppercase text-[#B8B0A5] mb-4 font-semibold">
               Every drape, a little magic.
             </p>
-            <p className="text-xs text-[#8E857B] leading-relaxed">
+            <p className="text-xs text-[#B8B0A5] leading-relaxed">
               A contemporary Indian luxury saree fashion house dedicated exclusively to 100% authentic handloom sarees. Honoring master weavers with timeless drapes.
             </p>
           </div>
@@ -84,7 +84,7 @@ export default function Footer() {
                 Coming Soon
               </span>
             </div>
-            <p className="text-xs text-[#8E857B] mb-4">
+            <p className="text-xs text-[#B8B0A5] mb-4">
               Private preview invitations, silk care guides, and exclusive festive privileges launching soon.
             </p>
             <div className="flex" aria-disabled="true">
@@ -99,13 +99,13 @@ export default function Footer() {
                 aria-disabled="true"
                 aria-label="Newsletter subscriptions opening soon"
                 placeholder="Subscriptions opening soon..."
-                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#8E857B] placeholder-[#8E857B]/70 rounded-l-md cursor-not-allowed flex-1 focus:outline-none"
+                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 focus:outline-none"
               />
               <button 
                 type="button"
                 disabled
                 aria-disabled="true"
-                className="bg-[#3D302A] text-[#8E857B] px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
+                className="bg-[#3D302A] text-[#B8B0A5] px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
               >
                 Join
               </button>
@@ -114,7 +114,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#8E857B] gap-4">
+        <div className="pt-8 flex flex-col md:flex-row items-center justify-between text-xs text-[#B8B0A5] gap-4">
           <p>© {new Date().getFullYear()} PALLUVO Luxury Fashion House. All Rights Reserved.</p>
           <div className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
             <span className="flex items-center gap-1.5 whitespace-nowrap">

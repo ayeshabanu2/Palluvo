@@ -95,6 +95,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 
 | Review Feedback | Resolution & Implementation |
 | :--- | :--- |
+| **[P2] Increase Contrast on Product Discount Badges** | `src/components/ProductCard.js:34` updated from 10px white text on `#B08D57` (3.09:1) to dark charcoal foreground `text-[#1C1613]` on `bg-[#B08D57]`, raising the contrast ratio to **5.77:1**, comfortably surpassing the 4.5:1 WCAG AA target. |
+| **[P2] Raise Contrast for Small Secondary Copy** | Replaced `#8E857B` across light cards and page body with `#665E57` (contrast **6.38:1 on white** and **5.87:1 on `#F8F5EF`**). On the dark footer background (`#2B211D`), updated secondary supporting text, newsletter copy, and badges to `#B8B0A5` (contrast **7.43:1 on `#2B211D`**). Defined surface-appropriate `--text-muted: #665E57;` and `--text-muted-dark: #B8B0A5;` tokens. |
 | **Next.js & React Migration** | Fully rebuilt in Next.js 15 (App Router) + React 19 + Tailwind CSS + Lucide React. All 9 routes implemented and verified HTTP 200. |
 | **Mobile Navigation Toggle (`#mobileMenuToggle`)** | `display: none` removed. `display: inline-flex !important` applied at `<1120px`. IDs `#mobileMenuToggle` and `#mobileMenuDrawer` present in `Header.js` and verified functional. |
 | **Desktop Nav Wrapping at 1265px** | Root cause fixed via `postcss.config.mjs`. CSS pipeline now emits `.whitespace-nowrap`, `.lg:flex`, `.hidden`, `.flex-nowrap`, `.shrink-0` and all responsive variants. Nav hardened at JSX and CSS layers. Single-line confirmed at 1440px, 1265px, 1200px, and 1024px. Header compact at 72px. |
@@ -119,6 +121,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 
 ## 🔬 Testing & Verification
 
+- [x] **[P2] Product Discount Badge Contrast:** Verified `src/components/ProductCard.js:34` renders dark charcoal text (`#1C1613`) on `#B08D57` gold pill, giving a **5.77:1** contrast ratio, surpassing the 4.5:1 WCAG AA minimum.
+- [x] **[P2] Secondary Copy Contrast on Light & Dark Surfaces:** Replaced `#8E857B` across all light surfaces (product cards, review counts, active chips, body text) with `#665E57` (**6.38:1 on white**, **5.87:1 on #F8F5EF**). Updated dark footer (`#2B211D`) supporting copy, pillars, newsletter, and assurance items to `#B8B0A5` (**7.43:1 on #2B211D**). Both comfortably exceed the 4.5:1 WCAG AA target.
 - [x] **[P2] Compact 2-Column Mobile Signature Grid:** Verified 2-column mobile layout with compact card padding, adjusted typography, and clamped descriptions on viewports < 640px, eliminating the tall vertical wall.
 - [x] **[P2] Balanced 8-Card Signature Grid on Desktop:** Verified 4-column layout on desktop divides all 8 signature models into two perfectly balanced rows of 4 cards.
 - [x] **[P2] Model-Card CTA Label Breakpoint:** Verified `hidden sm:inline` reveals "Drapes" on tablet and desktop, with `--breakpoint-xs: 380px;` configured in `@theme`.

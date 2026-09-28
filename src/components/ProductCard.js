@@ -31,7 +31,7 @@ export default function ProductCard({ product }) {
             </span>
           )}
           {product.discount && (
-            <span className="bg-[#B08D57] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+            <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
               {product.discount}
             </span>
           )}
@@ -73,14 +73,14 @@ export default function ProductCard({ product }) {
       {/* Product Content Details */}
       <div className="p-4 flex-1 flex flex-col justify-between">
         <div>
-          <div className="flex items-center justify-between text-[11px] text-[#8E857B] uppercase tracking-wider mb-1">
+          <div className="flex items-center justify-between text-[11px] text-[#665E57] uppercase tracking-wider mb-1">
             <span className="truncate pr-1.5">{product.sareeType || product.category}</span>
             {product.rating && (
               <div className="flex items-center gap-1 text-amber-600 font-semibold shrink-0">
                 <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
                 <span>{product.rating}</span>
                 {product.reviewsCount && (
-                  <span className="text-[#8E857B] font-normal text-[10px]">
+                  <span className="text-[#665E57] font-normal text-[10px]">
                     ({product.reviewsCount})
                   </span>
                 )}
@@ -110,7 +110,7 @@ export default function ProductCard({ product }) {
                 />
               ))}
               {product.swatches.length > 4 && (
-                <span className="text-[10px] text-[#8E857B]">+{product.swatches.length - 4}</span>
+                <span className="text-[10px] text-[#665E57]">+{product.swatches.length - 4}</span>
               )}
             </div>
           )}
@@ -123,7 +123,7 @@ export default function ProductCard({ product }) {
               {formatINR(product.price)}
             </span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <span className="text-xs text-[#8E857B] line-through">
+              <span className="text-xs text-[#665E57] line-through">
                 {formatINR(product.compareAtPrice)}
               </span>
             )}

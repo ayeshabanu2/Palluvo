@@ -281,11 +281,11 @@ export default function HomePage() {
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
                 <h4 className="font-serif text-lg font-bold text-[#641C2D]">Silk Mark Certified</h4>
-                <p className="text-xs text-[#8E857B] mt-1">100% natural pure silk fibers tested for authentic thread density.</p>
+                <p className="text-xs text-[#665E57] mt-1">100% natural pure silk fibers tested for authentic thread density.</p>
               </div>
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
                 <h4 className="font-serif text-lg font-bold text-[#641C2D]">Complimentary Fall & Pico</h4>
-                <p className="text-xs text-[#8E857B] mt-1">Every saree arrives finished with premium matching fall and pico edging.</p>
+                <p className="text-xs text-[#665E57] mt-1">Every saree arrives finished with premium matching fall and pico edging.</p>
               </div>
             </div>
 

@@ -51,17 +51,17 @@ export default function AboutPage() {
         <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] text-center">
           <Award className="w-8 h-8 text-[#B08D57] mx-auto mb-3" />
           <h3 className="font-serif text-lg font-bold text-[#2B211D] mb-1">Authentic Weave Clusters</h3>
-          <p className="text-xs text-[#8E857B]">Every drape is sourced directly from certified geographical origin looms.</p>
+          <p className="text-xs text-[#665E57]">Every drape is sourced directly from certified geographical origin looms.</p>
         </div>
         <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] text-center">
           <ShieldCheck className="w-8 h-8 text-[#B08D57] mx-auto mb-3" />
           <h3 className="font-serif text-lg font-bold text-[#2B211D] mb-1">Silk Mark Purity</h3>
-          <p className="text-xs text-[#8E857B]">Natural Mulberry, Katan, and Tussar silk threads tested to supreme purity benchmarks.</p>
+          <p className="text-xs text-[#665E57]">Natural Mulberry, Katan, and Tussar silk threads tested to supreme purity benchmarks.</p>
         </div>
         <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] text-center">
           <Scissors className="w-8 h-8 text-[#B08D57] mx-auto mb-3" />
           <h3 className="font-serif text-lg font-bold text-[#2B211D] mb-1">Custom Atelier Blouse Tailoring</h3>
-          <p className="text-xs text-[#8E857B]">Pair your saree with unstitched matching yardage or custom bespoke corset blouses.</p>
+          <p className="text-xs text-[#665E57]">Pair your saree with unstitched matching yardage or custom bespoke corset blouses.</p>
         </div>
       </div>
 

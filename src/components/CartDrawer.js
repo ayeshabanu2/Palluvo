@@ -39,7 +39,7 @@ export default function CartDrawer() {
           <div className="px-6 py-5 border-b border-[#EDE3D5] flex items-center justify-between bg-white">
             <div>
               <h2 className="font-serif text-2xl text-[#2B211D] font-bold">Shopping Bag</h2>
-              <p className="text-xs text-[#8E857B]">
+              <p className="text-xs text-[#665E57]">
                 {cart.length === 0 ? 'Your bag is empty' : `${cart.reduce((s, i) => s + i.qty, 0)} signature item(s)`}
               </p>
             </div>
@@ -77,11 +77,11 @@ export default function CartDrawer() {
           <div className="flex-1 overflow-y-auto px-6 py-4 space-y-4">
             {cart.length === 0 ? (
               <div className="text-center py-16">
-                <div className="w-16 h-16 rounded-full bg-[#EDE3D5] flex items-center justify-center mx-auto mb-4 text-[#8E857B]">
+                <div className="w-16 h-16 rounded-full bg-[#EDE3D5] flex items-center justify-center mx-auto mb-4 text-[#665E57]">
                   🧺
                 </div>
                 <h3 className="font-serif text-xl text-[#2B211D]">Your bag is currently empty</h3>
-                <p className="text-xs text-[#8E857B] mt-2 mb-6">Explore our curated collection of master-woven sarees.</p>
+                <p className="text-xs text-[#665E57] mt-2 mb-6">Explore our curated collection of master-woven sarees.</p>
                 <Link
                   href="/sarees"
                   onClick={() => setIsCartOpen(false)}
@@ -108,13 +108,13 @@ export default function CartDrawer() {
                         </h4>
                         <button
                           onClick={() => removeFromCart(item.id)}
-                          className="text-[#8E857B] hover:text-red-600 transition"
+                          className="text-[#665E57] hover:text-red-600 transition"
                           aria-label="Remove item"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <p className="text-[11px] text-[#8E857B] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
+                      <p className="text-[11px] text-[#665E57] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
                       {item.blousePrice > 0 && (
                         <p className="text-[10px] text-[#B08D57] font-medium">+ {item.blouseOptionName} ({formatINR(item.blousePrice)})</p>
                       )}
@@ -189,13 +189,13 @@ export default function CartDrawer() {
                 <Link
                   href="/cart"
                   onClick={() => setIsCartOpen(false)}
-                  className="w-full text-center py-2 text-xs text-[#8E857B] hover:text-[#2B211D] font-medium uppercase tracking-wider"
+                  className="w-full text-center py-2 text-xs text-[#665E57] hover:text-[#2B211D] font-medium uppercase tracking-wider"
                 >
                   View Full Cart & Apply Coupons
                 </Link>
               </div>
 
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#8E857B] pt-1">
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#665E57] pt-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-[#B08D57]" /> Silk Mark Certified • 100% Genuine Sarees
               </div>
             </div>

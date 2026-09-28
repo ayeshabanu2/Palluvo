@@ -45,7 +45,7 @@ export default function ContactPage() {
             <Phone className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Phone & WhatsApp Concierge</h3>
-              <p className="text-xs text-[#8E857B] mt-1">+91 84988 54323 / +91 81067 89789</p>
+              <p className="text-xs text-[#665E57] mt-1">+91 84988 54323 / +91 81067 89789</p>
               <p className="text-[11px] text-[#641C2D] mt-1 font-semibold">Available Mon–Sat: 10 AM – 7 PM IST</p>
             </div>
           </div>
@@ -54,8 +54,8 @@ export default function ContactPage() {
             <Mail className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Email Concierge</h3>
-              <p className="text-xs text-[#8E857B] mt-1">contact@palluvo.com</p>
-              <p className="text-xs text-[#8E857B]">concierge@palluvo.com</p>
+              <p className="text-xs text-[#665E57] mt-1">contact@palluvo.com</p>
+              <p className="text-xs text-[#665E57]">concierge@palluvo.com</p>
             </div>
           </div>
 
@@ -63,7 +63,7 @@ export default function ContactPage() {
             <MapPin className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
             <div>
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Flagship Atelier</h3>
-              <p className="text-xs text-[#8E857B] mt-1">
+              <p className="text-xs text-[#665E57] mt-1">
                 PALLUVO Couture Atelier<br />
                 Kavuri Hills Road, Madhapur, Hitech City<br />
                 Hyderabad, Telangana 500081, India

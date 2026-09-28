@@ -141,11 +141,11 @@ export default function Header() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Kanjivaram, Banarasi, Organza..."
-                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#8E857B] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
+                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
                 />
                 <button
                   type="submit"
-                  className="absolute left-3.5 top-3 text-[#8E857B] hover:text-[#641C2D] transition"
+                  className="absolute left-3.5 top-3 text-[#665E57] hover:text-[#641C2D] transition"
                   aria-label="Submit search"
                 >
                   <Search className="w-4 h-4" />
@@ -279,7 +279,7 @@ export default function Header() {
           <div className="w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
             <button 
               onClick={() => setShowSearchModal(false)}
-              className="absolute top-4 right-4 text-[#8E857B] hover:text-black"
+              className="absolute top-4 right-4 text-[#665E57] hover:text-black"
               aria-label="Close search"
             >
               <X className="w-6 h-6" />
@@ -294,7 +294,7 @@ export default function Header() {
                 placeholder="Search by silk type, color, region, or weave..."
                 className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg pl-12 pr-4 py-3 text-base text-[#241F1D] focus:outline-none focus:border-[#641C2D]"
               />
-              <Search className="w-5 h-5 text-[#8E857B] absolute left-4 top-3.5" />
+              <Search className="w-5 h-5 text-[#665E57] absolute left-4 top-3.5" />
               <button
                 type="submit"
                 className="w-full mt-4 bg-[#641C2D] text-white py-3 rounded-lg font-medium text-sm tracking-wider uppercase hover:bg-[#4E1422] transition"

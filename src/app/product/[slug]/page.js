@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
     return (
       <div className="max-w-4xl mx-auto px-4 py-20 text-center">
         <h1 className="font-serif text-3xl font-bold text-[#2B211D]">Saree Not Found</h1>
-        <p className="text-xs text-[#8E857B] mt-2 mb-6">The requested drape might have been moved or archived.</p>
+        <p className="text-xs text-[#665E57] mt-2 mb-6">The requested drape might have been moved or archived.</p>
         <Link href="/sarees" className="bg-[#641C2D] text-white px-6 py-3 rounded-full text-xs font-semibold tracking-wider uppercase">
           Back to All Sarees
         </Link>
@@ -81,7 +81,7 @@ export default function ProductDetailPage() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
       
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs text-[#8E857B]">
+      <nav className="flex items-center gap-2 text-xs text-[#665E57]">
         <Link href="/" className="hover:text-[#641C2D]">Home</Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <Link href="/sarees" className="hover:text-[#641C2D]">Sarees</Link>
@@ -164,7 +164,7 @@ export default function ProductDetailPage() {
               {formatINR(totalPrice)}
             </span>
             {product.compareAtPrice && (
-              <span className="text-sm text-[#8E857B] line-through">
+              <span className="text-sm text-[#665E57] line-through">
                 {formatINR(product.compareAtPrice * quantity)}
               </span>
             )}
@@ -214,7 +214,7 @@ export default function ProductDetailPage() {
               <label className="text-xs font-bold text-[#2B211D] uppercase tracking-wider flex items-center gap-1.5">
                 <Scissors className="w-3.5 h-3.5 text-[#B08D57]" /> Blouse Stitching Service:
               </label>
-              <span className="text-[11px] text-[#8E857B]">Custom Atelier Finishing</span>
+              <span className="text-[11px] text-[#665E57]">Custom Atelier Finishing</span>
             </div>
 
             <div className="space-y-2">
@@ -289,7 +289,7 @@ export default function ProductDetailPage() {
               <div className="bg-white rounded-xl border border-[#EDE3D5] divide-y divide-[#EDE3D5] text-xs">
                 {Object.entries(product.specifications).map(([key, value]) => (
                   <div key={key} className="flex p-3">
-                    <span className="w-1/3 font-semibold uppercase tracking-wider text-[#8E857B]">
+                    <span className="w-1/3 font-semibold uppercase tracking-wider text-[#665E57]">
                       {key.replace(/([A-Z])/g, ' $1')}
                     </span>
                     <span className="w-2/3 text-[#2B211D] font-medium">{value}</span>

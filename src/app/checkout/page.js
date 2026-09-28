@@ -62,15 +62,15 @@ export default function CheckoutPage() {
 
           <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-left text-xs space-y-2 mb-8">
             <div className="flex justify-between">
-              <span className="text-[#8E857B]">Confirmation Email sent to:</span>
+              <span className="text-[#665E57]">Confirmation Email sent to:</span>
               <span className="font-medium text-[#2B211D]">{formData.email}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#8E857B]">Shipping Destination:</span>
+              <span className="text-[#665E57]">Shipping Destination:</span>
               <span className="font-medium text-[#2B211D]">{formData.city}, {formData.pincode}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#8E857B]">Estimated Insured Delivery:</span>
+              <span className="text-[#665E57]">Estimated Insured Delivery:</span>
               <span className="font-medium text-emerald-800">2–4 Business Days</span>
             </div>
           </div>
@@ -98,7 +98,7 @@ export default function CheckoutPage() {
     return (
       <div className="max-w-md mx-auto px-4 py-20 text-center">
         <h2 className="font-serif text-2xl font-bold text-[#2B211D]">Your Bag is Empty</h2>
-        <p className="text-xs text-[#8E857B] mt-2 mb-6">Please add sarees to proceed to checkout.</p>
+        <p className="text-xs text-[#665E57] mt-2 mb-6">Please add sarees to proceed to checkout.</p>
         <Link href="/sarees" className="bg-[#641C2D] text-white px-6 py-3 rounded-full text-xs font-semibold uppercase tracking-wider">
           Browse Sarees
         </Link>
@@ -277,7 +277,7 @@ export default function CheckoutPage() {
                   />
                   <span>Credit / Debit Card (Visa, MasterCard, RuPay, Amex)</span>
                 </div>
-                <span className="text-[11px] text-[#8E857B]">256-Bit SSL</span>
+                <span className="text-[11px] text-[#665E57]">256-Bit SSL</span>
               </label>
 
               <label className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
@@ -293,7 +293,7 @@ export default function CheckoutPage() {
                   />
                   <span>Cash on Delivery (COD)</span>
                 </div>
-                <span className="text-[11px] text-[#8E857B]">Pay at Doorstep</span>
+                <span className="text-[11px] text-[#665E57]">Pay at Doorstep</span>
               </label>
             </div>
           </div>
@@ -315,7 +315,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-[#2B211D] line-clamp-1">{item.name}</p>
-                    <p className="text-[10px] text-[#8E857B]">Qty: {item.qty} • {item.selectedColor}</p>
+                    <p className="text-[10px] text-[#665E57]">Qty: {item.qty} • {item.selectedColor}</p>
                   </div>
                   <span className="font-bold text-[#641C2D]">
                     {formatINR((item.price + (item.blousePrice || 0)) * item.qty)}
@@ -353,7 +353,7 @@ export default function CheckoutPage() {
               <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
             </button>
 
-            <div className="pt-2 text-center text-[11px] text-[#8E857B] flex items-center justify-center gap-1.5">
+            <div className="pt-2 text-center text-[11px] text-[#665E57] flex items-center justify-center gap-1.5">
               <ShieldCheck className="w-3.5 h-3.5 text-[#B08D57]" /> Bank-Grade 256-bit Encrypted Checkout
             </div>
           </div>

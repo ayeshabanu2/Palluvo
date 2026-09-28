@@ -48,7 +48,7 @@ export default function CartPage() {
             🧺
           </div>
           <h2 className="font-serif text-2xl font-bold text-[#2B211D]">Your shopping bag is empty</h2>
-          <p className="text-xs text-[#8E857B] mt-2 mb-6">
+          <p className="text-xs text-[#665E57] mt-2 mb-6">
             Adorn your wardrobe with India's finest handloom silks and artisanal drapes.
           </p>
           <Link
@@ -76,7 +76,7 @@ export default function CartPage() {
                     <h3 className="font-serif text-base sm:text-lg font-bold text-[#2B211D]">
                       {item.name}
                     </h3>
-                    <p className="text-xs text-[#8E857B] mt-0.5">
+                    <p className="text-xs text-[#665E57] mt-0.5">
                       {item.sareeType} • Color: {item.selectedColor}
                     </p>
                     {item.blousePrice > 0 ? (
@@ -120,7 +120,7 @@ export default function CartPage() {
 
                   <button
                     onClick={() => removeFromCart(item.id)}
-                    className="p-2 text-[#8E857B] hover:text-red-600 rounded-full hover:bg-red-50 transition"
+                    className="p-2 text-[#665E57] hover:text-red-600 rounded-full hover:bg-red-50 transition"
                     title="Remove item"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -200,7 +200,7 @@ export default function CartPage() {
                   <span>Total Amount</span>
                   <span className="text-[#641C2D]">{formatINR(grandTotal)}</span>
                 </div>
-                <p className="text-[10px] text-[#8E857B] text-right">Inclusive of all GST taxes</p>
+                <p className="text-[10px] text-[#665E57] text-right">Inclusive of all GST taxes</p>
               </div>
 
               <Link
