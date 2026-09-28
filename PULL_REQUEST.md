@@ -1,8 +1,8 @@
 # Pull Request: PALLUVO Next.js (React) Tech Stack Migration & Luxury Saree Experience
 
-**PR Title:** `fix(nav,sarees): reactively sync top category buttons with filter state, add active indicators, reflow footer, cleanup`  
-**Base Branch:** `fix(nav): add postcss.config.mjs, enforce single-line category nav, harden Tailwind CSS pipeline`  
-**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-26`
+**PR Title:** `feat(stack): migrate storefront to Next.js App Router (React) with Tailwind CSS and full e-commerce suite`  
+**Base Branch:** `main`  
+**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-09-28`
 
 ---
 
@@ -12,7 +12,7 @@ This pull request transitions **PALLUVO — Contemporary Luxury Indian Saree Fas
 
 The migration preserves strict **100% saree-only merchandising**, all authenticated artisan imagery, custom blouse tailoring workflows, and verified customer concierge channels while dramatically improving client-side responsiveness, modularity, and SEO capabilities.
 
-**Latest revisions** resolve the desktop-navigation styling (`postcss.config.mjs`), fix top category buttons reactivity & search synchronization (`sarees/page.js` & `Header.js`), address three [P2] items (copy duplicate word, mobile footer assurance row reflow), and clean up nine deprecated standalone HTML pages.
+**Latest revisions** resolve reviewer accessibility findings on product cards: adding keyboard `focus-within` and touch-visible overlay interactions for quick actions (`ProductCard.js`), expanding wishlist controls to compliant ≥44×44px hit areas with dynamic, product-specific `aria-label` and `aria-pressed` states (`ProductCard.js`, `QuickViewModal.js`, `product/[slug]/page.js`), validating high-contrast text ratios across all surfaces (5.79:1 badge, 5.84:1 secondary copy, 7.32:1 dark footer copy), and maintaining a clean PostCSS pipeline with 100% route verification.
 
 ---
 
