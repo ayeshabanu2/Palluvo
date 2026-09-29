@@ -209,7 +209,7 @@ export const SAREE_OCCASIONS = [
   }
 ];
 
-// Complete 25-Product Catalog of Authentic Luxury Sarees
+// Complete 29-Product Catalog of Authentic Luxury Sarees
 export const SAREE_PRODUCTS = [
   {
     id: "saree-001",

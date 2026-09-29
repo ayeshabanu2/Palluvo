@@ -207,7 +207,7 @@ export default function HomePage() {
             href="/sarees"
             className="text-xs font-semibold uppercase tracking-wider text-[#641C2D] hover:text-[#4E1422] flex items-center gap-1.5 transition"
           >
-            View All 25 Sarees <ArrowRight className="w-4 h-4" />
+            View All {SAREE_PRODUCTS.length} Sarees <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
 

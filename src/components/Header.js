@@ -173,6 +173,8 @@ export default function Header() {
 
               <Link
                 href="/account"
+                aria-label="Account"
+                title="Account"
                 className="hidden sm:flex items-center gap-1.5 p-2 text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition"
               >
                 <User className="w-5 h-5" />
