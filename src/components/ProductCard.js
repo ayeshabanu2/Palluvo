@@ -98,7 +98,7 @@ export default function ProductCard({ product }) {
             </h3>
           </Link>
 
-          <p className="text-xs text-[#6D625D] line-clamp-1 mt-1 font-sans">
+          <p className="text-xs text-[#6D625D] line-clamp-2 mt-1 font-sans leading-snug min-h-[2rem]">
             {product.tagline || product.fabric}
           </p>
 

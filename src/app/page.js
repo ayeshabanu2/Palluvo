@@ -138,7 +138,7 @@ export default function HomePage() {
                   <h3 className="font-serif text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white leading-tight line-clamp-1">
                     {model.name}
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-1 mt-0.5 font-light">
+                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-2 mt-0.5 font-light leading-snug">
                     {model.subtitle}
                   </p>
                 </div>
