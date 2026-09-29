@@ -93,7 +93,7 @@ export default function ProductCard({ product }) {
           </div>
 
           <Link href={`/product/${product.slug || product.id}`} className="block">
-            <h3 className="font-serif text-sm sm:text-base font-semibold text-[#2B211D] hover:text-[#641C2D] transition line-clamp-2 leading-snug min-h-[2.5rem] sm:min-h-[2.75rem]">
+            <h3 className="font-serif text-sm sm:text-base font-semibold text-[#2B211D] hover:text-[#641C2D] transition line-clamp-3 sm:line-clamp-2 leading-snug min-h-[3.6rem] sm:min-h-[2.75rem]">
               {product.name}
             </h3>
           </Link>
