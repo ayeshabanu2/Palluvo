@@ -41,7 +41,7 @@ export default function HomePage() {
 
         {/* Protected Left-Aligned Editorial Text Column */}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-xl lg:max-w-2xl text-left text-white">
+          <div className="max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl text-left text-white">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
               <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" />
               <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium">
@@ -54,21 +54,21 @@ export default function HomePage() {
               <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
             </h1>
 
-            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-lg">
+            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-xs sm:max-w-sm md:max-w-lg">
               India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
               Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
             </p>
 
-            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-none">
               <Link
                 href="/sarees"
-                className="w-full md:w-auto bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
+                className="w-full sm:w-auto max-w-xs sm:max-w-none bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
               >
                 Shop Curated Collection <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#signature-models"
-                className="w-full md:w-auto bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
+                className="w-full sm:w-auto max-w-xs sm:max-w-none bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
               >
                 Explore Top Models
               </a>
@@ -232,7 +232,7 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             {SAREE_OCCASIONS.map((occ) => (
               <Link
                 key={occ.id}
@@ -247,7 +247,7 @@ export default function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
                   <h3 className="font-serif text-lg sm:text-xl font-bold">{occ.name}</h3>
-                  <p className="text-[11px] text-[#D6B878] line-clamp-1">{occ.subtitle}</p>
+                  <p className="text-[11px] sm:text-xs text-[#D6B878] leading-snug line-clamp-2">{occ.subtitle}</p>
                 </div>
               </Link>
             ))}
