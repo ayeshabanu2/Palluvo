@@ -52,20 +52,21 @@ export default function ProductCard({ product }) {
         </button>
 
         {/* Quick Action Overlay (Touch-visible, Keyboard focus-within & Desktop hover) */}
-        <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent flex items-center gap-2 transition-transform duration-300 md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0 focus-within:translate-y-0 z-10">
+        <div className="absolute inset-x-0 bottom-0 p-1.5 xs:p-2 sm:p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent flex items-center justify-between gap-1.5 sm:gap-2 transition-transform duration-300 md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0 focus-within:translate-y-0 z-10">
           <button
             onClick={() => {
               addToCart(product.id);
               setIsCartOpen(true);
             }}
-            className="flex-1 min-h-[44px] bg-white text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white py-2 px-3 rounded-full text-xs font-semibold tracking-wider uppercase transition flex items-center justify-center gap-1.5 shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="flex-1 min-w-0 min-h-[44px] bg-white text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white py-2 px-2 sm:px-3 rounded-full text-[11px] sm:text-xs font-semibold tracking-wider uppercase transition flex items-center justify-center gap-1 sm:gap-1.5 shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`Quick add ${product.name} to bag`}
           >
-            <ShoppingBag className="w-3.5 h-3.5" /> Quick Add
+            <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate"><span className="hidden xs:inline">Quick </span>Add</span>
           </button>
           <button
             onClick={() => setQuickViewProduct(product)}
-            className="w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/95 text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white flex items-center justify-center transition shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
+            className="w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 rounded-full bg-white/95 text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white flex items-center justify-center transition shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`Quick view details for ${product.name}`}
             title={`Quick view details for ${product.name}`}
           >

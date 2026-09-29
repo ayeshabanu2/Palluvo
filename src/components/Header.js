@@ -91,8 +91,11 @@ export default function Header() {
         <Link href="/sarees?occasion=Festive" className="font-semibold hover:underline text-[#D6B878] transition shrink-0">
           THE FESTIVE EDIT
         </Link>
-        <span className="shrink-0 text-[#D6B878]/60">—</span> 
-        <span className="text-white/90 truncate">Free insured shipping on orders ₹999+</span>
+        <span className="shrink-0 text-[#D6B878]/60">—</span>
+        <span className="text-white/90 truncate">
+          <span className="hidden sm:inline">Free insured shipping on orders ₹999+</span>
+          <span className="sm:hidden">Free shipping on ₹999+</span>
+        </span>
         <span className="hidden md:inline text-white/50">| Use Code: </span>
         <button
           onClick={copyPromoCode}
