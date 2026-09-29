@@ -269,8 +269,8 @@ export default function Header() {
             </div>
 
             <div className="pt-6 border-t border-[#EDE3D5] text-xs text-[#6D625D]">
-              <div className="flex items-center gap-2 text-[#B08D57] font-semibold mb-1">
-                <ShieldCheck className="w-4 h-4" /> 100% Certified Pure Handloom
+              <div className="flex items-center gap-2 text-[#641C2D] font-semibold mb-1">
+                <ShieldCheck className="w-4 h-4 text-[#B08D57]" /> 100% Certified Pure Handloom
               </div>
               <p>Crafted in India. Worldwide shipping available.</p>
             </div>

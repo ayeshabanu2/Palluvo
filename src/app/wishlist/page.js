@@ -15,7 +15,7 @@ export default function WishlistPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="text-center max-w-xl mx-auto mb-10">
-        <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
+        <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold block mb-2">
           Saved Favorites
         </span>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">

@@ -13,7 +13,7 @@ export default function AccountPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between pb-8 border-b border-[#EDE3D5] gap-4">
         <div>
-          <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-1">
+          <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold block mb-1">
             Member Privileges
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">

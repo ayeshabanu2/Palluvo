@@ -272,7 +272,8 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-6">
-            <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block">
+            <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] shrink-0" aria-hidden="true" />
               Heritage Preservation
             </span>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D] leading-tight">

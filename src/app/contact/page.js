@@ -25,7 +25,7 @@ export default function ContactPage() {
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-12">
       
       <div className="text-center max-w-xl mx-auto">
-        <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
+        <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold block mb-2">
           Concierge & Client Care
         </span>
         <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">

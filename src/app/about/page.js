@@ -13,7 +13,7 @@ export default function AboutPage() {
       
       {/* Hero */}
       <div className="text-center max-w-3xl mx-auto">
-        <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold block mb-2">
+        <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold block mb-2">
           The Atelier Story
         </span>
         <h1 className="font-serif text-4xl sm:text-5xl font-bold text-[#2B211D] leading-tight">

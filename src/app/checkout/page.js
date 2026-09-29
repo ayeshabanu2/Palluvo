@@ -50,7 +50,7 @@ export default function CheckoutPage() {
           <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8" />
           </div>
-          <span className="text-xs uppercase tracking-[0.25em] text-[#B08D57] font-semibold">
+          <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold">
             Order Confirmed
           </span>
           <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D] mt-2 mb-2">

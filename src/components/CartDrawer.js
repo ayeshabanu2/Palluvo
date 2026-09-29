@@ -116,7 +116,7 @@ export default function CartDrawer() {
                       </div>
                       <p className="text-[11px] text-[#665E57] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
                       {item.blousePrice > 0 && (
-                        <p className="text-[10px] text-[#B08D57] font-medium">+ {item.blouseOptionName} ({formatINR(item.blousePrice)})</p>
+                        <p className="text-[10px] text-[#641C2D] font-medium">+ {item.blouseOptionName} ({formatINR(item.blousePrice)})</p>
                       )}
                     </div>
 
