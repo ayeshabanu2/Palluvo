@@ -130,7 +130,7 @@ export default function Header() {
                 <span className="font-serif text-2xl xs:text-[26px] sm:text-4xl tracking-[0.16em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight">
                   PALLUVO
                 </span>
-                <span className="text-[8.5px] xs:text-[9.5px] sm:text-[11px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-[#B08D57] font-sans block -mt-0.5 sm:-mt-1 font-semibold truncate">
+                <span className="text-[8.5px] xs:text-[9.5px] sm:text-[11px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold truncate">
                   Every drape, a little magic.
                 </span>
               </Link>
@@ -253,7 +253,7 @@ export default function Header() {
                     className="hover:text-[#641C2D] py-1 border-b border-[#EDE3D5]/50 flex items-center justify-between"
                   >
                     <span>{model.name}</span>
-                    <span className="text-[11px] text-[#B08D57] lowercase font-serif italic">{model.region}</span>
+                    <span className="text-[11px] text-[#665E57] lowercase font-serif italic">{model.region}</span>
                   </Link>
                 ))}
                 <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="hover:text-[#641C2D] py-1">

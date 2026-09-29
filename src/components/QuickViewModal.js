@@ -92,8 +92,8 @@ export default function QuickViewModal() {
               {product.rating && (
                 <>
                   <span>•</span>
-                  <div className="flex items-center gap-1 text-amber-600 font-semibold">
-                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
+                  <div className="flex items-center gap-1 text-[#2B211D] font-semibold">
+                    <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500 shrink-0" aria-hidden="true" />
                     <span>{product.rating}</span>
                     {product.reviewsCount && (
                       <span className="text-[#665E57] font-normal text-xs">

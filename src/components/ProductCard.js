@@ -81,8 +81,8 @@ export default function ProductCard({ product }) {
           <div className="flex items-center justify-between text-[11px] text-[#665E57] uppercase tracking-wider mb-1">
             <span className="truncate pr-1.5">{product.sareeType || product.category}</span>
             {product.rating && (
-              <div className="flex items-center gap-1 text-amber-600 font-semibold shrink-0">
-                <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+              <div className="flex items-center gap-1 text-[#2B211D] font-semibold shrink-0">
+                <Star className="w-3 h-3 fill-amber-500 text-amber-500 shrink-0" aria-hidden="true" />
                 <span>{product.rating}</span>
                 {product.reviewsCount && (
                   <span className="text-[#665E57] font-normal text-[10px]">

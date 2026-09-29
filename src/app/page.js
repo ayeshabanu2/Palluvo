@@ -149,7 +149,10 @@ export default function HomePage() {
                   {model.desc}
                 </p>
                 <div className="flex items-center justify-between text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
-                  <span className="text-[#B08D57] font-semibold">{model.artisanHours}</span>
+                  <span className="text-[#665E57] font-semibold flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] shrink-0" aria-hidden="true" />
+                    {model.artisanHours}
+                  </span>
                   <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1">
                     Explore <span className="hidden sm:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </span>
@@ -281,11 +284,11 @@ export default function HomePage() {
 
             <div className="grid grid-cols-2 gap-4 pt-2">
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
-                <h4 className="font-serif text-lg font-bold text-[#641C2D]">Pure Zari & Natural Fibers</h4>
+                <h3 className="font-serif text-lg font-bold text-[#641C2D]">Pure Zari & Natural Fibers</h3>
                 <p className="text-xs text-[#665E57] mt-1">Lab-tested zari threads and authentic pure mulberry silk for enduring heirloom luster.</p>
               </div>
               <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
-                <h4 className="font-serif text-lg font-bold text-[#641C2D]">Complimentary Fall & Pico</h4>
+                <h3 className="font-serif text-lg font-bold text-[#641C2D]">Complimentary Fall & Pico</h3>
                 <p className="text-xs text-[#665E57] mt-1">Every saree arrives finished with premium matching fall and pico edging.</p>
               </div>
             </div>
