@@ -75,7 +75,7 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* Product Content Details */}
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between">
         <div>
           <div className="flex items-center justify-between text-[11px] text-[#665E57] uppercase tracking-wider mb-1">
             <span className="truncate pr-1.5">{product.sareeType || product.category}</span>
@@ -93,7 +93,7 @@ export default function ProductCard({ product }) {
           </div>
 
           <Link href={`/product/${product.slug || product.id}`} className="block">
-            <h3 className="font-serif text-base font-semibold text-[#2B211D] hover:text-[#641C2D] transition line-clamp-1">
+            <h3 className="font-serif text-sm sm:text-base font-semibold text-[#2B211D] hover:text-[#641C2D] transition line-clamp-2 leading-snug min-h-[2.5rem] sm:min-h-[2.75rem]">
               {product.name}
             </h3>
           </Link>
@@ -121,18 +121,18 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Pricing */}
-        <div className="mt-3 pt-3 border-t border-[#EDE3D5]/60 flex items-center justify-between">
-          <div className="flex items-baseline gap-2">
-            <span className="text-base font-bold text-[#641C2D]">
+        <div className="mt-3 pt-2.5 sm:pt-3 border-t border-[#EDE3D5]/60 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+          <div className="flex flex-wrap items-baseline gap-x-1.5 sm:gap-x-2">
+            <span className="text-sm sm:text-base font-bold text-[#641C2D] whitespace-nowrap">
               {formatINR(product.price)}
             </span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <span className="text-xs text-[#665E57] line-through">
+              <span className="text-[11px] sm:text-xs text-[#665E57] line-through whitespace-nowrap">
                 {formatINR(product.compareAtPrice)}
               </span>
             )}
           </div>
-          <span className="text-[11px] text-emerald-800 font-medium">
+          <span className="text-[10px] sm:text-[11px] text-emerald-800 font-medium whitespace-nowrap">
             In Stock
           </span>
         </div>

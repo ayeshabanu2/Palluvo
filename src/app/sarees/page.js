@@ -356,7 +356,7 @@ function SareesContent() {
               </button>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3.5 sm:gap-6">
               {filteredSarees.map((saree) => (
                 <ProductCard key={saree.id} product={saree} />
               ))}
