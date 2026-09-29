@@ -31,7 +31,7 @@ export default function HomePage() {
         <div className="absolute inset-0">
           <img
             src="/images/hero_campaign.jpg"
-            alt="Palluvo Luxury Saree Muse"
+            alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
             className="w-full h-full object-cover object-[75%_center] lg:object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
           />
           {/* Protected text backdrop gradient on the left, clear open saree view on the right */}
@@ -59,16 +59,16 @@ export default function HomePage() {
               Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="flex flex-col md:flex-row items-stretch md:items-center gap-4">
               <Link
                 href="/sarees"
-                className="bg-[#641C2D] hover:bg-[#7A3043] text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B]"
+                className="w-full md:w-auto bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
               >
                 Shop Curated Collection <ArrowRight className="w-4 h-4" />
               </Link>
               <a
                 href="#signature-models"
-                className="bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-8 py-4 rounded-full text-xs font-semibold tracking-[0.2em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center"
+                className="w-full md:w-auto bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
               >
                 Explore Top Models
               </a>
