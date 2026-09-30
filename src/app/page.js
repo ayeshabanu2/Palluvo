@@ -41,7 +41,7 @@ export default function HomePage() {
 
         {/* Protected Left-Aligned Editorial Text Column */}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-sm sm:max-w-md md:max-w-xl lg:max-w-2xl text-left text-white">
+          <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
               <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" />
               <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium">
@@ -54,12 +54,12 @@ export default function HomePage() {
               <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
             </h1>
 
-            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-xs sm:max-w-sm md:max-w-lg">
+            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
               India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
               Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
             </p>
 
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm md:max-w-none">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm lg:max-w-none">
               <Link
                 href="/sarees"
                 className="w-full sm:w-auto max-w-xs sm:max-w-none bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
@@ -139,8 +139,9 @@ export default function HomePage() {
                   <h3 className="font-serif text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white leading-tight line-clamp-1">
                     {model.name}
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-1 sm:line-clamp-2 mt-0.5 font-light leading-snug">
-                    {model.subtitle}
+                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-2 mt-0.5 font-light leading-snug">
+                    <span className="sm:hidden">{model.shortSubtitle || model.subtitle}</span>
+                    <span className="hidden sm:inline">{model.subtitle}</span>
                   </p>
                 </div>
               </div>
