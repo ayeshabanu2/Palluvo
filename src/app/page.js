@@ -132,13 +132,14 @@ export default function HomePage() {
                   </span>
                 </div>
                 <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-4 sm:left-4 sm:right-4 text-white">
-                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium block">
-                    {model.region}
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium block truncate">
+                    <span className="sm:hidden">{model.shortRegion || model.region}</span>
+                    <span className="hidden sm:inline">{model.region}</span>
                   </span>
                   <h3 className="font-serif text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white leading-tight line-clamp-1">
                     {model.name}
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-2 mt-0.5 font-light leading-snug">
+                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-1 sm:line-clamp-2 mt-0.5 font-light leading-snug">
                     {model.subtitle}
                   </p>
                 </div>
@@ -148,12 +149,13 @@ export default function HomePage() {
                 <p className="text-[11px] sm:text-xs text-[#6D625D] leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
                   {model.desc}
                 </p>
-                <div className="flex items-center justify-between text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
-                  <span className="text-[#665E57] font-semibold flex items-center gap-1.5">
+                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-2 gap-y-1.5 text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
+                  <span className="text-[#665E57] font-semibold flex items-center gap-1.5 shrink-0">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] shrink-0" aria-hidden="true" />
-                    {model.artisanHours}
+                    <span className="sm:hidden">{model.shortArtisanHours || model.artisanHours}</span>
+                    <span className="hidden sm:inline">{model.artisanHours}</span>
                   </span>
-                  <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1">
+                  <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto sm:ml-0">
                     Explore <span className="hidden sm:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
                   </span>
                 </div>

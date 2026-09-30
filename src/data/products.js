@@ -12,6 +12,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Banarasi",
     shortName: "Katan Banarasi",
     region: "Varanasi, Uttar Pradesh",
+    shortRegion: "Varanasi",
     tag: "Kadhwa Brocade",
     oneLiner: "Timeless zari woven in Varanasi",
     subtitle: "Pure Katan Silk with Real Zari Jaal",
@@ -19,6 +20,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/banarasi.jpg",
     filterType: "Banarasi",
     artisanHours: "210+ Weaving Hours",
+    shortArtisanHours: "210+ hrs",
     pureSilkMark: true
   },
   {
@@ -27,6 +29,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Kanjivaram",
     shortName: "Kanjivaram Silk",
     region: "Kanchipuram, Tamil Nadu",
+    shortRegion: "Kanchipuram",
     tag: "Temple Zari",
     oneLiner: "Rich silk and heritage temple borders",
     subtitle: "Pure Mulberry Silk & Korvai Gold Temple Zari",
@@ -34,6 +37,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/kanjivaram.jpg",
     filterType: "Kanjivaram",
     artisanHours: "180+ Weaving Hours",
+    shortArtisanHours: "180+ hrs",
     pureSilkMark: true
   },
   {
@@ -42,6 +46,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Pochampally",
     shortName: "Double Ikat",
     region: "Bhoodan Pochampally, Telangana",
+    shortRegion: "Pochampally",
     tag: "Geometric Ikat",
     oneLiner: "Iconic geometric Ikat from Telangana",
     subtitle: "Pure Handloom Silk Double Ikat Weave",
@@ -49,6 +54,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/pochampally.jpg",
     filterType: "Pochampally",
     artisanHours: "140+ Weaving Hours",
+    shortArtisanHours: "140+ hrs",
     pureSilkMark: true
   },
   {
@@ -57,6 +63,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Paithani",
     shortName: "Pure Paithani",
     region: "Paithan & Yeola, Maharashtra",
+    shortRegion: "Paithan",
     tag: "Peacock Pallu",
     oneLiner: "Handwoven silk with signature motifs",
     subtitle: "Kaleidoscopic Pure Silk with Zari Borders",
@@ -64,6 +71,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/saree_paithani_royal.jpg",
     filterType: "Paithani",
     artisanHours: "160+ Weaving Hours",
+    shortArtisanHours: "160+ hrs",
     pureSilkMark: true
   },
   {
@@ -72,6 +80,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Chanderi",
     shortName: "Chanderi Tissue",
     region: "Chanderi, Madhya Pradesh",
+    shortRegion: "Chanderi",
     tag: "Gossamer Handloom",
     oneLiner: "Gossamer handloom with delicate golden bootis",
     subtitle: "Silk-Cotton Tissue with Gold Bootis",
@@ -79,6 +88,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/chanderi.jpg",
     filterType: "Chanderi",
     artisanHours: "95+ Weaving Hours",
+    shortArtisanHours: "95+ hrs",
     pureSilkMark: true
   },
   {
@@ -87,6 +97,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Organza",
     shortName: "Embroidered Organza",
     region: "PALLUVO Contemporary Atelier",
+    shortRegion: "Atelier",
     tag: "Couture Sheer",
     oneLiner: "Crisp sheer luxury with hand-embroidered zardozi",
     subtitle: "Scalloped Hand-Embroidered Zardozi Silk",
@@ -94,6 +105,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/organza.jpg",
     filterType: "Organza",
     artisanHours: "75+ Hand-Embroidery Hours",
+    shortArtisanHours: "75+ hrs",
     pureSilkMark: true
   },
   {
@@ -102,6 +114,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Ready-to-Wear",
     shortName: "1-Minute Drape",
     region: "PALLUVO Signature Studio",
+    shortRegion: "Studio",
     tag: "Effortless Glamour",
     oneLiner: "Pre-pleated 60-second couture drape",
     subtitle: "Pre-Pleated Tailored Pure Silk Drape",
@@ -109,6 +122,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/ready-to-wear.jpg",
     filterType: "Ready-to-Wear",
     artisanHours: "Boutique Tailored",
+    shortArtisanHours: "Tailored",
     pureSilkMark: true
   },
   {
@@ -117,6 +131,7 @@ export const PALLUVO_TOP_MODELS = [
     name: "Mysore Silk",
     shortName: "Royal Crepe",
     region: "Mysuru, Karnataka",
+    shortRegion: "Mysuru",
     tag: "Certified Gold Zari",
     oneLiner: "Royal crepe silk with certified gold zari",
     subtitle: "Pure Crepe Silk with 100% Tested Gold Zari",
@@ -124,6 +139,7 @@ export const PALLUVO_TOP_MODELS = [
     image: "images/categories/mysore-silk.jpg",
     filterType: "Mysore Silk",
     artisanHours: "110+ Weaving Hours",
+    shortArtisanHours: "110+ hrs",
     pureSilkMark: true
   }
 ];
