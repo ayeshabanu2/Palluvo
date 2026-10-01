@@ -27,7 +27,7 @@ export default function Footer() {
         </div>
 
         {/* Links Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-10 py-12 border-b border-[#3D302A]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 py-12 border-b border-[#3D302A]">
           {/* Brand Info */}
           <div>
             <span className="font-serif text-3xl tracking-[0.22em] text-[#D6B878] font-bold uppercase block mb-3">
@@ -77,7 +77,7 @@ export default function Footer() {
             <p className="text-xs text-[#B8B0A5] mb-4">
               Private preview invitations, silk care guides, and exclusive festive privileges launching soon.
             </p>
-            <div className="flex" aria-disabled="true">
+            <div className="flex w-full" aria-disabled="true">
               <label htmlFor="newsletter-email" className="sr-only">
                 Email address for newsletter (Subscriptions launching soon)
               </label>
@@ -89,13 +89,13 @@ export default function Footer() {
                 aria-disabled="true"
                 aria-label="Newsletter subscriptions opening soon"
                 placeholder="Subscriptions opening soon..."
-                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 focus:outline-none"
+                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 min-w-0 focus:outline-none"
               />
               <button 
                 type="button"
                 disabled
                 aria-disabled="true"
-                className="bg-[#3D302A] text-[#B8B0A5] px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
+                className="bg-[#3D302A] text-[#B8B0A5] px-3.5 sm:px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
               >
                 Join
               </button>

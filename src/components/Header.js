@@ -125,12 +125,12 @@ export default function Header() {
             </div>
 
             {/* Brand Logo & Tagline */}
-            <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-1">
+            <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-0.5 xs:px-1">
               <Link href="/" className="inline-block group max-w-full">
                 <span className="font-serif text-2xl xs:text-[26px] sm:text-4xl tracking-[0.16em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight">
                   PALLUVO
                 </span>
-                <span className="text-[8.5px] xs:text-[9.5px] sm:text-[11px] tracking-[0.18em] sm:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold truncate">
+                <span className="text-[7px] xs:text-[9.5px] sm:text-[11px] tracking-[0.03em] xs:tracking-[0.18em] sm:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold truncate">
                   Every drape, a little magic.
                 </span>
               </Link>
