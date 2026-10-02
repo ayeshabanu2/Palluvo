@@ -2,7 +2,7 @@
 
 **PR Title:** `feat(stack): migrate storefront to Next.js App Router (React) with Tailwind CSS and full e-commerce suite`  
 **Base Branch:** `main`  
-**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-10-01`
+**Status:** `READY TO MERGE` | **Target Branch:** `main` | **Last Updated:** `2026-10-02`
 
 ---
 
@@ -12,7 +12,7 @@ This pull request transitions **PALLUVO — Contemporary Luxury Indian Saree Fas
 
 The migration preserves strict **100% saree-only merchandising**, all authenticated artisan imagery, custom blouse tailoring workflows, and verified customer concierge channels while dramatically improving client-side responsiveness, modularity, and SEO capabilities.
 
-**Latest revisions** resolve reviewer findings across breakpoints: (1) delayed footer four-column link grid to `lg` breakpoint (`sm:grid-cols-2 lg:grid-cols-4`) and constrained newsletter form with `min-w-0 flex-1` and `px-3.5 sm:px-4`, keeping the Join button fully visible within the 768px viewport with zero document overflow (`document.scrollWidth: 762px`, no horizontal scroll); (2) tightened mobile brand tagline typography and letter spacing (`text-[7px] tracking-[0.03em]` below `xs:`) in `Header.js`, rendering the complete brand line "Every drape, a little magic." on 320px screens without clipping or ellipsis (`isTruncated: false`); (3) kept hero CTAs vertically stacked through 1023px (`lg:flex-row`) and constrained text column to `md:max-w-md`, ensuring "Explore Top Models" remains completely clear of the model and her emerald green sari across the 768–1023px breakpoint; (4) preserved complete weave details in mobile signature-card subtitles (`shortSubtitle`) with `line-clamp-2`; (5) verified artisan-hours separation and concise region labels at 320px viewport; (6) fully verified contrast and sequential heading-order requirements.
+**Latest revisions** resolve reviewer findings across breakpoints: (1) preserved compact brand tagline typography and letter spacing (`text-[7.5px] tracking-[0.04em]` across mobile viewports, scaling to `sm:text-[9px] sm:tracking-[0.14em]` and `md:text-[11px] md:tracking-[0.28em]`) and replaced `truncate` with `whitespace-normal sm:whitespace-nowrap leading-tight` in `src/components/Header.js:133`, completely eliminating 380px–390px ellipsis truncation and rendering the full unclipped brand line "Every drape, a little magic." across all mobile viewports (`isTruncated: false`, 0 ellipsis); (2) delayed footer four-column link grid to `lg` breakpoint (`sm:grid-cols-2 lg:grid-cols-4`) and constrained newsletter form with `min-w-0 flex-1` and `px-3.5 sm:px-4`, keeping the Join button fully visible within the 768px viewport with zero document overflow (`document.scrollWidth: 762px`, no horizontal scroll); (3) kept hero CTAs vertically stacked through 1023px (`lg:flex-row`) and constrained text column to `md:max-w-md`, ensuring "Explore Top Models" remains completely clear of the model and her emerald green sari across the 768–1023px breakpoint; (4) preserved complete weave details in mobile signature-card subtitles (`shortSubtitle`) with `line-clamp-2`; (5) verified artisan-hours separation and concise region labels at 320px viewport; (6) fully verified contrast and sequential heading-order requirements.
 
 ---
 
