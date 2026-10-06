@@ -70,6 +70,11 @@ export default function Header() {
   const drawerRef = useRef(null);
   const closeButtonRef = useRef(null);
 
+  const searchTriggerRef = useRef(null);
+  const searchDialogRef = useRef(null);
+  const searchInputRef = useRef(null);
+  const searchCloseBtnRef = useRef(null);
+
   // Manage accessibility, focus trap, and Escape dismissal for mobile navigation drawer
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -122,6 +127,61 @@ export default function Header() {
       }
     };
   }, [mobileMenuOpen]);
+
+  // Manage accessibility, focus trap, and Escape dismissal for search modal dialog
+  useEffect(() => {
+    if (!showSearchModal) return;
+
+    // Move focus into the search input once dialog is mounted
+    const timer = setTimeout(() => {
+      if (searchInputRef.current) {
+        searchInputRef.current.focus();
+      } else if (searchCloseBtnRef.current) {
+        searchCloseBtnRef.current.focus();
+      }
+    }, 40);
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setShowSearchModal(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && searchDialogRef.current) {
+        const focusable = searchDialogRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the trigger button that opened search modal
+      if (searchTriggerRef.current) {
+        searchTriggerRef.current.focus();
+      }
+    };
+  }, [showSearchModal]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -198,12 +258,17 @@ export default function Header() {
 
             {/* Desktop Direct Search Bar */}
             <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <form onSubmit={handleSearchSubmit} className="relative w-full">
+              <form onSubmit={handleSearchSubmit} className="relative w-full" role="search">
+                <label htmlFor="desktopSearchInput" className="sr-only">
+                  Search sarees catalog
+                </label>
                 <input
+                  id="desktopSearchInput"
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Kanjivaram, Banarasi, Organza..."
+                  aria-label="Search sarees catalog"
                   className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
                 />
                 <button
@@ -227,9 +292,13 @@ export default function Header() {
             {/* Actions: Search (Mobile), Account, Wishlist, Bag */}
             <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-4 shrink-0">
               <button 
+                ref={searchTriggerRef}
+                id="searchModalToggle"
                 onClick={() => setShowSearchModal(true)}
                 className="lg:hidden w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
                 aria-label="Search sarees"
+                aria-expanded={showSearchModal}
+                aria-controls="searchModal"
               >
                 <Search className="w-5 h-5" />
               </button>
@@ -358,26 +427,46 @@ export default function Header() {
 
       {/* Mobile / Full Search Modal */}
       {showSearchModal && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4 bg-black/70 backdrop-blur-xs">
-          <div className="w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
+        <div 
+          id="searchModal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="searchModalTitle"
+          className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4"
+        >
+          <div 
+            className="fixed inset-0 bg-black/70 backdrop-blur-xs" 
+            onClick={() => setShowSearchModal(false)} 
+            aria-hidden="true"
+          />
+          <div 
+            ref={searchDialogRef}
+            className="w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 z-10"
+          >
             <button 
+              ref={searchCloseBtnRef}
               onClick={() => setShowSearchModal(false)}
               className="absolute top-3 right-3 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#665E57] hover:text-black transition-colors rounded-full"
               aria-label="Close search"
             >
               <X className="w-6 h-6" />
             </button>
-            <h3 className="font-serif text-2xl text-[#2B211D] mb-4">Discover Signature Sarees</h3>
-            <form onSubmit={handleSearchSubmit} className="relative">
+            <h3 id="searchModalTitle" className="font-serif text-2xl text-[#2B211D] mb-4">Discover Signature Sarees</h3>
+            <form onSubmit={handleSearchSubmit} className="relative" role="search">
+              <label htmlFor="overlaySearchInput" className="sr-only">
+                Search signature sarees
+              </label>
               <input
+                ref={searchInputRef}
+                id="overlaySearchInput"
                 type="text"
-                autoFocus
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by silk type, color, region, or weave..."
+                aria-label="Search by silk type, color, region, or weave"
                 className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg pl-12 pr-4 py-3 text-base text-[#241F1D] focus:outline-none focus:border-[#641C2D]"
               />
-              <Search className="w-5 h-5 text-[#665E57] absolute left-4 top-3.5" />
+              <Search className="w-5 h-5 text-[#665E57] absolute left-4 top-3.5" aria-hidden="true" />
               <button
                 type="submit"
                 className="w-full mt-4 bg-[#641C2D] text-white py-3 rounded-lg font-medium text-sm tracking-wider uppercase hover:bg-[#4E1422] transition"
