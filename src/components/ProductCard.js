@@ -23,19 +23,14 @@ export default function ProductCard({ product }) {
           />
         </Link>
 
-        {/* Badges */}
-        <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
-          {product.badge && (
-            <span className="bg-[#641C2D] text-white text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
+        {/* Classification Badge (Single top-left badge to keep model and saree drape 100% unobstructed) */}
+        {product.badge && (
+          <div className="absolute top-2 left-2 xs:top-2.5 xs:left-2.5 z-10">
+            <span className="bg-[#641C2D] text-white text-[9px] xs:text-[10px] font-bold px-1.5 xs:px-2 py-0.5 rounded uppercase tracking-wider shadow-sm block">
               {product.badge}
             </span>
-          )}
-          {product.discount && (
-            <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
-              {product.discount}
-            </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Wishlist Button - 44x44px touch target, product-specific label, and aria-pressed */}
         <button
@@ -130,6 +125,11 @@ export default function ProductCard({ product }) {
             {product.compareAtPrice && product.compareAtPrice > product.price && (
               <span className="text-[11px] sm:text-xs text-[#665E57] line-through whitespace-nowrap">
                 {formatINR(product.compareAtPrice)}
+              </span>
+            )}
+            {product.discount && (
+              <span className="bg-[#B08D57] text-[#1C1613] text-[9.5px] xs:text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap shadow-xs">
+                {product.discount}
               </span>
             )}
           </div>
