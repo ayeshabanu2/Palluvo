@@ -108,7 +108,7 @@ export default function Header() {
       </aside>
 
       {/* Main Luxury Header */}
-      <header className="sticky top-0 z-40 bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] transition-all">
+      <header className="sticky top-0 z-40 w-full bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] shadow-xs transition-all">
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-[64px] sm:h-[72px] gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             

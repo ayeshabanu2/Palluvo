@@ -8,7 +8,7 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Core Customer Guarantees (Fulfillment & Protection) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pb-14 border-b border-[#3D302A] text-center">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-6 lg:gap-8 pb-10 sm:pb-14 border-b border-[#3D302A] text-center">
           <div className="flex flex-col items-center">
             <Truck className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">Express Insured Delivery</h4>
