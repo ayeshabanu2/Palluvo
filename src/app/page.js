@@ -26,54 +26,77 @@ export default function HomePage() {
     <div className="space-y-20 pb-20">
       
       {/* 1. EDITORIAL HERO SECTION */}
-      <section className="relative min-h-[85vh] flex items-center overflow-hidden bg-[#2B211D]">
-        {/* Background Image: Model placed in open right space, left side clear */}
-        <div className="absolute inset-0">
+      <section className="relative bg-[#2B211D] text-white overflow-hidden lg:min-h-[85vh] lg:flex lg:items-center">
+        {/* Desktop-only full-bleed background image */}
+        <div className="hidden lg:block absolute inset-0">
           <img
             src="/images/hero_campaign.jpg"
             alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
-            className="w-full h-full object-cover object-[75%_center] lg:object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
+            className="w-full h-full object-cover object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
           />
           {/* Protected text backdrop gradient on the left, clear open saree view on the right */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#2B211D] via-[#2B211D]/80 md:via-[#2B211D]/65 lg:via-[#2B211D]/40 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#2B211D] via-transparent to-black/30" />
         </div>
 
-        {/* Protected Left-Aligned Editorial Text Column */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
-          <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white">
-            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md max-w-full">
-              <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
-              <span className="text-[10px] xs:text-[11px] uppercase tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
-                <span className="xs:hidden">Autumn / Festive 2026</span>
-                <span className="hidden xs:inline">Autumn / Festive 2026 Collection</span>
-              </span>
+        {/* Responsive Grid Container */}
+        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-24">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+            
+            {/* Mobile View: Dedicated Image Grid Card */}
+            <div className="lg:hidden w-full order-1">
+              <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[16/10] shadow-2xl border border-[#D6B878]/30 bg-[#241B17] max-w-md mx-auto">
+                <img
+                  src="/images/hero_campaign.jpg"
+                  alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
+                  className="w-full h-full object-cover object-[75%_center]"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-[#2B211D]/85 backdrop-blur-md border border-[#D6B878]/40 px-3 py-1.5 rounded-full flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-[#D6B878] animate-pulse" />
+                  <span className="text-[10px] xs:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium">
+                    Autumn / Festive 2026 Drape
+                  </span>
+                </div>
+              </div>
             </div>
 
-            <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-6 leading-[1.15] drop-shadow-sm">
-              Every drape, <br />
-              <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
-            </h1>
+            {/* Editorial Text Column (renders in grid below image on mobile, left column on desktop) */}
+            <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white mx-auto lg:mx-0 w-full order-2">
+              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-5 sm:mb-6 shadow-md max-w-full">
+                <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
+                <span className="text-[10px] xs:text-[11px] uppercase tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
+                  <span className="xs:hidden">Autumn / Festive 2026</span>
+                  <span className="hidden xs:inline">Autumn / Festive 2026 Collection</span>
+                </span>
+              </div>
 
-            <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-8 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
-              India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
-              Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
-            </p>
+              <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-[1.15] drop-shadow-sm">
+                Every drape, <br />
+                <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
+              </h1>
 
-            <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm lg:max-w-none">
-              <Link
-                href="/sarees"
-                className="w-full sm:w-auto max-w-xs sm:max-w-none bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
-              >
-                Shop Curated Collection <ArrowRight className="w-4 h-4" />
-              </Link>
-              <a
-                href="#signature-models"
-                className="w-full sm:w-auto max-w-xs sm:max-w-none bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
-              >
-                Explore Top Models
-              </a>
+              <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-6 sm:mb-8 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+                India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
+                Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
+              </p>
+
+              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm lg:max-w-none">
+                <Link
+                  href="/sarees"
+                  className="w-full sm:w-auto max-w-xs sm:max-w-none bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
+                >
+                  Shop Curated Collection <ArrowRight className="w-4 h-4" />
+                </Link>
+                <a
+                  href="#signature-models"
+                  className="w-full sm:w-auto max-w-xs sm:max-w-none bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
+                >
+                  Explore Top Models
+                </a>
+              </div>
             </div>
+
           </div>
         </div>
       </section>
