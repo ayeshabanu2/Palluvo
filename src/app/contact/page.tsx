@@ -1,13 +1,21 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Mail, Phone, MapPin, Clock, MessageSquare, Send, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
-export default function ContactPage() {
+interface ContactFormData {
+  name: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+}
+
+export default function ContactPage(): React.JSX.Element {
   const { showToast } = useStore();
-  const [submitted, setSubmitted] = useState(false);
-  const [formData, setFormData] = useState({
+  const [submitted, setSubmitted] = useState<boolean>(false);
+  const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',
     phone: '',
@@ -15,7 +23,7 @@ export default function ContactPage() {
     message: ''
   });
 
-  const handleSubmit = (e) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitted(true);
     showToast('Your inquiry has been received. Our atelier stylist will reach out promptly.');

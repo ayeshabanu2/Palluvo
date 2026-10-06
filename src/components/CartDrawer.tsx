@@ -2,12 +2,11 @@
 
 import React from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { formatINR } from '@/utils/format';
 
-export default function CartDrawer() {
+export default function CartDrawer(): React.JSX.Element | null {
   const {
     cart,
     isCartOpen,
@@ -115,7 +114,7 @@ export default function CartDrawer() {
                         </button>
                       </div>
                       <p className="text-[11px] text-[#665E57] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
-                      {item.blousePrice > 0 && (
+                      {item.blousePrice !== undefined && item.blousePrice > 0 && (
                         <p className="text-[10px] text-[#641C2D] font-medium">+ {item.blouseOptionName} ({formatINR(item.blousePrice)})</p>
                       )}
                     </div>

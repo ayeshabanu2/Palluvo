@@ -4,6 +4,7 @@ import React, { useState, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SAREE_PRODUCTS, PALLUVO_TOP_MODELS } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
+import { SareeProduct, TopModel } from '@/types';
 import { Filter, SlidersHorizontal, ArrowUpDown, X, Search, Sparkles, ShieldCheck } from 'lucide-react';
 
 function SareesContent() {
@@ -13,14 +14,14 @@ function SareesContent() {
   const initialBadge = searchParams.get('badge') || '';
   const initialSearch = searchParams.get('q') || '';
 
-  const [selectedType, setSelectedType] = useState(initialType);
-  const [selectedOccasion, setSelectedOccasion] = useState(initialOccasion);
-  const [selectedFabric, setSelectedFabric] = useState('All');
-  const [selectedBadge, setSelectedBadge] = useState(initialBadge);
-  const [sortBy, setSortBy] = useState('featured');
-  const [priceRange, setPriceRange] = useState(15000);
-  const [searchQuery, setSearchQuery] = useState(initialSearch);
-  const [mobileFilterOpen, setMobileFilterOpen] = useState(false);
+  const [selectedType, setSelectedType] = useState<string>(initialType);
+  const [selectedOccasion, setSelectedOccasion] = useState<string>(initialOccasion);
+  const [selectedFabric, setSelectedFabric] = useState<string>('All');
+  const [selectedBadge, setSelectedBadge] = useState<string>(initialBadge);
+  const [sortBy, setSortBy] = useState<string>('featured');
+  const [priceRange, setPriceRange] = useState<number>(15000);
+  const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
+  const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
 
   // Sync state whenever URL searchParams change (clicking header buttons, category links, or searching)
   React.useEffect(() => {
@@ -40,17 +41,17 @@ function SareesContent() {
   }, [searchParams]);
 
   // Extract distinct fabrics
-  const fabrics = useMemo(() => {
-    const set = new Set();
-    SAREE_PRODUCTS.forEach(p => {
+  const fabrics = useMemo<string[]>(() => {
+    const set = new Set<string>();
+    SAREE_PRODUCTS.forEach((p: SareeProduct) => {
       if (p.fabric) set.add(p.fabric.split(' ')[0]);
     });
     return ['All', ...Array.from(set)];
   }, []);
 
   // Filtered & Sorted Sarees
-  const filteredSarees = useMemo(() => {
-    return SAREE_PRODUCTS.filter((saree) => {
+  const filteredSarees = useMemo<SareeProduct[]>(() => {
+    return (SAREE_PRODUCTS as SareeProduct[]).filter((saree) => {
       // Type
       if (selectedType !== 'All') {
         if (selectedType === 'Ready-to-Wear') {
@@ -65,18 +66,18 @@ function SareesContent() {
             saree.id === 'saree-027';
           if (!isReady) return false;
         } else if (
-          saree.sareeType.toLowerCase() !== selectedType.toLowerCase() &&
-          saree.category.toLowerCase() !== selectedType.toLowerCase()
+          (saree.sareeType || '').toLowerCase() !== selectedType.toLowerCase() &&
+          (saree.category || '').toLowerCase() !== selectedType.toLowerCase()
         ) {
           return false;
         }
       }
       // Occasion
-      if (selectedOccasion !== 'All' && saree.occasion.toLowerCase() !== selectedOccasion.toLowerCase()) {
+      if (selectedOccasion !== 'All' && (saree.occasion || '').toLowerCase() !== selectedOccasion.toLowerCase()) {
         return false;
       }
       // Fabric
-      if (selectedFabric !== 'All' && !saree.fabric.toLowerCase().includes(selectedFabric.toLowerCase())) {
+      if (selectedFabric !== 'All' && !(saree.fabric || '').toLowerCase().includes(selectedFabric.toLowerCase())) {
         return false;
       }
       // Price
@@ -96,11 +97,11 @@ function SareesContent() {
         const q = searchQuery.toLowerCase().trim();
         const matches =
           saree.name.toLowerCase().includes(q) ||
-          saree.sareeType.toLowerCase().includes(q) ||
-          saree.fabric.toLowerCase().includes(q) ||
-          saree.color.toLowerCase().includes(q) ||
-          saree.occasion.toLowerCase().includes(q) ||
-          (saree.specifications && saree.specifications.origin && saree.specifications.origin.toLowerCase().includes(q));
+          Boolean(saree.sareeType && saree.sareeType.toLowerCase().includes(q)) ||
+          Boolean(saree.fabric && saree.fabric.toLowerCase().includes(q)) ||
+          Boolean(saree.color && saree.color.toLowerCase().includes(q)) ||
+          Boolean(saree.occasion && saree.occasion.toLowerCase().includes(q)) ||
+          Boolean(saree.specifications && saree.specifications.origin && saree.specifications.origin.toLowerCase().includes(q));
         if (!matches) return false;
       }
       return true;
@@ -242,7 +243,7 @@ function SareesContent() {
               >
                 All Signature Models
               </button>
-              {PALLUVO_TOP_MODELS.map((model) => (
+              {PALLUVO_TOP_MODELS.map((model: TopModel) => (
                 <button
                   key={model.id}
                   onClick={() => setSelectedType(model.filterType)}
@@ -389,7 +390,7 @@ function SareesContent() {
                 className="w-full p-2 border border-[#EDE3D5] rounded text-xs"
               >
                 <option value="All">All Signature Models</option>
-                {PALLUVO_TOP_MODELS.map((m) => (
+                {PALLUVO_TOP_MODELS.map((m: TopModel) => (
                   <option key={m.id} value={m.filterType}>{m.name}</option>
                 ))}
               </select>

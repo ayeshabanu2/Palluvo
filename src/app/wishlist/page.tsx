@@ -5,12 +5,12 @@ import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
 import { SAREE_PRODUCTS } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-import { Heart, ShoppingBag } from 'lucide-react';
+import { Heart } from 'lucide-react';
 
-export default function WishlistPage() {
+export default function WishlistPage(): React.JSX.Element {
   const { wishlist } = useStore();
 
-  const wishlistedProducts = SAREE_PRODUCTS.filter(p => wishlist.includes(p.id));
+  const wishlistedProducts = SAREE_PRODUCTS.filter((p) => wishlist.includes(p.id));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -46,7 +46,7 @@ export default function WishlistPage() {
             Showing <strong className="text-[#2B211D]">{wishlistedProducts.length}</strong> saved saree(s)
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {wishlistedProducts.map(product => (
+            {wishlistedProducts.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

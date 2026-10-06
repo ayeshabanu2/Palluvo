@@ -2,15 +2,15 @@ import React from 'react';
 import Link from 'next/link';
 import { 
   PALLUVO_TOP_MODELS, 
-  FESTIVE_SAREES, 
   SAREE_OCCASIONS, 
   SAREE_PRODUCTS 
 } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-import { Sparkles, ArrowRight, ShieldCheck, Award, HeartHandshake, Scissors } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, HeartHandshake, Scissors } from 'lucide-react';
+import { SareeProduct } from '@/types';
 
-export default function HomePage() {
-  const trendingSarees = [
+export default function HomePage(): React.JSX.Element {
+  const trendingSarees: SareeProduct[] = [
     SAREE_PRODUCTS[25], // Regal Patan Patola Double Ikat
     SAREE_PRODUCTS[26], // Liquid Gold Tissue Kanjivaram
     SAREE_PRODUCTS[27], // Midnight Shikargah Banarasi
@@ -19,8 +19,7 @@ export default function HomePage() {
     SAREE_PRODUCTS[1],  // Classic Kanjivaram
     SAREE_PRODUCTS[13], // Bridal Heirloom Crimson Kanjivaram
     SAREE_PRODUCTS[4]   // Traditional Paithani
-  ].filter(Boolean);
-  const festiveSarees = SAREE_PRODUCTS.filter(p => p.occasion === 'Festive' || p.occasion === 'Wedding').slice(0, 4);
+  ].filter((s): s is SareeProduct => Boolean(s));
 
   return (
     <div className="space-y-20 pb-20">

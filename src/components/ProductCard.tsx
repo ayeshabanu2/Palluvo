@@ -3,10 +3,11 @@
 import React from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
-import { Heart, ShoppingBag, Eye, Star, Sparkles } from 'lucide-react';
+import { Heart, ShoppingBag, Eye, Star } from 'lucide-react';
 import { formatINR } from '@/utils/format';
+import { ProductCardProps } from '@/types';
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product }: ProductCardProps): React.JSX.Element {
   const { wishlist, toggleWishlist, addToCart, setIsCartOpen, setQuickViewProduct } = useStore();
   const isWishlisted = wishlist.includes(product.id);
 

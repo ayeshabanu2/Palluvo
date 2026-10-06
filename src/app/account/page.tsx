@@ -2,12 +2,14 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { User, Package, Heart, MapPin, ShieldCheck, LogOut } from 'lucide-react';
+import { Package, Heart, MapPin, ShieldCheck } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
-export default function AccountPage() {
+type AccountTab = 'orders' | 'addresses';
+
+export default function AccountPage(): React.JSX.Element {
   const { wishlist } = useStore();
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState<AccountTab>('orders');
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

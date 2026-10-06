@@ -1,13 +1,14 @@
 import React from 'react';
 import Link from 'next/link';
-import { Award, ShieldCheck, HeartHandshake, Scissors, ArrowRight } from 'lucide-react';
+import { Metadata } from 'next';
+import { Award, ShieldCheck, Scissors, ArrowRight } from 'lucide-react';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'About Atelier | PALLUVO Luxury Sarees',
   description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.'
 };
 
-export default function AboutPage() {
+export default function AboutPage(): React.JSX.Element {
   return (
     <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 space-y-16">
       

@@ -1,4 +1,6 @@
 import './globals.css';
+import React from 'react';
+import { Metadata } from 'next';
 import { StoreProvider } from '@/context/StoreContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -6,7 +8,7 @@ import CartDrawer from '@/components/CartDrawer';
 import QuickViewModal from '@/components/QuickViewModal';
 import Toast from '@/components/Toast';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
   description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
   keywords: 'sarees, banarasi silk saree, kanjivaram silk, organza saree, paithani saree, bridal saree, luxury handloom',
@@ -17,7 +19,11 @@ export const metadata = {
   }
 };
 
-export default function RootLayout({ children }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}): React.JSX.Element {
   return (
     <html lang="en">
       <head>

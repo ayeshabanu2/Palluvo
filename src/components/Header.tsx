@@ -4,16 +4,25 @@ import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
-import { Search, Heart, ShoppingBag, User, Menu, X, ArrowRight, ShieldCheck, Sparkles, Copy, Check } from 'lucide-react';
+import { Search, Heart, ShoppingBag, User, Menu, X, Sparkles } from 'lucide-react';
 import { PALLUVO_TOP_MODELS } from '@/data/products';
 
-function CategoryNav() {
+interface NavItem {
+  label: string;
+  href: string;
+  badge: string | null;
+  type: string | null;
+  isAll: boolean;
+  special?: string;
+}
+
+function CategoryNav(): React.JSX.Element {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentType = searchParams?.get('type') || null;
   const currentBadge = searchParams?.get('badge') || null;
 
-  const isNavActive = (type, badge, isAll) => {
+  const isNavActive = (type: string | null, badge: string | null, isAll: boolean): boolean => {
     if (isAll) {
       return pathname === '/sarees' && !currentType && !currentBadge;
     }
@@ -26,7 +35,7 @@ function CategoryNav() {
     return false;
   };
 
-  const navItems = [
+  const navItems: NavItem[] = [
     { label: 'New Arrivals', href: '/sarees?badge=New+Arrival', badge: 'New Arrival', type: null, isAll: false, special: 'text-[#8C6A35]' },
     { label: 'Kanjivaram', href: '/sarees?type=Kanjivaram', badge: null, type: 'Kanjivaram', isAll: false },
     { label: 'Banarasi', href: '/sarees?type=Banarasi', badge: null, type: 'Banarasi', isAll: false },
@@ -59,21 +68,21 @@ function CategoryNav() {
   );
 }
 
-export default function Header() {
+export default function Header(): React.JSX.Element {
   const router = useRouter();
   const { totalCartCount, wishlist, setIsCartOpen, showToast } = useStore();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showSearchModal, setShowSearchModal] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [showSearchModal, setShowSearchModal] = useState<boolean>(false);
 
-  const menuTriggerRef = useRef(null);
-  const drawerRef = useRef(null);
-  const closeButtonRef = useRef(null);
+  const menuTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
-  const searchTriggerRef = useRef(null);
-  const searchDialogRef = useRef(null);
-  const searchInputRef = useRef(null);
-  const searchCloseBtnRef = useRef(null);
+  const searchTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const searchDialogRef = useRef<HTMLDivElement | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const searchCloseBtnRef = useRef<HTMLButtonElement | null>(null);
 
   // Manage accessibility, focus trap, and Escape dismissal for mobile navigation drawer
   useEffect(() => {
@@ -86,7 +95,7 @@ export default function Header() {
       }
     }, 40);
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         setMobileMenuOpen(false);
@@ -94,7 +103,7 @@ export default function Header() {
       }
 
       if (e.key === 'Tab' && drawerRef.current) {
-        const focusable = drawerRef.current.querySelectorAll(
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         );
         if (!focusable || focusable.length === 0) return;
@@ -141,7 +150,7 @@ export default function Header() {
       }
     }, 40);
 
-    const handleKeyDown = (e) => {
+    const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
         setShowSearchModal(false);
@@ -149,7 +158,7 @@ export default function Header() {
       }
 
       if (e.key === 'Tab' && searchDialogRef.current) {
-        const focusable = searchDialogRef.current.querySelectorAll(
+        const focusable = searchDialogRef.current.querySelectorAll<HTMLElement>(
           'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
         );
         if (!focusable || focusable.length === 0) return;
@@ -183,7 +192,7 @@ export default function Header() {
     };
   }, [showSearchModal]);
 
-  const handleSearchSubmit = (e) => {
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
       setShowSearchModal(false);
@@ -417,7 +426,7 @@ export default function Header() {
 
             <div className="pt-6 border-t border-[#EDE3D5] text-xs text-[#6D625D]">
               <div className="flex items-center gap-2 text-[#641C2D] font-semibold mb-1">
-                <ShieldCheck className="w-4 h-4 text-[#B08D57]" /> 100% Certified Pure Handloom
+                <span className="w-2 h-2 rounded-full bg-[#B08D57]" /> 100% Certified Pure Handloom
               </div>
               <p>Crafted in India. Worldwide shipping available.</p>
             </div>

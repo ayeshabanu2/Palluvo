@@ -4,7 +4,7 @@ import React from 'react';
 import { useStore } from '@/context/StoreContext';
 import { CheckCircle2 } from 'lucide-react';
 
-export default function Toast() {
+export default function Toast(): React.JSX.Element | null {
   const { toastMessage } = useStore();
 
   if (!toastMessage) return null;

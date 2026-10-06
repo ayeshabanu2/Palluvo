@@ -3,14 +3,15 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
-import { X, Heart, ShoppingBag, ShieldCheck, Check, Star } from 'lucide-react';
+import { X, Heart, ShoppingBag, ShieldCheck, Star } from 'lucide-react';
 import { formatINR } from '@/utils/format';
+import { BlouseOption } from '@/types';
 
-export default function QuickViewModal() {
+export default function QuickViewModal(): React.JSX.Element | null {
   const { quickViewProduct, setQuickViewProduct, addToCart, setIsCartOpen, wishlist, toggleWishlist } = useStore();
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [selectedBlouse, setSelectedBlouse] = useState('unstitched');
-  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [selectedColor, setSelectedColor] = useState<string | null>(null);
+  const [selectedBlouse, setSelectedBlouse] = useState<string>('unstitched');
+  const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
 
   if (!quickViewProduct) return null;
 
@@ -18,7 +19,7 @@ export default function QuickViewModal() {
   const isWishlisted = wishlist.includes(product.id);
   const images = product.images && product.images.length > 0 ? product.images : ['images/hero_saree_art.jpg'];
 
-  const blouseOptions = product.blouseOptions || [
+  const blouseOptions: BlouseOption[] = product.blouseOptions || [
     { id: 'unstitched', name: 'Unstitched Matching Fabric Included', price: 0 },
     { id: 'tailored-classic', name: 'Custom Tailored Classic Blouse', price: 1200 }
   ];

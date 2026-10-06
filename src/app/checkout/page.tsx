@@ -2,17 +2,28 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard } from 'lucide-react';
 
-export default function CheckoutPage() {
-  const router = useRouter();
+interface CheckoutFormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+}
+
+type PaymentMethod = 'upi' | 'card' | 'cod';
+
+export default function CheckoutPage(): React.JSX.Element {
   const { cart, grandTotal, subtotal, shippingFee, discountAmount, clearCart, showToast } = useStore();
 
-  const [paymentMethod, setPaymentMethod] = useState('upi');
-  const [formData, setFormData] = useState({
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
+  const [formData, setFormData] = useState<CheckoutFormData>({
     firstName: '',
     lastName: '',
     email: '',
@@ -22,14 +33,14 @@ export default function CheckoutPage() {
     state: '',
     pincode: ''
   });
-  const [isSubmitted, setIsSubmitted] = useState(false);
-  const [orderNumber, setOrderNumber] = useState('');
+  const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
+  const [orderNumber, setOrderNumber] = useState<string>('');
 
-  const handleChange = (e) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!formData.firstName || !formData.email || !formData.phone || !formData.address || !formData.pincode) {
       showToast('Please fill all mandatory shipping details.');

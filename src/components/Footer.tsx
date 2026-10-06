@@ -1,8 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { ShieldCheck, Award, Truck, RotateCcw, Lock, Sparkles, Heart } from 'lucide-react';
+import { Truck, RotateCcw, Lock, ShieldCheck } from 'lucide-react';
 
-export default function Footer() {
+export default function Footer(): React.JSX.Element {
   return (
     <footer className="bg-[#2B211D] text-[#EDE3D5] pt-16 pb-12 border-t border-[#3D302A]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

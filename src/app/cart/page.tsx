@@ -4,9 +4,10 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
-import { Trash2, Plus, Minus, ArrowRight, ShieldCheck, Tag, ShoppingBag } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
+import { CouponResult } from '@/types';
 
-export default function CartPage() {
+export default function CartPage(): React.JSX.Element {
   const {
     cart,
     updateCartQty,
@@ -20,10 +21,10 @@ export default function CartPage() {
     removeCoupon
   } = useStore();
 
-  const [couponInput, setCouponInput] = useState('');
-  const [couponMsg, setCouponMsg] = useState(null);
+  const [couponInput, setCouponInput] = useState<string>('');
+  const [couponMsg, setCouponMsg] = useState<CouponResult | null>(null);
 
-  const handleApplyCoupon = (e) => {
+  const handleApplyCoupon = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!couponInput) return;
     const res = applyCouponCode(couponInput);
@@ -79,7 +80,7 @@ export default function CartPage() {
                     <p className="text-xs text-[#665E57] mt-0.5">
                       {item.sareeType} • Color: {item.selectedColor}
                     </p>
-                    {item.blousePrice > 0 ? (
+                    {item.blousePrice !== undefined && item.blousePrice > 0 ? (
                       <p className="text-xs text-[#B08D57] font-medium mt-1">
                         + {item.blouseOptionName} ({formatINR(item.blousePrice)})
                       </p>

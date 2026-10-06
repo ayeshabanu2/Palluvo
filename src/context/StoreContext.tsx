@@ -2,16 +2,24 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { SAREE_PRODUCTS } from '@/data/products';
+import { 
+  StoreContextType, 
+  CartItem, 
+  Coupon, 
+  AddToCartOptions, 
+  SareeProduct, 
+  CouponResult 
+} from '@/types';
 
-const StoreContext = createContext(null);
+const StoreContext = createContext<StoreContextType | null>(null);
 
-export function StoreProvider({ children }) {
-  const [cart, setCart] = useState([]);
-  const [wishlist, setWishlist] = useState([]);
-  const [coupon, setCoupon] = useState(null);
-  const [isCartOpen, setIsCartOpen] = useState(false);
-  const [quickViewProduct, setQuickViewProduct] = useState(null);
-  const [toastMessage, setToastMessage] = useState(null);
+export function StoreProvider({ children }: { children: React.ReactNode }) {
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [quickViewProduct, setQuickViewProduct] = useState<SareeProduct | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -30,7 +38,7 @@ export function StoreProvider({ children }) {
   }, []);
 
   // Save changes
-  const saveCartToStorage = (updatedCart) => {
+  const saveCartToStorage = (updatedCart: CartItem[]) => {
     setCart(updatedCart);
     try {
       localStorage.setItem('palluvo_cart', JSON.stringify(updatedCart));
@@ -39,14 +47,14 @@ export function StoreProvider({ children }) {
     }
   };
 
-  const showToast = (msg) => {
+  const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((current) => (current === msg ? null : current));
     }, 3500);
   };
 
-  const addToCart = (productId, qty = 1, options = {}) => {
+  const addToCart = (productId: string, qty: number = 1, options: AddToCartOptions = {}) => {
     const product = SAREE_PRODUCTS.find((p) => p.id === productId);
     if (!product) return;
 
@@ -62,11 +70,11 @@ export function StoreProvider({ children }) {
       updatedCart[existingIndex].qty += qty;
     } else {
       updatedCart.push({
-        id: 'cart_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        id: 'cart_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
         productId: product.id,
         name: product.name,
         price: product.price,
-        image: product.images ? product.images[0] : '',
+        image: product.images && product.images[0] ? product.images[0] : '',
         sareeType: product.sareeType,
         qty: qty,
         selectedColor: options.selectedColor || product.color,
@@ -80,8 +88,8 @@ export function StoreProvider({ children }) {
     showToast(`Added "${product.name}" to your shopping bag.`);
   };
 
-  const updateCartQty = (cartItemId, newQty) => {
-    let updated;
+  const updateCartQty = (cartItemId: string, newQty: number) => {
+    let updated: CartItem[];
     if (newQty <= 0) {
       updated = cart.filter((item) => item.id !== cartItemId);
     } else {
@@ -90,7 +98,7 @@ export function StoreProvider({ children }) {
     saveCartToStorage(updated);
   };
 
-  const removeFromCart = (cartItemId) => {
+  const removeFromCart = (cartItemId: string) => {
     const updated = cart.filter((item) => item.id !== cartItemId);
     saveCartToStorage(updated);
   };
@@ -103,8 +111,8 @@ export function StoreProvider({ children }) {
     } catch (e) {}
   };
 
-  const toggleWishlist = (productId) => {
-    let updated;
+  const toggleWishlist = (productId: string) => {
+    let updated: string[];
     const exists = wishlist.includes(productId);
     if (exists) {
       updated = wishlist.filter((id) => id !== productId);
@@ -119,16 +127,16 @@ export function StoreProvider({ children }) {
     } catch (e) {}
   };
 
-  const applyCouponCode = (code) => {
+  const applyCouponCode = (code: string): CouponResult => {
     const clean = (code || '').trim().toUpperCase();
     if (clean === 'PALLUVO10' || clean === 'MAGIC10') {
-      const c = { code: clean, discountPercent: 10, label: '10% Festive Privilege' };
+      const c: Coupon = { code: clean, discountPercent: 10, label: '10% Festive Privilege' };
       setCoupon(c);
       localStorage.setItem('palluvo_coupon', JSON.stringify(c));
       showToast('Coupon applied: 10% Off!');
       return { success: true, message: '10% discount applied!' };
     } else if (clean === 'FIRSTDRAPE') {
-      const c = { code: clean, flatDiscount: 500, label: '₹500 First Order Welcome' };
+      const c: Coupon = { code: clean, flatDiscount: 500, label: '₹500 First Order Welcome' };
       setCoupon(c);
       localStorage.setItem('palluvo_coupon', JSON.stringify(c));
       showToast('Coupon applied: ₹500 Off!');
@@ -191,7 +199,7 @@ export function StoreProvider({ children }) {
   );
 }
 
-export function useStore() {
+export function useStore(): StoreContextType {
   const context = useContext(StoreContext);
   if (!context) {
     throw new Error('useStore must be used within a StoreProvider');

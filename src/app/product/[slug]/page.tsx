@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useParams, notFound } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { SAREE_PRODUCTS } from '@/data/products';
 import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
 import { formatINR } from '@/utils/format';
+import { BlouseOption, SareeProduct } from '@/types';
 import { 
   Heart, 
   ShoppingBag, 
@@ -15,17 +16,17 @@ import {
   Truck, 
   RotateCcw, 
   Star, 
-  Check, 
   Share2, 
   ChevronRight,
   Scissors
 } from 'lucide-react';
 
-export default function ProductDetailPage() {
+export default function ProductDetailPage(): React.JSX.Element {
   const params = useParams();
-  const slug = params?.slug;
+  const rawSlug = params?.slug;
+  const slug = Array.isArray(rawSlug) ? rawSlug[0] : rawSlug;
 
-  const product = SAREE_PRODUCTS.find(p => p.slug === slug || p.id === slug);
+  const product = SAREE_PRODUCTS.find((p) => p.slug === slug || p.id === slug);
 
   if (!product) {
     return (
@@ -39,23 +40,27 @@ export default function ProductDetailPage() {
     );
   }
 
+  return <ProductDetailContent product={product} />;
+}
+
+function ProductDetailContent({ product }: { product: SareeProduct }): React.JSX.Element {
   const { wishlist, toggleWishlist, addToCart, setIsCartOpen, showToast } = useStore();
   const isWishlisted = wishlist.includes(product.id);
 
   const images = product.images && product.images.length > 0 ? product.images : ['images/hero_saree_art.jpg'];
-  const [activeImage, setActiveImage] = useState(images[0]);
-  const [selectedColor, setSelectedColor] = useState(product.color);
-  const [selectedBlouse, setSelectedBlouse] = useState('unstitched');
-  const [quantity, setQuantity] = useState(1);
+  const [activeImage, setActiveImage] = useState<string>(images[0]);
+  const [selectedColor, setSelectedColor] = useState<string | undefined>(product.color);
+  const [selectedBlouse, setSelectedBlouse] = useState<string>('unstitched');
+  const [quantity] = useState<number>(1);
 
-  const blouseOptions = product.blouseOptions || [
+  const blouseOptions: BlouseOption[] = product.blouseOptions || [
     { id: "unstitched", name: "Unstitched Matching Fabric (0.8m Included)", price: 0 },
     { id: "tailored-classic", name: "Custom Tailored - Classic Elbow Sleeve & U-Neck", price: 1200 },
     { id: "tailored-sleeveless", name: "Custom Tailored - Deep Sweetheart Sleeveless", price: 1200 },
     { id: "ready-padded", name: "Ready-to-Wear Premium Padded Corset Blouse", price: 1800 }
   ];
 
-  const currentBlouse = blouseOptions.find(b => b.id === selectedBlouse) || blouseOptions[0];
+  const currentBlouse = blouseOptions.find((b) => b.id === selectedBlouse) || blouseOptions[0];
   const totalPrice = (product.price + currentBlouse.price) * quantity;
 
   const handleAddToCart = () => {
@@ -69,26 +74,32 @@ export default function ProductDetailPage() {
   };
 
   const handleShare = () => {
-    if (navigator.clipboard) {
+    if (typeof window !== 'undefined' && navigator.clipboard) {
       navigator.clipboard.writeText(window.location.href);
       showToast('Product link copied to clipboard!');
     }
   };
 
-  const relatedProducts = SAREE_PRODUCTS.filter(p => p.id !== product.id && (p.category === product.category || p.occasion === product.occasion)).slice(0, 4);
+  const relatedProducts = SAREE_PRODUCTS.filter(
+    (p) => p.id !== product.id && (p.category === product.category || p.occasion === product.occasion)
+  ).slice(0, 4);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16">
       
       {/* Breadcrumbs */}
-      <nav className="flex items-center gap-2 text-xs text-[#665E57]">
+      <nav aria-label="Breadcrumb" className="flex items-center gap-2 text-xs text-[#665E57]">
         <Link href="/" className="hover:text-[#641C2D]">Home</Link>
         <ChevronRight className="w-3.5 h-3.5" />
         <Link href="/sarees" className="hover:text-[#641C2D]">Sarees</Link>
-        <ChevronRight className="w-3.5 h-3.5" />
-        <Link href={`/sarees?type=${encodeURIComponent(product.sareeType)}`} className="hover:text-[#641C2D]">
-          {product.sareeType}
-        </Link>
+        {product.sareeType && (
+          <>
+            <ChevronRight className="w-3.5 h-3.5" />
+            <Link href={`/sarees?type=${encodeURIComponent(product.sareeType)}`} className="hover:text-[#641C2D]">
+              {product.sareeType}
+            </Link>
+          </>
+        )}
         <ChevronRight className="w-3.5 h-3.5" />
         <span className="text-[#2B211D] font-medium truncate max-w-xs">{product.name}</span>
       </nav>
@@ -113,6 +124,7 @@ export default function ProductDetailPage() {
               onClick={handleShare}
               className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-[#241F1D] hover:bg-white shadow-sm"
               title="Share"
+              aria-label="Share product link"
             >
               <Share2 className="w-4 h-4" />
             </button>
@@ -128,6 +140,7 @@ export default function ProductDetailPage() {
                   className={`relative w-20 h-24 rounded-lg overflow-hidden border-2 transition flex-shrink-0 ${
                     activeImage === img ? 'border-[#641C2D] scale-102 shadow-sm' : 'border-[#EDE3D5] opacity-75 hover:opacity-100'
                   }`}
+                  aria-label={`View product image ${i + 1}`}
                 >
                   <img src={`/${img}`} alt="" className="w-full h-full object-cover" />
                 </button>
@@ -197,6 +210,7 @@ export default function ProductDetailPage() {
                     className={`group relative p-1 rounded-full border-2 transition ${
                       selectedColor === swatch.name ? 'border-[#641C2D]' : 'border-transparent'
                     }`}
+                    aria-label={`Select color ${swatch.name}`}
                   >
                     <span
                       className="block w-6 h-6 rounded-full border border-black/20"
@@ -311,7 +325,7 @@ export default function ProductDetailPage() {
             You May Also Admire
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
-            {relatedProducts.map(p => (
+            {relatedProducts.map((p) => (
               <ProductCard key={p.id} product={p} />
             ))}
           </div>

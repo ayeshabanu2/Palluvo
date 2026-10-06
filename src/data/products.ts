@@ -1,3 +1,5 @@
+import { TopModel, SareeCategory, FestiveSaree, SareeOccasion, SareeProduct, HandloomRegion } from '@/types';
+
 /**
  * PALLUVO — Contemporary Luxury Saree Fashion House
  * "Every drape, a little magic."
@@ -5,7 +7,7 @@
  */
 
 // Curated Top Signature Saree Models for PALLUVO
-export const PALLUVO_TOP_MODELS = [
+export const PALLUVO_TOP_MODELS: TopModel[] = [
   {
     id: "banarasi",
     slug: "banarasi",
@@ -156,7 +158,7 @@ export const PALLUVO_TOP_MODELS = [
 export const SAREE_CATEGORIES = PALLUVO_TOP_MODELS;
 
 // Colorful Festive Sarees for "THE FESTIVE EDIT"
-export const FESTIVE_SAREES = [
+export const FESTIVE_SAREES: FestiveSaree[] = [
   { name: "Bandhani Silk", region: "Gujarat", image: "images/categories/bandhani.jpg", desc: "Auspicious red & gold resist tie-dye dots hand-plucked on pure silk." },
   { name: "Patola Double Ikat", region: "Patan, Gujarat", image: "images/categories/patola.jpg", desc: "Rare mathematical geometric precision double ikat handloom." },
   { name: "Traditional Paithani", region: "Maharashtra", image: "images/saree_paithani_royal.jpg", desc: "Kaleidoscopic Mor Bangdi peacock pallu with radiant gold tissue." },
@@ -166,7 +168,7 @@ export const FESTIVE_SAREES = [
 ];
 
 // 8 Occasions (Saree-Only Curations)
-export const SAREE_OCCASIONS = [
+export const SAREE_OCCASIONS: SareeOccasion[] = [
   {
     id: "wedding",
     name: "Wedding",
@@ -234,7 +236,7 @@ export const SAREE_OCCASIONS = [
 ];
 
 // Complete 29-Product Catalog of Authentic Luxury Sarees
-export const SAREE_PRODUCTS = [
+export const SAREE_PRODUCTS: SareeProduct[] = [
   {
     id: "saree-001",
     slug: "royal-banarasi-silk-saree",
@@ -1507,7 +1509,7 @@ export const SAREE_PRODUCTS = [
 ];
 
 // Handloom Regions for "THE HANDLOOM EDIT"
-const HANDLOOM_REGIONS = [
+const HANDLOOM_REGIONS: HandloomRegion[] = [
   { name: "Pochampally", state: "Telangana", weave: "Double Ikat Silk", image: "images/categories/pochampally.jpg" },
   { name: "Gadwal", state: "Telangana", weave: "Kuta Interlocked Silk", image: "images/categories/gadwal.jpg" },
   { name: "Uppada", state: "Andhra Pradesh", weave: "Fine Jamdani Cotton Silk", image: "images/categories/uppada.jpg" },
@@ -1523,23 +1525,23 @@ const HANDLOOM_REGIONS = [
 // Helper functions for easy querying
 export const SareeCatalog = {
   getAllProducts: () => SAREE_PRODUCTS,
-  getProductById: (id) => SAREE_PRODUCTS.find(p => p.id === id || p.slug === id),
-  getProductsByCategory: (cat) => SAREE_PRODUCTS.filter(p => p.category.toLowerCase() === cat.toLowerCase() || p.sareeType.toLowerCase() === cat.toLowerCase()),
-  getProductsByOccasion: (occ) => SAREE_PRODUCTS.filter(p => p.occasion.toLowerCase() === occ.toLowerCase()),
+  getProductById: (id: string): SareeProduct | undefined => SAREE_PRODUCTS.find(p => p.id === id || p.slug === id),
+  getProductsByCategory: (cat: string): SareeProduct[] => SAREE_PRODUCTS.filter(p => (((p.category || "").toLowerCase() === cat.toLowerCase()) || ((p.sareeType || "").toLowerCase() === cat.toLowerCase()))),
+  getProductsByOccasion: (occ: string): SareeProduct[] => SAREE_PRODUCTS.filter(p => (((p.occasion || "").toLowerCase() === occ.toLowerCase()))),
   getAllCategories: () => SAREE_CATEGORIES,
   getAllOccasions: () => SAREE_OCCASIONS,
   getHandloomRegions: () => HANDLOOM_REGIONS,
-  search: (query) => {
+  search: (query: string): SareeProduct[] => {
     if (!query) return SAREE_PRODUCTS;
     const q = query.toLowerCase().trim();
     return SAREE_PRODUCTS.filter(p => 
-      p.name.toLowerCase().includes(q) ||
-      p.sareeType.toLowerCase().includes(q) ||
-      p.category.toLowerCase().includes(q) ||
-      p.fabric.toLowerCase().includes(q) ||
-      p.color.toLowerCase().includes(q) ||
-      p.occasion.toLowerCase().includes(q) ||
-      (p.specifications && p.specifications.origin.toLowerCase().includes(q))
+      (p.name || '').toLowerCase().includes(q) ||
+      (p.sareeType || '').toLowerCase().includes(q) ||
+      (p.category || '').toLowerCase().includes(q) ||
+      (p.fabric || '').toLowerCase().includes(q) ||
+      (p.color || '').toLowerCase().includes(q) ||
+      (p.occasion || '').toLowerCase().includes(q) ||
+      (p.specifications?.origin && p.specifications.origin.toLowerCase().includes(q))
     );
   }
 };
@@ -1559,13 +1561,13 @@ SAREE_PRODUCTS.forEach(p => {
 // Backward and cross-compatibility aliases
 export const ProductsCatalog = {
   getAll: () => SAREE_PRODUCTS,
-  getById: (id) => SareeCatalog.getProductById(id),
-  getBySlug: (slug) => SAREE_PRODUCTS.find(p => p.slug === slug || p.id === slug),
-  getByCategory: (cat) => SareeCatalog.getProductsByCategory(cat),
-  getByOccasion: (occ) => SareeCatalog.getProductsByOccasion(occ),
+  getById: (id: string): SareeProduct | undefined => SareeCatalog.getProductById(id),
+  getBySlug: (slug: string): SareeProduct | undefined => SAREE_PRODUCTS.find(p => p.slug === slug || p.id === slug),
+  getByCategory: (cat: string): SareeProduct[] => SareeCatalog.getProductsByCategory(cat),
+  getByOccasion: (occ: string): SareeProduct[] => SareeCatalog.getProductsByOccasion(occ),
   getNewArrivals: () => [SAREE_PRODUCTS[4], SAREE_PRODUCTS[1], SAREE_PRODUCTS[0], SAREE_PRODUCTS[13]],
   getBestsellers: () => SAREE_PRODUCTS.filter(p => p.badge === 'Bestseller' || p.badge === 'Trending' || p.badge === 'Heritage'),
-  search: (query) => SareeCatalog.search(query)
+  search: (query: string): SareeProduct[] => SareeCatalog.search(query)
 };
 
 export const PALLUVO_PRODUCTS = SAREE_PRODUCTS;
