@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
@@ -66,6 +66,63 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showSearchModal, setShowSearchModal] = useState(false);
 
+  const menuTriggerRef = useRef(null);
+  const drawerRef = useRef(null);
+  const closeButtonRef = useRef(null);
+
+  // Manage accessibility, focus trap, and Escape dismissal for mobile navigation drawer
+  useEffect(() => {
+    if (!mobileMenuOpen) return;
+
+    // Move focus into the drawer once rendered
+    const timer = setTimeout(() => {
+      if (closeButtonRef.current) {
+        closeButtonRef.current.focus();
+      }
+    }, 40);
+
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMobileMenuOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+      // Restore focus to the trigger button that opened the drawer
+      if (menuTriggerRef.current) {
+        menuTriggerRef.current.focus();
+      }
+    };
+  }, [mobileMenuOpen]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -115,10 +172,13 @@ export default function Header() {
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden shrink-0">
               <button 
+                ref={menuTriggerRef}
                 id="mobileMenuToggle"
                 onClick={() => setMobileMenuOpen(true)}
                 className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
                 aria-label="Open navigation menu"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobileMenuDrawer"
               >
                 <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
               </button>
@@ -227,13 +287,27 @@ export default function Header() {
 
       {/* Mobile Drawer Navigation */}
       {mobileMenuOpen && (
-        <div id="mobileMenuDrawer" className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-xs" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative w-4/5 max-w-sm bg-[#F8F5EF] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto">
+        <div 
+          id="mobileMenuDrawer" 
+          role="dialog"
+          aria-modal="true"
+          aria-label="Navigation menu"
+          className="fixed inset-0 z-50 flex lg:hidden"
+        >
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
+            onClick={() => setMobileMenuOpen(false)} 
+            aria-hidden="true"
+          />
+          <div 
+            ref={drawerRef}
+            className="relative w-4/5 max-w-sm bg-[#F8F5EF] h-full shadow-2xl p-6 flex flex-col justify-between overflow-y-auto"
+          >
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-[#EDE3D5]">
                 <span className="font-serif text-2xl tracking-[0.2em] text-[#641C2D] font-bold">PALLUVO</span>
                 <button 
+                  ref={closeButtonRef}
                   onClick={() => setMobileMenuOpen(false)} 
                   className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full" 
                   aria-label="Close menu"
@@ -242,7 +316,7 @@ export default function Header() {
                 </button>
               </div>
 
-              <div className="mt-6 flex flex-col gap-4 text-sm font-medium tracking-wider uppercase text-[#2B211D]">
+              <nav aria-label="Mobile navigation links" className="mt-6 flex flex-col gap-4 text-sm font-medium tracking-wider uppercase text-[#2B211D]">
                 <Link href="/" onClick={() => setMobileMenuOpen(false)} className="hover:text-[#641C2D] py-1 border-b border-[#EDE3D5]/50">
                   Home
                 </Link>
@@ -269,7 +343,7 @@ export default function Header() {
                 <Link href="/account" onClick={() => setMobileMenuOpen(false)} className="hover:text-[#641C2D] py-1">
                   My Orders & Profile
                 </Link>
-              </div>
+              </nav>
             </div>
 
             <div className="pt-6 border-t border-[#EDE3D5] text-xs text-[#6D625D]">

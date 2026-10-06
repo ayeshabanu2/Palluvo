@@ -63,11 +63,11 @@ export default function HomePage() {
 
             {/* Editorial Text Column (renders in grid below image on mobile, left column on desktop) */}
             <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white mx-auto lg:mx-0 w-full order-2">
-              <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-5 sm:mb-6 shadow-md max-w-full">
+              {/* Desktop-only Editorial Collection Pill (mobile already carries campaign badge in the image card) */}
+              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md max-w-full">
                 <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
-                <span className="text-[10px] xs:text-[11px] uppercase tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
-                  <span className="xs:hidden">Autumn / Festive 2026</span>
-                  <span className="hidden xs:inline">Autumn / Festive 2026 Collection</span>
+                <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
+                  Autumn / Festive 2026 Collection
                 </span>
               </div>
 
