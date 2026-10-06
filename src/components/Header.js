@@ -109,15 +109,15 @@ export default function Header() {
 
       {/* Main Luxury Header */}
       <header className="sticky top-0 z-40 bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] transition-all">
-        <div className="max-w-7xl mx-auto px-2 xs:px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[64px] sm:h-[72px] gap-1.5 sm:gap-4 header-main-row">
+        <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-[64px] sm:h-[72px] gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden shrink-0">
               <button 
                 id="mobileMenuToggle"
                 onClick={() => setMobileMenuOpen(true)}
-                className="p-1.5 sm:p-2 text-[#241F1D] hover:text-[#641C2D]"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
                 aria-label="Open navigation menu"
               >
                 <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -127,10 +127,10 @@ export default function Header() {
             {/* Brand Logo & Tagline */}
             <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-0.5 xs:px-1">
               <Link href="/" className="inline-block group max-w-full">
-                <span className="font-serif text-2xl xs:text-[26px] sm:text-4xl tracking-[0.16em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight">
+                <span className="font-serif text-[20px] xs:text-[26px] sm:text-4xl tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight">
                   PALLUVO
                 </span>
-                <span className="text-[7.5px] sm:text-[9px] md:text-[11px] tracking-[0.04em] sm:tracking-[0.14em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold whitespace-normal sm:whitespace-nowrap leading-tight">
+                <span className="text-[7px] xs:text-[7.5px] sm:text-[9px] md:text-[11px] tracking-[0.02em] xs:tracking-[0.04em] sm:tracking-[0.14em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold whitespace-normal sm:whitespace-nowrap leading-tight">
                   Every drape, a little magic.
                 </span>
               </Link>
@@ -165,20 +165,20 @@ export default function Header() {
             </div>
 
             {/* Actions: Search (Mobile), Account, Wishlist, Bag */}
-            <div className="flex items-center gap-1 xs:gap-1.5 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-4 shrink-0">
               <button 
                 onClick={() => setShowSearchModal(true)}
-                className="lg:hidden p-1.5 sm:p-2 text-[#241F1D] hover:text-[#641C2D]"
+                className="lg:hidden w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
                 aria-label="Search sarees"
               >
-                <Search className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Search className="w-5 h-5" />
               </button>
 
               <Link
                 href="/account"
                 aria-label="Account"
                 title="Account"
-                className="hidden sm:flex items-center gap-1.5 p-2 text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition"
+                className="hidden sm:flex items-center gap-1.5 px-3 min-h-[44px] text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition rounded-full"
               >
                 <User className="w-5 h-5" />
                 <span className="hidden xl:inline">Account</span>
@@ -186,12 +186,12 @@ export default function Header() {
 
               <Link
                 href="/wishlist"
-                className="relative p-1.5 sm:p-2 text-[#241F1D] hover:text-[#641C2D] transition"
+                className="relative w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
                 aria-label="Wishlist"
               >
-                <Heart className="w-4 h-4 sm:w-5 sm:h-5" />
+                <Heart className="w-5 h-5" />
                 {wishlist.length > 0 && (
-                  <span className="absolute top-0.5 right-0.5 sm:top-1 sm:right-1 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-[#B08D57] text-white text-[9px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-[#B08D57] text-white text-[9.5px] sm:text-[10px] font-bold rounded-full flex items-center justify-center">
                     {wishlist.length}
                   </span>
                 )}
@@ -199,12 +199,12 @@ export default function Header() {
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative flex items-center gap-1 sm:gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white px-2.5 sm:px-4 py-2 sm:py-2.5 rounded-full text-xs font-semibold tracking-wider transition shadow-sm cursor-pointer shrink-0"
+                className="relative w-11 h-11 min-w-[44px] min-h-[44px] sm:w-auto sm:min-w-0 sm:h-11 sm:px-4 flex items-center justify-center sm:gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white rounded-full transition shadow-sm cursor-pointer shrink-0"
                 aria-label="Shopping bag"
               >
-                <ShoppingBag className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">BAG</span>
-                <span className="bg-[#D6B878] text-[#241F1D] text-[10px] sm:text-[11px] font-bold px-1.5 py-0.2 rounded-full min-w-4 text-center">
+                <ShoppingBag className="w-5 h-5 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline text-xs font-semibold tracking-wider">BAG</span>
+                <span className="absolute top-1 right-1 sm:static w-4 h-4 sm:w-auto sm:h-auto bg-[#D6B878] text-[#241F1D] text-[9.5px] sm:text-[11px] font-bold rounded-full flex items-center justify-center sm:px-1.5 sm:py-0.2 sm:min-w-4 text-center">
                   {totalCartCount}
                 </span>
               </button>
@@ -233,7 +233,11 @@ export default function Header() {
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-[#EDE3D5]">
                 <span className="font-serif text-2xl tracking-[0.2em] text-[#641C2D] font-bold">PALLUVO</span>
-                <button onClick={() => setMobileMenuOpen(false)} className="p-1 text-[#241F1D]" aria-label="Close menu">
+                <button 
+                  onClick={() => setMobileMenuOpen(false)} 
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full" 
+                  aria-label="Close menu"
+                >
                   <X className="w-6 h-6" />
                 </button>
               </div>
@@ -284,7 +288,7 @@ export default function Header() {
           <div className="w-full max-w-xl bg-white rounded-xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95">
             <button 
               onClick={() => setShowSearchModal(false)}
-              className="absolute top-4 right-4 text-[#665E57] hover:text-black"
+              className="absolute top-3 right-3 w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#665E57] hover:text-black transition-colors rounded-full"
               aria-label="Close search"
             >
               <X className="w-6 h-6" />

@@ -42,10 +42,11 @@ export default function HomePage() {
         {/* Protected Left-Aligned Editorial Text Column */}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
           <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white">
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
-              <Sparkles className="w-3.5 h-3.5 text-[#D6B878]" />
-              <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium">
-                Autumn / Festive 2026 Collection
+            <div className="inline-flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md max-w-full">
+              <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
+              <span className="text-[10px] xs:text-[11px] uppercase tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
+                <span className="xs:hidden">Autumn / Festive 2026</span>
+                <span className="hidden xs:inline">Autumn / Festive 2026 Collection</span>
               </span>
             </div>
 
