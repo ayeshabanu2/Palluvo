@@ -102,24 +102,30 @@ export default function ContactPage(): React.JSX.Element {
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="contact-name" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Your Name *
                   </label>
                   <input
+                    id="contact-name"
+                    name="name"
                     type="text"
                     required
+                    autoComplete="name"
                     value={formData.name}
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="contact-email" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Email Address *
                   </label>
                   <input
+                    id="contact-email"
+                    name="email"
                     type="email"
                     required
+                    autoComplete="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
@@ -129,11 +135,14 @@ export default function ContactPage(): React.JSX.Element {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="contact-phone" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Mobile / WhatsApp
                   </label>
                   <input
+                    id="contact-phone"
+                    name="phone"
                     type="tel"
+                    autoComplete="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     placeholder="+91..."
@@ -141,10 +150,12 @@ export default function ContactPage(): React.JSX.Element {
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="contact-subject" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Inquiry Topic
                   </label>
                   <select
+                    id="contact-subject"
+                    name="subject"
                     value={formData.subject}
                     onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
@@ -159,10 +170,12 @@ export default function ContactPage(): React.JSX.Element {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                <label htmlFor="contact-message" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                   How may we assist you? *
                 </label>
                 <textarea
+                  id="contact-message"
+                  name="message"
                   required
                   rows={5}
                   value={formData.message}

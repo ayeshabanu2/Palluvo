@@ -151,8 +151,15 @@ export default function CartPage(): React.JSX.Element {
               <div>
                 <form onSubmit={handleApplyCoupon} className="flex gap-2">
                   <div className="relative flex-1">
+                    <label htmlFor="cart-coupon-input" className="sr-only">
+                      Promotional Coupon Code
+                    </label>
                     <input
+                      id="cart-coupon-input"
+                      name="couponCode"
                       type="text"
+                      aria-label="Enter promotional coupon code"
+                      autoComplete="off"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       placeholder="Try: PALLUVO10"

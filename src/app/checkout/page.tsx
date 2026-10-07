@@ -139,25 +139,29 @@ export default function CheckoutPage(): React.JSX.Element {
             <form id="checkout-form" onSubmit={handlePlaceOrder} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-firstName" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     First Name *
                   </label>
                   <input
+                    id="checkout-firstName"
                     type="text"
                     required
                     name="firstName"
+                    autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-lastName" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Last Name
                   </label>
                   <input
+                    id="checkout-lastName"
                     type="text"
                     name="lastName"
+                    autoComplete="family-name"
                     value={formData.lastName}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
@@ -167,26 +171,30 @@ export default function CheckoutPage(): React.JSX.Element {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-email" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Email Address *
                   </label>
                   <input
+                    id="checkout-email"
                     type="email"
                     required
                     name="email"
+                    autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-phone" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     Mobile Number (For Courier Tracking) *
                   </label>
                   <input
+                    id="checkout-phone"
                     type="tel"
                     required
                     name="phone"
+                    autoComplete="tel"
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 98765 43210"
@@ -196,13 +204,15 @@ export default function CheckoutPage(): React.JSX.Element {
               </div>
 
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                <label htmlFor="checkout-address" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                   Street Address & Apartment / Villa *
                 </label>
                 <input
+                  id="checkout-address"
                   type="text"
                   required
                   name="address"
+                  autoComplete="street-address"
                   value={formData.address}
                   onChange={handleChange}
                   className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
@@ -211,38 +221,44 @@ export default function CheckoutPage(): React.JSX.Element {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-city" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     City *
                   </label>
                   <input
+                    id="checkout-city"
                     type="text"
                     required
                     name="city"
+                    autoComplete="address-level2"
                     value={formData.city}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-state" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     State
                   </label>
                   <input
+                    id="checkout-state"
                     type="text"
                     name="state"
+                    autoComplete="address-level1"
                     value={formData.state}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
+                  <label htmlFor="checkout-pincode" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
                     PIN Code *
                   </label>
                   <input
+                    id="checkout-pincode"
                     type="text"
                     required
                     name="pincode"
+                    autoComplete="postal-code"
                     value={formData.pincode}
                     onChange={handleChange}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
@@ -258,12 +274,13 @@ export default function CheckoutPage(): React.JSX.Element {
               <CreditCard className="w-5 h-5 text-[#B08D57]" /> Payment Method
             </h2>
 
-            <div className="space-y-3">
-              <label className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
+            <div className="space-y-3" role="radiogroup" aria-label="Select Payment Method">
+              <label htmlFor="checkout-payment-upi" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
                 paymentMethod === 'upi' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
               }`}>
                 <div className="flex items-center gap-3">
                   <input
+                    id="checkout-payment-upi"
                     type="radio"
                     name="payment"
                     checked={paymentMethod === 'upi'}
@@ -275,11 +292,12 @@ export default function CheckoutPage(): React.JSX.Element {
                 <span className="text-[11px] text-[#B08D57] font-bold">Fastest</span>
               </label>
 
-              <label className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
+              <label htmlFor="checkout-payment-card" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
                 paymentMethod === 'card' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
               }`}>
                 <div className="flex items-center gap-3">
                   <input
+                    id="checkout-payment-card"
                     type="radio"
                     name="payment"
                     checked={paymentMethod === 'card'}
@@ -291,11 +309,12 @@ export default function CheckoutPage(): React.JSX.Element {
                 <span className="text-[11px] text-[#665E57]">256-Bit SSL</span>
               </label>
 
-              <label className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
+              <label htmlFor="checkout-payment-cod" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
                 paymentMethod === 'cod' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
               }`}>
                 <div className="flex items-center gap-3">
                   <input
+                    id="checkout-payment-cod"
                     type="radio"
                     name="payment"
                     checked={paymentMethod === 'cod'}
