@@ -27,12 +27,13 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
   if (!product) {
     return {
-      title: 'Saree Not Found | PALLUVO',
+      title: 'Saree Not Found',
       description: 'The requested luxury handloom saree drape could not be found.',
     };
   }
 
-  const title = `${product.name} | PALLUVO Luxury Sarees`;
+  const title = product.name;
+  const brandTitle = `${product.name} | PALLUVO Luxury Sarees`;
   const description =
     product.description ||
     product.tagline ||
@@ -47,7 +48,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       canonical: canonicalUrl,
     },
     openGraph: {
-      title,
+      title: brandTitle,
       description,
       url: canonicalUrl,
       siteName: 'PALLUVO',
@@ -63,7 +64,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
     },
     twitter: {
       card: 'summary_large_image',
-      title,
+      title: brandTitle,
       description,
       images: [primaryImage],
     },

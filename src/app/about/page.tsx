@@ -5,7 +5,7 @@ import { Metadata } from 'next';
 import { Award, ShieldCheck, Scissors, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
-  title: 'About Atelier | PALLUVO Luxury Sarees',
+  title: 'About Atelier',
   description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.',
   alternates: {
     canonical: '/about',
@@ -14,6 +14,14 @@ export const metadata: Metadata = {
     title: 'About Atelier | PALLUVO Luxury Sarees',
     description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.',
     url: 'https://palluvo.com/about',
+    images: [
+      {
+        url: '/images/craftsmanship.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'PALLUVO Atelier Handloom Heritage Craftsmanship',
+      },
+    ],
   },
 };
 

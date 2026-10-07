@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import WishlistClient from './WishlistClient';
 
 export const metadata: Metadata = {
-  title: 'Your Saved Sarees | PALLUVO Wishlist',
+  title: 'Your Saved Sarees',
   description: 'Your saved luxury handloom sarees collection at PALLUVO.',
   robots: {
     index: false,

@@ -12,6 +12,14 @@ export const metadata: Metadata = {
     title: 'All Sarees — Curated Luxury Handloom Collection | PALLUVO',
     description: 'Explore PALLUVO’s curated luxury handloom sarees — Kanjivaram, Banarasi, Chanderi, Paithani, and Organza drapes.',
     url: 'https://palluvo.com/sarees',
+    images: [
+      {
+        url: '/images/hero_campaign.jpg',
+        width: 1200,
+        height: 630,
+        alt: 'PALLUVO Curated Luxury Sarees Collection',
+      },
+    ],
   },
 };
 
