@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Metadata } from 'next';
 import { Award, ShieldCheck, Scissors, ArrowRight } from 'lucide-react';
 
@@ -29,7 +30,13 @@ export default function AboutPage(): React.JSX.Element {
       {/* Main Philosophy */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
         <div className="relative aspect-[4/5] rounded-2xl overflow-hidden bg-[#EDE3D5] shadow-lg">
-          <img src="/images/craftsmanship.jpg" alt="Weaving loom" className="w-full h-full object-cover" />
+          <Image
+            src="/images/craftsmanship.jpg"
+            alt="Weaving loom"
+            fill
+            sizes="(max-width: 768px) 100vw, 50vw"
+            className="object-cover"
+          />
         </div>
         <div className="space-y-4 text-xs sm:text-sm text-[#6D625D] leading-relaxed">
           <h2 className="font-serif text-2xl sm:text-3xl font-bold text-[#2B211D]">

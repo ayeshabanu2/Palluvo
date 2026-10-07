@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { X, Heart, ShoppingBag, ShieldCheck, Star } from 'lucide-react';
 import { formatINR } from '@/utils/format';
@@ -124,13 +125,15 @@ export default function QuickViewModal(): React.JSX.Element | null {
         {/* Image Gallery Side */}
         <div className="bg-[#EDE3D5] flex flex-col justify-between p-6 overflow-hidden">
           <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-white shadow-sm">
-            <img
+            <Image
               src={`/${images[activeImageIndex] || images[0]}`}
               alt={product.name}
-              className="w-full h-full object-cover object-top"
+              fill
+              sizes="(max-width: 768px) 100vw, 450px"
+              className="object-cover object-top"
             />
             {product.badge && (
-              <span className="absolute top-3 left-3 bg-[#641C2D] text-white text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider">
+              <span className="absolute top-3 left-3 bg-[#641C2D] text-white text-xs font-bold px-2.5 py-1 rounded uppercase tracking-wider z-10">
                 {product.badge}
               </span>
             )}
@@ -141,11 +144,11 @@ export default function QuickViewModal(): React.JSX.Element | null {
                 <button
                   key={idx}
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`w-14 h-16 rounded border-2 overflow-hidden flex-shrink-0 transition ${
+                  className={`relative w-14 h-16 rounded border-2 overflow-hidden flex-shrink-0 transition ${
                     activeImageIndex === idx ? 'border-[#641C2D]' : 'border-transparent opacity-70'
                   }`}
                 >
-                  <img src={`/${img}`} alt="" className="w-full h-full object-cover" />
+                  <Image src={`/${img}`} alt="" fill sizes="56px" className="object-cover" />
                 </button>
               ))}
             </div>

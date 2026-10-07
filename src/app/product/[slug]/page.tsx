@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Image from 'next/image';
 import { SAREE_PRODUCTS } from '@/data/products';
 import { useStore } from '@/context/StoreContext';
 import ProductCard from '@/components/ProductCard';
@@ -110,19 +111,22 @@ function ProductDetailContent({ product }: { product: SareeProduct }): React.JSX
         {/* Gallery Column */}
         <div className="space-y-4">
           <div className="relative aspect-[3/4] bg-[#EDE3D5]/40 rounded-xl overflow-hidden border border-[#EDE3D5] shadow-xs">
-            <img
+            <Image
               src={`/${activeImage}`}
               alt={product.name}
-              className="w-full h-full object-cover object-top"
+              fill
+              priority
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover object-top"
             />
             {product.badge && (
-              <span className="absolute top-4 left-4 bg-[#641C2D] text-white text-xs font-bold px-3 py-1 rounded uppercase tracking-wider shadow-sm">
+              <span className="absolute top-4 left-4 bg-[#641C2D] text-white text-xs font-bold px-3 py-1 rounded uppercase tracking-wider shadow-sm z-10">
                 {product.badge}
               </span>
             )}
             <button
               onClick={handleShare}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-[#241F1D] hover:bg-white shadow-sm"
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 backdrop-blur-xs flex items-center justify-center text-[#241F1D] hover:bg-white shadow-sm z-10"
               title="Share"
               aria-label="Share product link"
             >
@@ -142,7 +146,7 @@ function ProductDetailContent({ product }: { product: SareeProduct }): React.JSX
                   }`}
                   aria-label={`View product image ${i + 1}`}
                 >
-                  <img src={`/${img}`} alt="" className="w-full h-full object-cover" />
+                  <Image src={`/${img}`} alt="" fill sizes="80px" className="object-cover" />
                 </button>
               ))}
             </div>

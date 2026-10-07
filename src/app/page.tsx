@@ -1,5 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { 
   PALLUVO_TOP_MODELS, 
   SAREE_OCCASIONS, 
@@ -28,10 +29,13 @@ export default function HomePage(): React.JSX.Element {
       <section className="relative bg-[#2B211D] text-white overflow-hidden lg:min-h-[85vh] lg:flex lg:items-center">
         {/* Desktop-only full-bleed background image */}
         <div className="hidden lg:block absolute inset-0">
-          <img
+          <Image
             src="/images/hero_campaign.jpg"
             alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
-            className="w-full h-full object-cover object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
+            fill
+            priority
+            sizes="100vw"
+            className="object-cover object-right opacity-90 scale-100 transition-transform duration-1000 ease-out"
           />
           {/* Protected text backdrop gradient on the left, clear open saree view on the right */}
           <div className="absolute inset-0 bg-gradient-to-r from-[#2B211D] via-[#2B211D]/80 md:via-[#2B211D]/65 lg:via-[#2B211D]/40 to-transparent" />
@@ -45,10 +49,13 @@ export default function HomePage(): React.JSX.Element {
             {/* Mobile View: Dedicated Image Grid Card */}
             <div className="lg:hidden w-full order-1">
               <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[16/10] shadow-2xl border border-[#D6B878]/30 bg-[#241B17] max-w-md mx-auto">
-                <img
+                <Image
                   src="/images/hero_campaign.jpg"
                   alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
-                  className="w-full h-full object-cover object-[75%_center]"
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 100vw, 448px"
+                  className="object-cover object-[75%_center]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
                 <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-[#2B211D]/85 backdrop-blur-md border border-[#D6B878]/40 px-3 py-1.5 rounded-full flex items-center gap-2">
@@ -143,10 +150,12 @@ export default function HomePage(): React.JSX.Element {
               className="group relative rounded-xl overflow-hidden bg-white border border-[#EDE3D5] shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col"
             >
               <div className="relative aspect-[4/5] overflow-hidden bg-[#EDE3D5]">
-                <img
+                <Image
                   src={`/${model.image}`}
                   alt={model.name}
-                  className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
+                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4">
@@ -213,10 +222,12 @@ export default function HomePage(): React.JSX.Element {
             </div>
           </div>
           <div className="hidden lg:block absolute right-0 top-0 bottom-0 w-1/2">
-            <img
+            <Image
               src="/images/hero_navratri_motion.jpg"
               alt="Festive Drape"
-              className="w-full h-full object-cover object-center opacity-85"
+              fill
+              sizes="50vw"
+              className="object-cover object-center opacity-85"
             />
             <div className="absolute inset-0 bg-gradient-to-r from-[#641C2D] to-transparent" />
           </div>
@@ -268,10 +279,12 @@ export default function HomePage(): React.JSX.Element {
                 href={`/sarees?occasion=${encodeURIComponent(occ.filterParam)}`}
                 className="group relative rounded-xl overflow-hidden aspect-[3/4] bg-[#EDE3D5] shadow-xs hover:shadow-xl transition-all duration-300"
               >
-                <img
+                <Image
                   src={`/${occ.image}`}
                   alt={occ.name}
-                  className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                  fill
+                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
+                  className="object-cover object-center group-hover:scale-105 transition-transform duration-500"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
@@ -289,10 +302,12 @@ export default function HomePage(): React.JSX.Element {
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div className="relative rounded-2xl overflow-hidden bg-[#EDE3D5] aspect-[4/3] shadow-lg">
-            <img
+            <Image
               src="/images/craftsmanship.jpg"
               alt="Handloom Weaving Craftsmanship"
-              className="w-full h-full object-cover"
+              fill
+              sizes="(max-width: 1024px) 100vw, 50vw"
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-[#641C2D]/10" />
           </div>

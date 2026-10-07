@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { Heart, ShoppingBag, Eye, Star } from 'lucide-react';
 import { formatINR } from '@/utils/format';
@@ -15,12 +16,13 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
     <div className="group relative bg-white rounded-lg overflow-hidden border border-[#EDE3D5]/80 hover:border-[#B08D57] focus-within:border-[#B08D57] transition-all duration-300 hover:shadow-xl focus-within:shadow-xl flex flex-col">
       {/* Saree Image Container */}
       <div className="relative aspect-[3/4] bg-[#EDE3D5]/40 overflow-hidden">
-        <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full">
-          <img
+        <Link href={`/product/${product.slug || product.id}`} className="block w-full h-full relative">
+          <Image
             src={`/${product.images && product.images[0] ? product.images[0] : 'images/hero_saree_art.jpg'}`}
             alt={product.name}
-            className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-            loading="lazy"
+            fill
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
           />
         </Link>
 

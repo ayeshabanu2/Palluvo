@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { SAREE_PRODUCTS } from '@/data/products';
 import { 
   StoreContextType, 
@@ -37,163 +37,218 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  // Save changes
-  const saveCartToStorage = (updatedCart: CartItem[]) => {
-    setCart(updatedCart);
-    try {
-      localStorage.setItem('palluvo_cart', JSON.stringify(updatedCart));
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const showToast = (msg: string) => {
+  const showToast = useCallback((msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage((current) => (current === msg ? null : current));
     }, 3500);
-  };
+  }, []);
 
-  const addToCart = (productId: string, qty: number = 1, options: AddToCartOptions = {}) => {
+  const addToCart = useCallback((productId: string, qty: number = 1, options: AddToCartOptions = {}) => {
     const product = SAREE_PRODUCTS.find((p) => p.id === productId);
     if (!product) return;
 
-    const existingIndex = cart.findIndex(
-      (item) =>
-        item.productId === productId &&
-        (options.blouseOptionId ? item.blouseOptionId === options.blouseOptionId : true) &&
-        (options.selectedColor ? item.selectedColor === options.selectedColor : true)
-    );
+    setCart((prevCart) => {
+      const existingIndex = prevCart.findIndex(
+        (item) =>
+          item.productId === productId &&
+          (options.blouseOptionId ? item.blouseOptionId === options.blouseOptionId : true) &&
+          (options.selectedColor ? item.selectedColor === options.selectedColor : true)
+      );
 
-    let updatedCart = [...cart];
-    if (existingIndex > -1) {
-      updatedCart[existingIndex].qty += qty;
-    } else {
-      updatedCart.push({
-        id: 'cart_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
-        productId: product.id,
-        name: product.name,
-        price: product.price,
-        image: product.images && product.images[0] ? product.images[0] : '',
-        sareeType: product.sareeType,
-        qty: qty,
-        selectedColor: options.selectedColor || product.color,
-        blouseOptionId: options.blouseOptionId || 'unstitched',
-        blouseOptionName: options.blouseOptionName || 'Unstitched Matching Fabric Included',
-        blousePrice: options.blousePrice || 0
-      });
-    }
+      let updatedCart = [...prevCart];
+      if (existingIndex > -1) {
+        updatedCart[existingIndex] = {
+          ...updatedCart[existingIndex],
+          qty: updatedCart[existingIndex].qty + qty
+        };
+      } else {
+        updatedCart.push({
+          id: 'cart_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+          productId: product.id,
+          name: product.name,
+          price: product.price,
+          image: product.images && product.images[0] ? product.images[0] : '',
+          sareeType: product.sareeType,
+          qty: qty,
+          selectedColor: options.selectedColor || product.color,
+          blouseOptionId: options.blouseOptionId || 'unstitched',
+          blouseOptionName: options.blouseOptionName || 'Unstitched Matching Fabric Included',
+          blousePrice: options.blousePrice || 0
+        });
+      }
 
-    saveCartToStorage(updatedCart);
+      try {
+        localStorage.setItem('palluvo_cart', JSON.stringify(updatedCart));
+      } catch (e) {
+        console.error(e);
+      }
+      return updatedCart;
+    });
+
     showToast(`Added "${product.name}" to your shopping bag.`);
-  };
+  }, [showToast]);
 
-  const updateCartQty = (cartItemId: string, newQty: number) => {
-    let updated: CartItem[];
-    if (newQty <= 0) {
-      updated = cart.filter((item) => item.id !== cartItemId);
-    } else {
-      updated = cart.map((item) => (item.id === cartItemId ? { ...item, qty: newQty } : item));
-    }
-    saveCartToStorage(updated);
-  };
+  const updateCartQty = useCallback((cartItemId: string, newQty: number) => {
+    setCart((prevCart) => {
+      let updated: CartItem[];
+      if (newQty <= 0) {
+        updated = prevCart.filter((item) => item.id !== cartItemId);
+      } else {
+        updated = prevCart.map((item) => (item.id === cartItemId ? { ...item, qty: newQty } : item));
+      }
+      try {
+        localStorage.setItem('palluvo_cart', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  }, []);
 
-  const removeFromCart = (cartItemId: string) => {
-    const updated = cart.filter((item) => item.id !== cartItemId);
-    saveCartToStorage(updated);
-  };
+  const removeFromCart = useCallback((cartItemId: string) => {
+    setCart((prevCart) => {
+      const updated = prevCart.filter((item) => item.id !== cartItemId);
+      try {
+        localStorage.setItem('palluvo_cart', JSON.stringify(updated));
+      } catch (e) {
+        console.error(e);
+      }
+      return updated;
+    });
+  }, []);
 
-  const clearCart = () => {
-    saveCartToStorage([]);
+  const clearCart = useCallback(() => {
+    setCart([]);
     setCoupon(null);
     try {
+      localStorage.removeItem('palluvo_cart');
       localStorage.removeItem('palluvo_coupon');
     } catch (e) {}
-  };
+  }, []);
 
-  const toggleWishlist = (productId: string) => {
-    let updated: string[];
-    const exists = wishlist.includes(productId);
-    if (exists) {
-      updated = wishlist.filter((id) => id !== productId);
-      showToast('Item removed from wishlist');
-    } else {
-      updated = [...wishlist, productId];
-      showToast('Item added to your wishlist ❤️');
-    }
-    setWishlist(updated);
-    try {
-      localStorage.setItem('palluvo_wishlist', JSON.stringify(updated));
-    } catch (e) {}
-  };
+  const toggleWishlist = useCallback((productId: string) => {
+    setWishlist((prevWishlist) => {
+      let updated: string[];
+      const exists = prevWishlist.includes(productId);
+      if (exists) {
+        updated = prevWishlist.filter((id) => id !== productId);
+        showToast('Item removed from wishlist');
+      } else {
+        updated = [...prevWishlist, productId];
+        showToast('Item added to your wishlist ❤️');
+      }
+      try {
+        localStorage.setItem('palluvo_wishlist', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+  }, [showToast]);
 
-  const applyCouponCode = (code: string): CouponResult => {
+  const applyCouponCode = useCallback((code: string): CouponResult => {
     const clean = (code || '').trim().toUpperCase();
     if (clean === 'PALLUVO10' || clean === 'MAGIC10') {
       const c: Coupon = { code: clean, discountPercent: 10, label: '10% Festive Privilege' };
       setCoupon(c);
-      localStorage.setItem('palluvo_coupon', JSON.stringify(c));
+      try {
+        localStorage.setItem('palluvo_coupon', JSON.stringify(c));
+      } catch (e) {}
       showToast('Coupon applied: 10% Off!');
       return { success: true, message: '10% discount applied!' };
     } else if (clean === 'FIRSTDRAPE') {
       const c: Coupon = { code: clean, flatDiscount: 500, label: '₹500 First Order Welcome' };
       setCoupon(c);
-      localStorage.setItem('palluvo_coupon', JSON.stringify(c));
+      try {
+        localStorage.setItem('palluvo_coupon', JSON.stringify(c));
+      } catch (e) {}
       showToast('Coupon applied: ₹500 Off!');
       return { success: true, message: '₹500 welcome discount applied!' };
     }
     return { success: false, message: 'Invalid or expired promo code.' };
-  };
+  }, [showToast]);
 
-  const removeCoupon = () => {
+  const removeCoupon = useCallback(() => {
     setCoupon(null);
-    localStorage.removeItem('palluvo_coupon');
+    try {
+      localStorage.removeItem('palluvo_coupon');
+    } catch (e) {}
     showToast('Promo code removed');
-  };
+  }, [showToast]);
 
-  // Cart financial calculations
-  const subtotal = cart.reduce((acc, item) => acc + (item.price + (item.blousePrice || 0)) * item.qty, 0);
+  // Cart financial calculations (memoized)
+  const subtotal = useMemo(() => {
+    return cart.reduce((acc, item) => acc + (item.price + (item.blousePrice || 0)) * item.qty, 0);
+  }, [cart]);
+
   const FREE_SHIPPING_THRESHOLD = 999;
-  const shippingFee = subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 199;
+  const shippingFee = useMemo(() => {
+    return subtotal === 0 || subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : 199;
+  }, [subtotal]);
 
-  let discountAmount = 0;
-  if (coupon) {
+  const discountAmount = useMemo(() => {
+    if (!coupon) return 0;
     if (coupon.discountPercent) {
-      discountAmount = Math.round((subtotal * coupon.discountPercent) / 100);
+      return Math.round((subtotal * coupon.discountPercent) / 100);
     } else if (coupon.flatDiscount) {
-      discountAmount = Math.min(coupon.flatDiscount, subtotal);
+      return Math.min(coupon.flatDiscount, subtotal);
     }
-  }
+    return 0;
+  }, [coupon, subtotal]);
 
-  const grandTotal = Math.max(0, subtotal - discountAmount + shippingFee);
-  const totalCartCount = cart.reduce((sum, i) => sum + i.qty, 0);
+  const grandTotal = useMemo(() => {
+    return Math.max(0, subtotal - discountAmount + shippingFee);
+  }, [subtotal, discountAmount, shippingFee]);
+
+  const totalCartCount = useMemo(() => {
+    return cart.reduce((sum, i) => sum + i.qty, 0);
+  }, [cart]);
+
+  const contextValue = useMemo<StoreContextType>(() => ({
+    cart,
+    wishlist,
+    coupon,
+    isCartOpen,
+    setIsCartOpen,
+    quickViewProduct,
+    setQuickViewProduct,
+    toastMessage,
+    showToast,
+    addToCart,
+    updateCartQty,
+    removeFromCart,
+    clearCart,
+    toggleWishlist,
+    applyCouponCode,
+    removeCoupon,
+    subtotal,
+    shippingFee,
+    discountAmount,
+    grandTotal,
+    totalCartCount
+  }), [
+    cart,
+    wishlist,
+    coupon,
+    isCartOpen,
+    quickViewProduct,
+    toastMessage,
+    showToast,
+    addToCart,
+    updateCartQty,
+    removeFromCart,
+    clearCart,
+    toggleWishlist,
+    applyCouponCode,
+    removeCoupon,
+    subtotal,
+    shippingFee,
+    discountAmount,
+    grandTotal,
+    totalCartCount
+  ]);
 
   return (
-    <StoreContext.Provider
-      value={{
-        cart,
-        wishlist,
-        coupon,
-        isCartOpen,
-        setIsCartOpen,
-        quickViewProduct,
-        setQuickViewProduct,
-        toastMessage,
-        showToast,
-        addToCart,
-        updateCartQty,
-        removeFromCart,
-        clearCart,
-        toggleWishlist,
-        applyCouponCode,
-        removeCoupon,
-        subtotal,
-        shippingFee,
-        discountAmount,
-        grandTotal,
-        totalCartCount
-      }}
-    >
+    <StoreContext.Provider value={contextValue}>
       {children}
     </StoreContext.Provider>
   );

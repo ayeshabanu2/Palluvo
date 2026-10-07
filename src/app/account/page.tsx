@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Package, Heart, MapPin, ShieldCheck } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
@@ -81,8 +82,8 @@ export default function AccountPage(): React.JSX.Element {
                 </div>
 
                 <div className="flex gap-4 items-center">
-                  <div className="w-16 h-20 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
-                    <img src="/images/hero_saree_art.jpg" alt="" className="w-full h-full object-cover" />
+                  <div className="relative w-16 h-20 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
+                    <Image src="/images/hero_saree_art.jpg" alt="Royal Banarasi Silk Saree" fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="flex-1 text-xs">
                     <h4 className="font-serif text-base font-bold text-[#2B211D]">Royal Banarasi Silk Saree</h4>
@@ -114,8 +115,8 @@ export default function AccountPage(): React.JSX.Element {
                 </div>
 
                 <div className="flex gap-4 items-center">
-                  <div className="w-16 h-20 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
-                    <img src="/images/categories/organza.jpg" alt="" className="w-full h-full object-cover" />
+                  <div className="relative w-16 h-20 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
+                    <Image src="/images/categories/organza.jpg" alt="Elegant Organza Saree" fill sizes="64px" className="object-cover" />
                   </div>
                   <div className="flex-1 text-xs">
                     <h4 className="font-serif text-base font-bold text-[#2B211D]">Elegant Organza Saree</h4>

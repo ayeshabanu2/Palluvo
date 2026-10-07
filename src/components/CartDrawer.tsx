@@ -2,6 +2,7 @@
 
 import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { formatINR } from '@/utils/format';
@@ -155,10 +156,12 @@ export default function CartDrawer(): React.JSX.Element | null {
               cart.map((item) => (
                 <div key={item.id} className="flex gap-4 p-3 bg-white rounded-lg border border-[#EDE3D5] shadow-xs">
                   <div className="relative w-20 h-24 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
-                    <img
+                    <Image
                       src={`/${item.image}`}
                       alt={item.name}
-                      className="w-full h-full object-cover object-top"
+                      fill
+                      sizes="80px"
+                      className="object-cover object-top"
                     />
                   </div>
                   <div className="flex-1 flex flex-col justify-between">

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 import { Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
@@ -70,8 +71,14 @@ export default function CartPage(): React.JSX.Element {
                 className="bg-white p-4 sm:p-6 rounded-xl border border-[#EDE3D5] shadow-xs flex flex-col sm:flex-row gap-5 items-start sm:items-center justify-between"
               >
                 <div className="flex gap-4 items-center">
-                  <div className="w-20 h-24 sm:w-24 sm:h-28 rounded-lg overflow-hidden bg-[#EDE3D5] flex-shrink-0">
-                    <img src={`/${item.image}`} alt={item.name} className="w-full h-full object-cover object-top" />
+                  <div className="relative w-20 h-24 sm:w-24 sm:h-28 rounded-lg overflow-hidden bg-[#EDE3D5] flex-shrink-0">
+                    <Image
+                      src={`/${item.image}`}
+                      alt={item.name}
+                      fill
+                      sizes="(max-width: 640px) 80px, 96px"
+                      className="object-cover object-top"
+                    />
                   </div>
                   <div>
                     <h3 className="font-serif text-base sm:text-lg font-bold text-[#2B211D]">

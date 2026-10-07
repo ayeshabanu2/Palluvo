@@ -2,6 +2,7 @@
 
 import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { SAREE_PRODUCTS, PALLUVO_TOP_MODELS } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import { SareeProduct, TopModel } from '@/types';
@@ -188,10 +189,13 @@ function SareesContent() {
       <div className="relative rounded-2xl sm:rounded-3xl overflow-hidden mb-10 border border-[#EDE3D5] shadow-lg">
         {/* Background Saree Image */}
         <div className="absolute inset-0">
-          <img
+          <Image
             src="/images/catalog_hero_banner.jpg"
             alt="Palluvo Luxury Handloom Saree Collection"
-            className="w-full h-full object-cover object-[center_28%]"
+            fill
+            priority
+            sizes="(max-width: 1280px) 100vw, 1280px"
+            className="object-cover object-[center_28%]"
           />
           {/* Luxury Atelier Gradient Overlay */}
           <div className="absolute inset-0 bg-gradient-to-t from-[#1F1612]/92 via-[#2B211D]/75 to-[#1F1612]/85" />

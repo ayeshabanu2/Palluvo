@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard } from 'lucide-react';
@@ -340,8 +341,8 @@ export default function CheckoutPage(): React.JSX.Element {
             <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
               {cart.map((item) => (
                 <div key={item.id} className="flex gap-3 text-xs items-center">
-                  <div className="w-12 h-14 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
-                    <img src={`/${item.image}`} alt="" className="w-full h-full object-cover" />
+                  <div className="relative w-12 h-14 bg-[#EDE3D5] rounded overflow-hidden flex-shrink-0">
+                    <Image src={`/${item.image}`} alt={item.name} fill sizes="48px" className="object-cover" />
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-[#2B211D] line-clamp-1">{item.name}</p>
