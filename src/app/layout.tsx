@@ -9,6 +9,7 @@ import QuickViewModal from '@/components/QuickViewModal';
 import Toast from '@/components/Toast';
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://palluvo.com'),
   title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
   description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
   keywords: 'sarees, banarasi silk saree, kanjivaram silk, organza saree, paithani saree, bridal saree, luxury handloom',
