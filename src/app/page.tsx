@@ -8,7 +8,16 @@ import {
 } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import { Sparkles, ArrowRight, ShieldCheck, HeartHandshake, Scissors } from 'lucide-react';
+import { Metadata } from 'next';
 import { SareeProduct } from '@/types';
+
+export const metadata: Metadata = {
+  title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
+  description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
+  alternates: {
+    canonical: '/',
+  },
+};
 
 export default function HomePage(): React.JSX.Element {
   const trendingSarees: SareeProduct[] = [

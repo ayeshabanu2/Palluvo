@@ -6,7 +6,15 @@ import { Award, ShieldCheck, Scissors, ArrowRight } from 'lucide-react';
 
 export const metadata: Metadata = {
   title: 'About Atelier | PALLUVO Luxury Sarees',
-  description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.'
+  description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.',
+  alternates: {
+    canonical: '/about',
+  },
+  openGraph: {
+    title: 'About Atelier | PALLUVO Luxury Sarees',
+    description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.',
+    url: 'https://palluvo.com/about',
+  },
 };
 
 export default function AboutPage(): React.JSX.Element {
