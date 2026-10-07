@@ -373,6 +373,7 @@ export default function Header(): React.JSX.Element {
           id="mobileMenuDrawer" 
           role="dialog"
           aria-modal="true"
+          aria-labelledby="mobileMenuTitle"
           aria-label="Navigation menu"
           className="fixed inset-0 z-50 flex lg:hidden"
         >
@@ -387,7 +388,7 @@ export default function Header(): React.JSX.Element {
           >
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-[#EDE3D5]">
-                <span className="font-serif text-2xl tracking-[0.2em] text-[#641C2D] font-bold">PALLUVO</span>
+                <span id="mobileMenuTitle" className="font-serif text-2xl tracking-[0.2em] text-[#641C2D] font-bold">PALLUVO</span>
                 <button 
                   ref={closeButtonRef}
                   onClick={() => setMobileMenuOpen(false)} 

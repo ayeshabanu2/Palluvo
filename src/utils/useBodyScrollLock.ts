@@ -11,7 +11,7 @@ let originalOverflow = '';
  */
 export function useBodyScrollLock(isLocked: boolean): void {
   useEffect(() => {
-    if (!isLocked) return;
+    if (!isLocked || typeof document === 'undefined') return;
 
     if (lockCount === 0) {
       originalOverflow = document.body.style.overflow;
