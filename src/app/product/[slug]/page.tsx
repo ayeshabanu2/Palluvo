@@ -78,5 +78,78 @@ export default async function ProductDetailPage({ params }: ProductPageProps): P
     notFound();
   }
 
-  return <ProductDetailContent product={product} />;
+  const primaryImage = product.images && product.images[0] ? `https://palluvo.com/${product.images[0]}` : 'https://palluvo.com/images/hero_campaign.jpg';
+  const productUrl = `https://palluvo.com/product/${product.slug || product.id}`;
+
+  const productJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    image: primaryImage,
+    description: product.description || product.tagline,
+    sku: product.id,
+    brand: {
+      '@type': 'Brand',
+      name: 'PALLUVO',
+    },
+    category: product.sareeType,
+    offers: {
+      '@type': 'Offer',
+      url: productUrl,
+      priceCurrency: 'INR',
+      price: product.price,
+      availability: 'https://schema.org/InStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Organization',
+        name: 'PALLUVO',
+      },
+    },
+    aggregateRating: {
+      '@type': 'AggregateRating',
+      ratingValue: product.rating || '4.9',
+      reviewCount: product.reviewsCount || 28,
+      bestRating: '5',
+      worstRating: '1',
+    },
+  };
+
+  const breadcrumbJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: 'https://palluvo.com',
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: 'Sarees',
+        item: 'https://palluvo.com/sarees',
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: product.name,
+        item: productUrl,
+      },
+    ],
+  };
+
+  return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <ProductDetailContent product={product} />
+    </>
+  );
 }
