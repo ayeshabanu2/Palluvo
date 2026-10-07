@@ -1,10 +1,11 @@
 'use client';
 
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
 import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 import { formatINR } from '@/utils/format';
+import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
 
 export default function CartDrawer(): React.JSX.Element | null {
   const {
@@ -21,28 +22,89 @@ export default function CartDrawer(): React.JSX.Element | null {
     removeCoupon
   } = useStore();
 
+  const drawerRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  // Lock background body scrolling when drawer is open
+  useBodyScrollLock(isCartOpen);
+
+  // Focus trap and Escape key dismissal for accessible dialog
+  useEffect(() => {
+    if (!isCartOpen) return;
+
+    const timer = setTimeout(() => {
+      if (closeBtnRef.current) {
+        closeBtnRef.current.focus();
+      }
+    }, 40);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsCartOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && drawerRef.current) {
+        const focusable = drawerRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isCartOpen, setIsCartOpen]);
+
   if (!isCartOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 overflow-hidden">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cartDrawerTitle"
+      className="fixed inset-0 z-50 overflow-hidden"
+    >
       {/* Backdrop */}
       <div 
         className="absolute inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
         onClick={() => setIsCartOpen(false)}
+        aria-hidden="true"
       />
 
       <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-[#F8F5EF] shadow-2xl flex flex-col">
+        <div ref={drawerRef} className="w-screen max-w-md bg-[#F8F5EF] shadow-2xl flex flex-col">
           
           {/* Header */}
           <div className="px-6 py-5 border-b border-[#EDE3D5] flex items-center justify-between bg-white">
             <div>
-              <h2 className="font-serif text-2xl text-[#2B211D] font-bold">Shopping Bag</h2>
+              <h2 id="cartDrawerTitle" className="font-serif text-2xl text-[#2B211D] font-bold">Shopping Bag</h2>
               <p className="text-xs text-[#665E57]">
                 {cart.length === 0 ? 'Your bag is empty' : `${cart.reduce((s, i) => s + i.qty, 0)} signature item(s)`}
               </p>
             </div>
             <button 
+              ref={closeBtnRef}
               onClick={() => setIsCartOpen(false)}
               className="p-1.5 text-[#2B211D] hover:text-[#641C2D] rounded-full hover:bg-[#F8F5EF] transition"
               aria-label="Close bag"

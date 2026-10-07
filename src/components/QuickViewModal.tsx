@@ -1,17 +1,74 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { useStore } from '@/context/StoreContext';
 import { X, Heart, ShoppingBag, ShieldCheck, Star } from 'lucide-react';
 import { formatINR } from '@/utils/format';
 import { BlouseOption } from '@/types';
+import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
 
 export default function QuickViewModal(): React.JSX.Element | null {
   const { quickViewProduct, setQuickViewProduct, addToCart, setIsCartOpen, wishlist, toggleWishlist } = useStore();
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
   const [selectedBlouse, setSelectedBlouse] = useState<string>('unstitched');
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
+
+  const modalRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  const isOpen = quickViewProduct !== null;
+
+  // Lock background body scroll when quick view modal is open
+  useBodyScrollLock(isOpen);
+
+  // Focus trap and Escape key listener for accessible dialog
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const timer = setTimeout(() => {
+      if (closeBtnRef.current) {
+        closeBtnRef.current.focus();
+      }
+    }, 40);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setQuickViewProduct(null);
+        return;
+      }
+
+      if (e.key === 'Tab' && modalRef.current) {
+        const focusable = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, setQuickViewProduct]);
 
   if (!quickViewProduct) return null;
 
@@ -38,17 +95,27 @@ export default function QuickViewModal(): React.JSX.Element | null {
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+    <div 
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="quickViewTitle"
+      className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4"
+    >
       <div 
         className="fixed inset-0 bg-black/70 backdrop-blur-xs transition-opacity" 
         onClick={() => setQuickViewProduct(null)} 
+        aria-hidden="true"
       />
 
-      <div className="relative bg-[#F8F5EF] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden z-10 grid grid-cols-1 md:grid-cols-2 max-h-[90vh]">
+      <div 
+        ref={modalRef}
+        className="relative bg-[#F8F5EF] w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden z-10 grid grid-cols-1 md:grid-cols-2 max-h-[90vh]"
+      >
         {/* Close Button */}
         <button
+          ref={closeBtnRef}
           onClick={() => setQuickViewProduct(null)}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/90 text-[#2B211D] flex items-center justify-center hover:bg-white shadow-md"
+          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/90 text-[#2B211D] flex items-center justify-center hover:bg-white shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -106,7 +173,7 @@ export default function QuickViewModal(): React.JSX.Element | null {
               )}
             </div>
 
-            <h2 className="font-serif text-2xl md:text-3xl font-bold text-[#2B211D] leading-tight">
+            <h2 id="quickViewTitle" className="font-serif text-2xl md:text-3xl font-bold text-[#2B211D] leading-tight">
               {product.name}
             </h2>
 

@@ -6,6 +6,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { Search, Heart, ShoppingBag, User, Menu, X, Sparkles } from 'lucide-react';
 import { PALLUVO_TOP_MODELS } from '@/data/products';
+import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
 
 interface NavItem {
   label: string;
@@ -83,6 +84,9 @@ export default function Header(): React.JSX.Element {
   const searchDialogRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
   const searchCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+
+  // Lock background body scroll when either mobile menu drawer or search modal is open
+  useBodyScrollLock(mobileMenuOpen || showSearchModal);
 
   // Manage accessibility, focus trap, and Escape dismissal for mobile navigation drawer
   useEffect(() => {

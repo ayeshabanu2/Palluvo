@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useMemo, Suspense } from 'react';
+import React, { useState, useMemo, useRef, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { SAREE_PRODUCTS, PALLUVO_TOP_MODELS } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
 import { SareeProduct, TopModel } from '@/types';
 import { Filter, SlidersHorizontal, ArrowUpDown, X, Search, Sparkles, ShieldCheck } from 'lucide-react';
+import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
 
 function SareesContent() {
   const searchParams = useSearchParams();
@@ -22,6 +23,64 @@ function SareesContent() {
   const [priceRange, setPriceRange] = useState<number>(15000);
   const [searchQuery, setSearchQuery] = useState<string>(initialSearch);
   const [mobileFilterOpen, setMobileFilterOpen] = useState<boolean>(false);
+
+  const mobileFilterRef = useRef<HTMLDivElement | null>(null);
+  const filterCloseBtnRef = useRef<HTMLButtonElement | null>(null);
+  const filterTriggerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Lock background body scroll when mobile filter drawer is open
+  useBodyScrollLock(mobileFilterOpen);
+
+  // Manage accessibility, focus trap, and Escape dismissal for mobile filter dialog
+  useEffect(() => {
+    if (!mobileFilterOpen) return;
+
+    const timer = setTimeout(() => {
+      if (filterCloseBtnRef.current) {
+        filterCloseBtnRef.current.focus();
+      }
+    }, 40);
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setMobileFilterOpen(false);
+        return;
+      }
+
+      if (e.key === 'Tab' && mobileFilterRef.current) {
+        const focusable = mobileFilterRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (!focusable || focusable.length === 0) return;
+
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === first) {
+            e.preventDefault();
+            last.focus();
+          }
+        } else {
+          if (document.activeElement === last) {
+            e.preventDefault();
+            first.focus();
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      clearTimeout(timer);
+      document.removeEventListener('keydown', handleKeyDown);
+      if (filterTriggerRef.current) {
+        filterTriggerRef.current.focus();
+      }
+    };
+  }, [mobileFilterOpen]);
 
   // Sync state whenever URL searchParams change (clicking header buttons, category links, or searching)
   React.useEffect(() => {
@@ -191,7 +250,10 @@ function SareesContent() {
         {/* Mobile filter toggle & Sort */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           <button
+            ref={filterTriggerRef}
             onClick={() => setMobileFilterOpen(true)}
+            aria-expanded={mobileFilterOpen}
+            aria-controls="mobileFilterDialog"
             className="lg:hidden flex items-center gap-1.5 px-4 py-2 bg-[#F8F5EF] border border-[#EDE3D5] rounded-full text-xs font-semibold text-[#2B211D]"
           >
             <Filter className="w-3.5 h-3.5" /> Filters
@@ -369,12 +431,30 @@ function SareesContent() {
 
       {/* MOBILE FILTER MODAL */}
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 flex lg:hidden">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setMobileFilterOpen(false)} />
-          <div className="relative w-4/5 max-w-sm bg-white h-full p-6 overflow-y-auto space-y-6">
+        <div 
+          id="mobileFilterDialog"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobileFilterTitle"
+          className="fixed inset-0 z-50 flex lg:hidden"
+        >
+          <div 
+            className="fixed inset-0 bg-black/60" 
+            onClick={() => setMobileFilterOpen(false)} 
+            aria-hidden="true"
+          />
+          <div 
+            ref={mobileFilterRef}
+            className="relative w-4/5 max-w-sm bg-white h-full p-6 overflow-y-auto space-y-6"
+          >
             <div className="flex items-center justify-between pb-4 border-b border-[#EDE3D5]">
-              <h3 className="font-serif text-xl font-bold">Filter Collection</h3>
-              <button onClick={() => setMobileFilterOpen(false)}>
+              <h3 id="mobileFilterTitle" className="font-serif text-xl font-bold">Filter Collection</h3>
+              <button 
+                ref={filterCloseBtnRef}
+                onClick={() => setMobileFilterOpen(false)}
+                aria-label="Close filters"
+                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-black/5 transition text-[#2B211D]"
+              >
                 <X className="w-6 h-6 text-[#2B211D]" />
               </button>
             </div>
