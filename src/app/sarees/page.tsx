@@ -254,7 +254,7 @@ function SareesContent() {
             onClick={() => setMobileFilterOpen(true)}
             aria-expanded={mobileFilterOpen}
             aria-controls="mobileFilterDialog"
-            className="lg:hidden flex items-center gap-1.5 px-4 py-2 bg-[#F8F5EF] border border-[#EDE3D5] rounded-full text-xs font-semibold text-[#2B211D]"
+            className="lg:hidden flex items-center gap-1.5 px-4 py-2.5 min-h-[44px] bg-[#F8F5EF] border border-[#EDE3D5] rounded-full text-xs font-semibold text-[#2B211D]"
           >
             <Filter className="w-3.5 h-3.5" /> Filters
           </button>
@@ -366,38 +366,73 @@ function SareesContent() {
             <div className="flex flex-wrap items-center gap-2 mb-6 p-3 bg-white rounded-xl border border-[#EDE3D5]">
               <span className="text-xs text-[#665E57] font-semibold uppercase tracking-wider mr-1">Active:</span>
               {selectedType !== 'All' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#641C2D]/10 text-[#641C2D] border border-[#641C2D]/30 rounded-full text-xs font-semibold">
-                  Model: {selectedType}
-                  <button onClick={() => setSelectedType('All')} className="hover:text-black" aria-label="Remove model filter"><X className="w-3 h-3" /></button>
+                <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#641C2D]/10 text-[#641C2D] border border-[#641C2D]/30 rounded-full text-xs font-semibold">
+                  <span>Model: {selectedType}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedType('All')}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center rounded-full hover:bg-[#641C2D]/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-label="Remove model filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               )}
               {selectedBadge && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#B08D57]/15 text-[#8C6A35] border border-[#B08D57]/40 rounded-full text-xs font-semibold">
-                  Badge: {selectedBadge}
-                  <button onClick={() => setSelectedBadge('')} className="hover:text-black" aria-label="Remove badge filter"><X className="w-3 h-3" /></button>
+                <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#B08D57]/15 text-[#8C6A35] border border-[#B08D57]/40 rounded-full text-xs font-semibold">
+                  <span>Badge: {selectedBadge}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedBadge('')}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center rounded-full hover:bg-[#B08D57]/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#8C6A35]"
+                    aria-label="Remove badge filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               )}
               {selectedOccasion !== 'All' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
-                  Occasion: {selectedOccasion}
-                  <button onClick={() => setSelectedOccasion('All')} className="hover:text-black" aria-label="Remove occasion filter"><X className="w-3 h-3" /></button>
+                <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
+                  <span>Occasion: {selectedOccasion}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedOccasion('All')}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center rounded-full hover:bg-[#2B211D]/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B211D]"
+                    aria-label="Remove occasion filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               )}
               {selectedFabric !== 'All' && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
-                  Fabric: {selectedFabric}
-                  <button onClick={() => setSelectedFabric('All')} className="hover:text-black" aria-label="Remove fabric filter"><X className="w-3 h-3" /></button>
+                <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#2B211D]/10 text-[#2B211D] border border-[#2B211D]/30 rounded-full text-xs font-semibold">
+                  <span>Fabric: {selectedFabric}</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFabric('All')}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center rounded-full hover:bg-[#2B211D]/20 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#2B211D]"
+                    aria-label="Remove fabric filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               )}
               {searchQuery && (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#EDE3D5] text-[#241F1D] border border-[#B08D57]/30 rounded-full text-xs font-semibold">
-                  Search: "{searchQuery}"
-                  <button onClick={() => setSearchQuery('')} className="hover:text-black" aria-label="Remove search filter"><X className="w-3 h-3" /></button>
+                <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#EDE3D5] text-[#241F1D] border border-[#B08D57]/30 rounded-full text-xs font-semibold">
+                  <span>Search: "{searchQuery}"</span>
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] -my-2 -mr-1 flex items-center justify-center rounded-full hover:bg-black/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-label="Remove search filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
                 </span>
               )}
               <button
                 onClick={clearAllFilters}
-                className="text-xs text-[#641C2D] hover:underline font-semibold ml-auto"
+                className="text-xs text-[#641C2D] hover:underline font-semibold ml-auto min-h-[44px] px-2 flex items-center"
               >
                 Clear All
               </button>
@@ -453,7 +488,7 @@ function SareesContent() {
                 ref={filterCloseBtnRef}
                 onClick={() => setMobileFilterOpen(false)}
                 aria-label="Close filters"
-                className="w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-black/5 transition text-[#2B211D]"
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full hover:bg-black/5 transition text-[#2B211D] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               >
                 <X className="w-6 h-6 text-[#2B211D]" />
               </button>
@@ -511,17 +546,19 @@ function SareesContent() {
 
             <div className="pt-4 flex gap-3">
               <button
+                type="button"
                 onClick={() => {
                   clearAllFilters();
                   setMobileFilterOpen(false);
                 }}
-                className="flex-1 border border-[#EDE3D5] py-2.5 rounded-full text-xs font-semibold uppercase"
+                className="flex-1 border border-[#EDE3D5] py-2.5 min-h-[44px] rounded-full text-xs font-semibold uppercase flex items-center justify-center"
               >
                 Reset
               </button>
               <button
+                type="button"
                 onClick={() => setMobileFilterOpen(false)}
-                className="flex-1 bg-[#641C2D] text-white py-2.5 rounded-full text-xs font-semibold uppercase"
+                className="flex-1 bg-[#641C2D] text-white py-2.5 min-h-[44px] rounded-full text-xs font-semibold uppercase flex items-center justify-center"
               >
                 Apply Filters
               </button>

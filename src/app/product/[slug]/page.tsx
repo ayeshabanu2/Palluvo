@@ -202,18 +202,19 @@ function ProductDetailContent({ product }: { product: SareeProduct }): React.JSX
               <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2">
                 Available Shade: <span className="font-normal text-[#6D625D]">{selectedColor}</span>
               </label>
-              <div className="flex gap-2.5">
+              <div className="flex flex-wrap gap-1 items-center">
                 {product.swatches.map((swatch, idx) => (
                   <button
                     key={idx}
+                    type="button"
                     onClick={() => setSelectedColor(swatch.name)}
-                    className={`group relative p-1 rounded-full border-2 transition ${
-                      selectedColor === swatch.name ? 'border-[#641C2D]' : 'border-transparent'
-                    }`}
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                     aria-label={`Select color ${swatch.name}`}
                   >
                     <span
-                      className="block w-6 h-6 rounded-full border border-black/20"
+                      className={`block w-6 h-6 rounded-full border-2 transition ${
+                        selectedColor === swatch.name ? 'border-[#641C2D] scale-110' : 'border-gray-300'
+                      }`}
                       style={{ backgroundColor: swatch.hex }}
                     />
                   </button>

@@ -106,7 +106,7 @@ export default function CartDrawer(): React.JSX.Element | null {
             <button 
               ref={closeBtnRef}
               onClick={() => setIsCartOpen(false)}
-              className="p-1.5 text-[#2B211D] hover:text-[#641C2D] rounded-full hover:bg-[#F8F5EF] transition"
+              className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full hover:bg-[#F8F5EF] transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               aria-label="Close bag"
             >
               <X className="w-6 h-6" />
@@ -168,11 +168,12 @@ export default function CartDrawer(): React.JSX.Element | null {
                           {item.name}
                         </h4>
                         <button
+                          type="button"
                           onClick={() => removeFromCart(item.id)}
-                          className="text-[#665E57] hover:text-red-600 transition"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] -mr-2 -mt-2 flex items-center justify-center text-[#665E57] hover:text-red-600 rounded-full hover:bg-red-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                           aria-label="Remove item"
                         >
-                          <Trash2 className="w-3.5 h-3.5" />
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                       <p className="text-[11px] text-[#665E57] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
@@ -182,21 +183,23 @@ export default function CartDrawer(): React.JSX.Element | null {
                     </div>
 
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#EDE3D5]/40">
-                      <div className="flex items-center border border-[#EDE3D5] rounded-full px-2 py-0.5 bg-[#F8F5EF]">
+                      <div className="flex items-center border border-[#EDE3D5] rounded-full bg-[#F8F5EF]">
                         <button
+                          type="button"
                           onClick={() => updateCartQty(item.id, item.qty - 1)}
-                          className="text-[#2B211D] hover:text-[#641C2D] p-1"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                           aria-label="Decrease quantity"
                         >
-                          <Minus className="w-3 h-3" />
+                          <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="text-xs font-bold px-2 text-[#2B211D]">{item.qty}</span>
+                        <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center">{item.qty}</span>
                         <button
+                          type="button"
                           onClick={() => updateCartQty(item.id, item.qty + 1)}
-                          className="text-[#2B211D] hover:text-[#641C2D] p-1"
+                          className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                           aria-label="Increase quantity"
                         >
-                          <Plus className="w-3 h-3" />
+                          <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       <span className="text-sm font-bold text-[#641C2D]">
@@ -215,7 +218,7 @@ export default function CartDrawer(): React.JSX.Element | null {
               {coupon && (
                 <div className="flex items-center justify-between text-xs bg-amber-50 text-amber-900 px-3 py-2 rounded border border-amber-200">
                   <span>Promo ({coupon.code}): -{formatINR(discountAmount)}</span>
-                  <button onClick={removeCoupon} className="text-xs text-red-600 font-semibold underline">Remove</button>
+                  <button onClick={removeCoupon} className="text-xs text-red-600 font-semibold underline min-h-[44px] px-2 flex items-center">Remove</button>
                 </div>
               )}
               <div className="space-y-1.5 text-xs text-[#6D625D]">

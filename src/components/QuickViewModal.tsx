@@ -115,7 +115,7 @@ export default function QuickViewModal(): React.JSX.Element | null {
         <button
           ref={closeBtnRef}
           onClick={() => setQuickViewProduct(null)}
-          className="absolute top-4 right-4 z-20 w-8 h-8 rounded-full bg-white/90 text-[#2B211D] flex items-center justify-center hover:bg-white shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+          className="absolute top-4 right-4 z-20 w-11 h-11 min-w-[44px] min-h-[44px] rounded-full bg-white/90 text-[#2B211D] flex items-center justify-center hover:bg-white shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
           aria-label="Close modal"
         >
           <X className="w-5 h-5" />
@@ -199,17 +199,23 @@ export default function QuickViewModal(): React.JSX.Element | null {
                 <label className="block text-xs font-semibold text-[#2B211D] uppercase tracking-wider mb-1.5">
                   Color: <span className="font-normal text-[#6D625D]">{selectedColor || product.color}</span>
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-1 items-center">
                   {product.swatches.map((swatch, idx) => (
                     <button
                       key={idx}
+                      type="button"
                       onClick={() => setSelectedColor(swatch.name)}
-                      className={`w-6 h-6 rounded-full border-2 transition ${
-                        (selectedColor || product.color) === swatch.name ? 'border-[#641C2D] scale-110' : 'border-gray-300'
-                      }`}
-                      style={{ backgroundColor: swatch.hex }}
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                       title={swatch.name}
-                    />
+                      aria-label={`Select color ${swatch.name}`}
+                    >
+                      <span
+                        className={`w-6 h-6 rounded-full border-2 transition ${
+                          (selectedColor || product.color) === swatch.name ? 'border-[#641C2D] scale-110' : 'border-gray-300'
+                        }`}
+                        style={{ backgroundColor: swatch.hex }}
+                      />
+                    </button>
                   ))}
                 </div>
               </div>

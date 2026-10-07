@@ -97,17 +97,21 @@ export default function CartPage(): React.JSX.Element {
 
                 <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto">
                   {/* Quantity Controller */}
-                  <div className="flex items-center border border-[#EDE3D5] rounded-full px-3 py-1 bg-[#F8F5EF]">
+                  <div className="flex items-center border border-[#EDE3D5] rounded-full bg-[#F8F5EF]">
                     <button
+                      type="button"
                       onClick={() => updateCartQty(item.id, item.qty - 1)}
-                      className="text-[#2B211D] hover:text-[#641C2D] p-1"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                      aria-label="Decrease quantity"
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-xs font-bold px-3 text-[#2B211D]">{item.qty}</span>
+                    <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center">{item.qty}</span>
                     <button
+                      type="button"
                       onClick={() => updateCartQty(item.id, item.qty + 1)}
-                      className="text-[#2B211D] hover:text-[#641C2D] p-1"
+                      className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                      aria-label="Increase quantity"
                     >
                       <Plus className="w-3.5 h-3.5" />
                     </button>
@@ -120,9 +124,11 @@ export default function CartPage(): React.JSX.Element {
                   </div>
 
                   <button
+                    type="button"
                     onClick={() => removeFromCart(item.id)}
-                    className="p-2 text-[#665E57] hover:text-red-600 rounded-full hover:bg-red-50 transition"
+                    className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#665E57] hover:text-red-600 rounded-full hover:bg-red-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                     title="Remove item"
+                    aria-label="Remove item"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -168,7 +174,7 @@ export default function CartPage(): React.JSX.Element {
                   </div>
                   <button
                     type="submit"
-                    className="bg-[#2B211D] hover:bg-[#641C2D] text-white px-4 py-2 rounded-lg text-xs font-semibold uppercase tracking-wider transition"
+                    className="bg-[#2B211D] hover:bg-[#641C2D] text-white px-4 py-2 min-h-[44px] rounded-lg text-xs font-semibold uppercase tracking-wider transition"
                   >
                     Apply
                   </button>
@@ -181,7 +187,7 @@ export default function CartPage(): React.JSX.Element {
                 {coupon && (
                   <div className="mt-2 flex items-center justify-between bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded text-xs">
                     <span>Applied: <strong>{coupon.code}</strong></span>
-                    <button onClick={removeCoupon} className="text-red-600 font-semibold underline text-[11px]">
+                    <button onClick={removeCoupon} className="text-red-600 font-semibold underline text-[11px] min-h-[44px] px-2 inline-flex items-center">
                       Remove
                     </button>
                   </div>
