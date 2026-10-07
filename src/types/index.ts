@@ -26,9 +26,11 @@ export interface ProductSpecifications {
   fabric?: string;
   weave?: string;
   zari?: string;
+  zariType?: string;
   length?: string;
   width?: string;
   sareeLength?: string;
+  blouseLength?: string;
   blousePiece?: string;
   origin?: string;
   certification?: string;
@@ -39,7 +41,6 @@ export interface ProductSpecifications {
   border?: string;
   pallu?: string;
   occasion?: string;
-  [key: string]: any;
 }
 
 export interface SareeProduct {
@@ -71,7 +72,7 @@ export interface SareeProduct {
   blouseOptions?: BlouseOption[];
   specifications?: ProductSpecifications;
   deliveryInfo?: string;
-  [key: string]: any;
+  stock?: number;
 }
 
 export interface TopModel {

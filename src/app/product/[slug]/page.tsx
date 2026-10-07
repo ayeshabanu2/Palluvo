@@ -303,14 +303,16 @@ function ProductDetailContent({ product }: { product: SareeProduct }): React.JSX
             <div className="pt-4">
               <h3 className="font-serif text-lg font-bold text-[#2B211D] mb-3">Authentic Specifications</h3>
               <div className="bg-white rounded-xl border border-[#EDE3D5] divide-y divide-[#EDE3D5] text-xs">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex p-3">
-                    <span className="w-1/3 font-semibold uppercase tracking-wider text-[#665E57]">
-                      {key.replace(/([A-Z])/g, ' $1')}
-                    </span>
-                    <span className="w-2/3 text-[#2B211D] font-medium">{value}</span>
-                  </div>
-                ))}
+                {Object.entries(product.specifications)
+                  .filter((entry): entry is [string, string] => typeof entry[1] === 'string' && entry[1].trim().length > 0)
+                  .map(([key, value]) => (
+                    <div key={key} className="flex p-3">
+                      <span className="w-1/3 font-semibold uppercase tracking-wider text-[#665E57]">
+                        {key.replace(/([A-Z])/g, ' $1')}
+                      </span>
+                      <span className="w-2/3 text-[#2B211D] font-medium">{value}</span>
+                    </div>
+                  ))}
               </div>
             </div>
           )}
