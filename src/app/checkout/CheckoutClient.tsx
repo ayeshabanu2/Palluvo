@@ -206,6 +206,7 @@ export default function CheckoutClient(): React.JSX.Element {
                   <input
                     id="checkout-phone"
                     type="tel"
+                    inputMode="tel"
                     required
                     name="phone"
                     autoComplete="tel"
@@ -270,11 +271,15 @@ export default function CheckoutClient(): React.JSX.Element {
                   <input
                     id="checkout-pincode"
                     type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
                     required
                     name="pincode"
                     autoComplete="postal-code"
                     value={formData.pincode}
                     onChange={handleChange}
+                    placeholder="e.g. 560001"
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>

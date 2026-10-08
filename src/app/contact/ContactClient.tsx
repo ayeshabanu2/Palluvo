@@ -142,6 +142,7 @@ export default function ContactClient(): React.JSX.Element {
                     id="contact-phone"
                     name="phone"
                     type="tel"
+                    inputMode="tel"
                     autoComplete="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
