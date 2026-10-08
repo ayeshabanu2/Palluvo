@@ -73,6 +73,7 @@ export interface SareeProduct {
   specifications?: ProductSpecifications;
   deliveryInfo?: string;
   stock?: number;
+  updatedAt?: string;
 }
 
 export interface TopModel {

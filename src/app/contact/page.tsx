@@ -21,6 +21,12 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Contact Atelier | PALLUVO Luxury Sarees',
+    description: 'Reach our saree concierge and client care atelier for styling assistance, bespoke orders, and appointments.',
+    images: ['/images/hero_campaign.jpg'],
+  },
 };
 
 export default function ContactPage(): React.JSX.Element {

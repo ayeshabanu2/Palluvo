@@ -23,6 +23,12 @@ export const metadata: Metadata = {
       },
     ],
   },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'About Atelier | PALLUVO Luxury Sarees',
+    description: 'Learn about Palluvo - Contemporary Luxury Indian Saree Fashion House & Boutique Atelier.',
+    images: ['/images/craftsmanship.jpg'],
+  },
 };
 
 export default function AboutPage(): React.JSX.Element {
