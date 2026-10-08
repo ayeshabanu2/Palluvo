@@ -174,7 +174,8 @@ export default function CartDrawer(): React.JSX.Element | null {
                           type="button"
                           onClick={() => removeFromCart(item.id)}
                           className="w-11 h-11 min-w-[44px] min-h-[44px] -mr-2 -mt-2 flex items-center justify-center text-[#665E57] hover:text-red-600 rounded-full hover:bg-red-50 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                          aria-label="Remove item"
+                          title={`Remove ${item.name} from bag`}
+                          aria-label={`Remove ${item.name} from bag`}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -191,7 +192,7 @@ export default function CartDrawer(): React.JSX.Element | null {
                           type="button"
                           onClick={() => updateCartQty(item.id, item.qty - 1)}
                           className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                          aria-label="Decrease quantity"
+                          aria-label={`Decrease quantity of ${item.name}`}
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
@@ -200,7 +201,7 @@ export default function CartDrawer(): React.JSX.Element | null {
                           type="button"
                           onClick={() => updateCartQty(item.id, item.qty + 1)}
                           className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#2B211D] hover:text-[#641C2D] rounded-full transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                          aria-label="Increase quantity"
+                          aria-label={`Increase quantity of ${item.name}`}
                         >
                           <Plus className="w-3.5 h-3.5" />
                         </button>
