@@ -191,6 +191,7 @@ export default function ProductDetailContent({ product }: { product: SareeProduc
                     onClick={() => setSelectedColor(swatch.name)}
                     className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                     aria-label={`Select color ${swatch.name}`}
+                    aria-pressed={selectedColor === swatch.name}
                   >
                     <span
                       className={`block w-6 h-6 rounded-full border-2 transition ${

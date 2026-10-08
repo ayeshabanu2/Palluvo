@@ -54,7 +54,7 @@ export default function ContactClient(): React.JSX.Element {
             <div>
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Phone & WhatsApp Concierge</h3>
               <p className="text-xs text-[#665E57] mt-1">+91 84988 54323 / +91 81067 89789</p>
-              <p className="text-[11px] text-[#641C2D] mt-1 font-semibold">Available Mon–Sat: 10 AM – 7 PM IST</p>
+              <p className="text-[11px] text-[#641C2D] mt-1 font-semibold">Available Mon to Sat: 10 AM to 7 PM IST</p>
             </div>
           </div>
 

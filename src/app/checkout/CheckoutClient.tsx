@@ -96,7 +96,7 @@ export default function CheckoutClient(): React.JSX.Element {
             </div>
             <div className="flex justify-between">
               <span className="text-[#665E57]">Estimated Insured Delivery:</span>
-              <span className="font-medium text-emerald-800">2–4 Business Days</span>
+              <span className="font-medium text-emerald-800">2 to 4 Business Days</span>
             </div>
           </div>
 

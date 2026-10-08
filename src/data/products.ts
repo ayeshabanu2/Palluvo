@@ -279,7 +279,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Wrap in breathable muslin cloth."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-002",
@@ -323,7 +323,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Store flat in cotton saree bag."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-003",
@@ -367,7 +367,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Gentle dry clean recommended. Iron inside out."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-004",
@@ -411,7 +411,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Do not wring or steam press."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-005",
@@ -455,7 +455,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean. Wrap in unbleached cotton muslin."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-006",
@@ -499,7 +499,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Protect from moisture."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-007",
@@ -543,7 +543,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean recommended or gentle cold hand wash."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-008",
@@ -587,7 +587,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Roll-press dry clean only to preserve natural bandhani texture."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-009",
@@ -631,7 +631,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Iron on reverse with medium heat."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-010",
@@ -675,7 +675,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Store draped in soft cotton cloth."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-011",
@@ -719,7 +719,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Gentle dry clean only. Natural vegetable colors mature with age."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-012",
@@ -763,7 +763,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Hang on padded hanger."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-013",
@@ -807,7 +807,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Roll press to preserve crinkle texture."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-014",
@@ -852,7 +852,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary heavy fall and pico edging done",
       care: "Dry clean only. Store in wooden or cotton heirloom box."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-015",
@@ -896,7 +896,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Gentle dry clean only."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-016",
@@ -940,7 +940,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Iron on reverse."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-017",
@@ -984,7 +984,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Wrap in pure cotton cloth."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-018",
@@ -1028,7 +1028,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Gentle dry clean only."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-019",
@@ -1072,7 +1072,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Keep wrapped in cotton cloth."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-020",
@@ -1116,7 +1116,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Ready to wear without additional underskirt",
       care: "Strictly dry clean only."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-021",
@@ -1160,7 +1160,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean only. Roll fold to protect zari work."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-022",
@@ -1204,7 +1204,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Gentle hand wash with mild shampoo or dry clean."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-023",
@@ -1248,7 +1248,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Dry clean recommended for first two washes, followed by delicate cold wash."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-024",
@@ -1292,7 +1292,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Wrap in muslin cloth."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-025",
@@ -1336,7 +1336,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Change folds every 6 months."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-026",
@@ -1420,7 +1420,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary heavy fall and pico edging done",
       care: "Dry clean only. Store flat in velvet lined box."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-028",
@@ -1462,7 +1462,7 @@ export const SAREE_PRODUCTS: SareeProduct[] = [
       fallPico: "Complimentary fall and pico edging done",
       care: "Strictly dry clean only. Wrap in breathable muslin."
     },
-    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2–4 business days."
+    deliveryInfo: "Dispatched within 24 hours. Express insured delivery in 2 to 4 business days."
   },
   {
     id: "saree-029",
