@@ -176,7 +176,7 @@ export default function CartClient(): React.JSX.Element {
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
                       placeholder="Try: PALLUVO10"
-                      className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg px-3 py-2 text-xs uppercase font-mono text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                      className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg px-3 py-2 text-xs uppercase font-mono text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                     />
                   </div>
                   <button

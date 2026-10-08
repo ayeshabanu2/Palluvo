@@ -284,7 +284,7 @@ export default function Header(): React.JSX.Element {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search Kanjivaram, Banarasi, Organza..."
                   aria-label="Search sarees catalog"
-                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:outline-none focus:border-[#B08D57] focus:ring-1 focus:ring-[#B08D57] shadow-xs transition"
+                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] shadow-xs transition"
                 />
                 <button
                   type="submit"
@@ -480,7 +480,7 @@ export default function Header(): React.JSX.Element {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search by silk type, color, region, or weave..."
                 aria-label="Search by silk type, color, region, or weave"
-                className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg pl-12 pr-4 py-3 text-base text-[#241F1D] focus:outline-none focus:border-[#641C2D]"
+                className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg pl-12 pr-4 py-3 text-base text-[#241F1D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               />
               <Search className="w-5 h-5 text-[#665E57] absolute left-4 top-3.5" aria-hidden="true" />
               <button

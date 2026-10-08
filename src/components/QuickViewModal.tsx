@@ -143,12 +143,15 @@ export default function QuickViewModal(): React.JSX.Element | null {
               {images.map((img, idx) => (
                 <button
                   key={idx}
+                  type="button"
                   onClick={() => setActiveImageIndex(idx)}
-                  className={`relative w-14 h-16 rounded border-2 overflow-hidden flex-shrink-0 transition ${
-                    activeImageIndex === idx ? 'border-[#641C2D]' : 'border-transparent opacity-70'
+                  aria-label={`View image ${idx + 1} of ${images.length} for ${product.name}`}
+                  aria-pressed={activeImageIndex === idx}
+                  className={`relative w-14 h-16 rounded border-2 overflow-hidden flex-shrink-0 transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${
+                    activeImageIndex === idx ? 'border-[#641C2D]' : 'border-transparent opacity-70 hover:opacity-100'
                   }`}
                 >
-                  <Image src={`/${img}`} alt="" fill sizes="56px" className="object-cover" />
+                  <Image src={`/${img}`} alt={`Thumbnail ${idx + 1} of ${images.length} for ${product.name}`} fill sizes="56px" className="object-cover" />
                 </button>
               ))}
             </div>

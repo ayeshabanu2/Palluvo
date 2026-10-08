@@ -164,7 +164,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
                 <div>
@@ -178,7 +178,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="family-name"
                     value={formData.lastName}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
                 <div>
@@ -212,7 +212,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
               </div>
@@ -229,7 +229,7 @@ export default function CheckoutClient(): React.JSX.Element {
                   autoComplete="street-address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                  className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                 />
               </div>
 
@@ -246,7 +246,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="address-level2"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
                 <div>
@@ -260,7 +260,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="address-level1"
                     value={formData.state}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
                 <div>
@@ -275,7 +275,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="postal-code"
                     value={formData.pincode}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:outline-none focus:border-[#641C2D]"
+                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
               </div>
@@ -299,7 +299,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     name="payment"
                     checked={paymentMethod === 'upi'}
                     onChange={() => setPaymentMethod('upi')}
-                    className="accent-[#641C2D]"
+                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                   <span>Instant UPI (Google Pay / PhonePe / Paytm / Any UPI ID)</span>
                 </div>
@@ -316,7 +316,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     name="payment"
                     checked={paymentMethod === 'card'}
                     onChange={() => setPaymentMethod('card')}
-                    className="accent-[#641C2D]"
+                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                   <span>Credit / Debit Card (Visa, MasterCard, RuPay, Amex)</span>
                 </div>
@@ -333,7 +333,7 @@ export default function CheckoutClient(): React.JSX.Element {
                     name="payment"
                     checked={paymentMethod === 'cod'}
                     onChange={() => setPaymentMethod('cod')}
-                    className="accent-[#641C2D]"
+                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                   <span>Cash on Delivery (COD)</span>
                 </div>

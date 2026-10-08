@@ -242,7 +242,7 @@ export default function SareesClient() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Filter by name, color, origin..."
-            className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] focus:outline-none focus:border-[#641C2D]"
+            className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
           />
           <Search className="w-3.5 h-3.5 text-[#665E57] absolute left-3.5 top-3" />
         </div>
@@ -269,7 +269,7 @@ export default function SareesClient() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="bg-[#F8F5EF] border border-[#EDE3D5] rounded-full px-3 py-2 text-xs text-[#2B211D] focus:outline-none font-medium"
+              className="bg-[#F8F5EF] border border-[#EDE3D5] rounded-full px-3 py-2 text-xs text-[#2B211D] font-medium focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
             >
               <option value="featured">Featured Collection</option>
               <option value="price-low">Price: Low to High</option>
@@ -507,7 +507,7 @@ export default function SareesClient() {
               <select
                 value={selectedType}
                 onChange={(e) => setSelectedType(e.target.value)}
-                className="w-full p-2 border border-[#EDE3D5] rounded text-xs"
+                className="w-full p-2 border border-[#EDE3D5] rounded text-xs focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               >
                 <option value="All">All Signature Models</option>
                 {PALLUVO_TOP_MODELS.map((m: TopModel) => (
@@ -524,7 +524,7 @@ export default function SareesClient() {
               <select
                 value={selectedOccasion}
                 onChange={(e) => setSelectedOccasion(e.target.value)}
-                className="w-full p-2 border border-[#EDE3D5] rounded text-xs"
+                className="w-full p-2 border border-[#EDE3D5] rounded text-xs focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               >
                 {['All', 'Wedding', 'Bridal', 'Festive', 'Party Wear', 'Office Wear', 'Traditional'].map((occ) => (
                   <option key={occ} value={occ}>{occ}</option>
