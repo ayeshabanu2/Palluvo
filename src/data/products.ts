@@ -1,7 +1,7 @@
 import { TopModel, SareeCategory, FestiveSaree, SareeOccasion, SareeProduct, HandloomRegion } from '@/types';
 
 /**
- * PALLUVO — Contemporary Luxury Saree Fashion House
+ * PALLUVO | Contemporary Luxury Saree Fashion House
  * "Every drape, a little magic."
  * Curated Top Models & Saree-Only Merchandising
  */

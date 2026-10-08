@@ -68,7 +68,7 @@ export default function AboutPage(): React.JSX.Element {
             Unlike contemporary portals overwhelmed by twenty disparate ethnic categories, <strong>PALLUVO</strong> is founded on an uncompromising devotion: strictly authentic sarees. Zero lehengas, kurtis, gowns, or western wear.
           </p>
           <p>
-            We believe the Indian saree is the pinnacle of sculptural fashion — six yards of unstitched poetry that transforms the posture, grace, and aura of whoever adorns it.
+            We believe the Indian saree is the pinnacle of sculptural fashion, six yards of unstitched poetry that transforms the posture, grace, and aura of whoever adorns it.
           </p>
           <p>
             By working directly with master weaving clusters in Varanasi, Kanchipuram, Yeola, Pochampally, and Chanderi, we ensure India&apos;s national textile heritage flourishes with fair artisan pricing and authenticated silk certification.

@@ -49,7 +49,7 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://palluvo.com'),
   title: {
-    default: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
+    default: 'PALLUVO | Every drape, a little magic | Contemporary Indian Luxury Sarees',
     template: '%s | PALLUVO Luxury Sarees',
   },
   description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
@@ -59,7 +59,7 @@ export const metadata: Metadata = {
     locale: 'en_IN',
     url: 'https://palluvo.com',
     siteName: 'PALLUVO',
-    title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
+    title: 'PALLUVO | Every drape, a little magic | Contemporary Indian Luxury Sarees',
     description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
     images: [
       {
@@ -72,7 +72,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
+    title: 'PALLUVO | Every drape, a little magic | Contemporary Indian Luxury Sarees',
     description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear.',
     images: ['/images/hero_campaign.jpg'],
   },

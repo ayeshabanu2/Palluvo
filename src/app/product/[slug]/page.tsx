@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   const description =
     product.description ||
     product.tagline ||
-    `Discover ${product.name} — authentic handloom ${product.sareeType} saree certified with pure silk mark guarantee.`;
+    `Discover ${product.name}, an authentic handloom ${product.sareeType} saree certified with pure silk mark guarantee.`;
   const primaryImage = product.images && product.images[0] ? `/${product.images[0]}` : '/images/hero_campaign.jpg';
   const canonicalUrl = `https://palluvo.com/product/${product.slug || product.id}`;
 

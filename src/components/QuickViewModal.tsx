@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
-import { X, Heart, ShoppingBag, ShieldCheck, Star } from 'lucide-react';
+import { X, Heart, ShoppingBag, ShieldCheck, Star, ArrowRight } from 'lucide-react';
 import { formatINR } from '@/utils/format';
 import { BlouseOption } from '@/types';
 import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
@@ -287,9 +287,10 @@ export default function QuickViewModal(): React.JSX.Element | null {
               <Link
                 href={`/product/${product.slug || product.id}`}
                 onClick={() => setQuickViewProduct(null)}
-                className="font-semibold text-[#641C2D] underline"
+                className="inline-flex items-center gap-1.5 font-semibold text-[#641C2D] underline"
               >
-                Full Product Specifications →
+                <span>Full Product Specifications</span>
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
             </div>
           </div>

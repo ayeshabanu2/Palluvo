@@ -213,7 +213,7 @@ export default function SareesClient() {
           </h1>
           <div className="w-16 h-0.5 bg-[#D6B878] mx-auto mt-4 mb-4" />
           <p className="text-xs sm:text-sm text-[#F4EFE6] leading-relaxed max-w-xl mx-auto drop-shadow-xs">
-            Explore {SAREE_PRODUCTS.length} signature handloom sarees — 100% pure silk mark guaranteed with complimentary fall and pico finishing.
+            Explore {SAREE_PRODUCTS.length} signature handloom sarees, 100% pure silk mark guaranteed with complimentary fall and pico finishing.
           </p>
 
           {/* Luxury Highlights Bar */}

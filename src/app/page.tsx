@@ -12,7 +12,7 @@ import { Metadata } from 'next';
 import { SareeProduct } from '@/types';
 
 export const metadata: Metadata = {
-  title: 'PALLUVO — Every drape, a little magic | Contemporary Indian Luxury Sarees',
+  title: 'PALLUVO | Every drape, a little magic | Contemporary Indian Luxury Sarees',
   description: 'Contemporary luxury Indian saree fashion house. Curated signature sarees: Kanjivaram, Banarasi, Chanderi, Paithani, Organza, Ready-to-wear. 100% Silk Mark certified.',
   alternates: {
     canonical: '/',
@@ -347,9 +347,10 @@ export default function HomePage(): React.JSX.Element {
             <div>
               <Link
                 href="/about"
-                className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.2em] font-semibold text-[#641C2D] hover:text-[#4E1422] underline underline-offset-4"
+                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] font-semibold text-[#641C2D] hover:text-[#4E1422] underline underline-offset-4"
               >
-                Read Atelier Story →
+                <span>Read Atelier Story</span>
+                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
             </div>
           </div>
