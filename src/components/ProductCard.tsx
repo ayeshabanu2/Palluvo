@@ -122,16 +122,16 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
         {/* Pricing */}
         <div className="mt-3 pt-2.5 sm:pt-3 border-t border-[#EDE3D5]/60 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
           <div className="flex flex-wrap items-baseline gap-x-1.5 sm:gap-x-2">
-            <span className="text-sm sm:text-base font-bold text-[#641C2D] whitespace-nowrap">
+            <span className="text-sm sm:text-base font-bold text-[#641C2D] whitespace-nowrap tabular-nums">
               {formatINR(product.price)}
             </span>
             {product.compareAtPrice && product.compareAtPrice > product.price && (
-              <span className="text-[11px] sm:text-xs text-[#665E57] line-through whitespace-nowrap">
+              <span className="text-[11px] sm:text-xs text-[#665E57] line-through whitespace-nowrap tabular-nums">
                 {formatINR(product.compareAtPrice)}
               </span>
             )}
             {product.discount && (
-              <span className="bg-[#B08D57] text-[#1C1613] text-[9.5px] xs:text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap shadow-xs">
+              <span className="bg-[#B08D57] text-[#1C1613] text-[9.5px] xs:text-[10px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider whitespace-nowrap shadow-xs tabular-nums">
                 {product.discount}
               </span>
             )}

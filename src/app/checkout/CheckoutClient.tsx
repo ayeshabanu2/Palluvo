@@ -364,9 +364,9 @@ export default function CheckoutClient(): React.JSX.Element {
                   </div>
                   <div className="flex-1">
                     <p className="font-semibold text-[#2B211D] line-clamp-1">{item.name}</p>
-                    <p className="text-[10px] text-[#665E57]">Qty: {item.qty} • {item.selectedColor}</p>
+                    <p className="text-[10px] text-[#665E57]">Qty: <span className="tabular-nums">{item.qty}</span> • {item.selectedColor}</p>
                   </div>
-                  <span className="font-bold text-[#641C2D]">
+                  <span className="font-bold text-[#641C2D] tabular-nums">
                     {formatINR((item.price + (item.blousePrice || 0)) * item.qty)}
                   </span>
                 </div>
@@ -376,21 +376,21 @@ export default function CheckoutClient(): React.JSX.Element {
             <div className="pt-3 border-t border-[#EDE3D5] space-y-2 text-xs text-[#6D625D]">
               <div className="flex justify-between">
                 <span>Subtotal</span>
-                <span>{formatINR(subtotal)}</span>
+                <span className="tabular-nums">{formatINR(subtotal)}</span>
               </div>
               {discountAmount > 0 && (
                 <div className="flex justify-between text-[#641C2D]">
                   <span>Discount</span>
-                  <span>-{formatINR(discountAmount)}</span>
+                  <span className="tabular-nums">-{formatINR(discountAmount)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span>Shipping</span>
-                <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : formatINR(shippingFee)}</span>
+                <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : <span className="tabular-nums">{formatINR(shippingFee)}</span>}</span>
               </div>
               <div className="flex justify-between text-base font-bold text-[#2B211D] pt-2 border-t border-[#EDE3D5]">
                 <span>Payable Total</span>
-                <span className="text-[#641C2D]">{formatINR(grandTotal)}</span>
+                <span className="text-[#641C2D] tabular-nums">{formatINR(grandTotal)}</span>
               </div>
             </div>
 
@@ -399,7 +399,7 @@ export default function CheckoutClient(): React.JSX.Element {
               form="checkout-form"
               className="w-full bg-[#641C2D] hover:bg-[#4E1422] text-white py-4 rounded-full text-xs font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-2 shadow-xl transition mt-4"
             >
-              <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
+              <Lock className="w-4 h-4" /> Place Order (<span className="tabular-nums">{formatINR(grandTotal)}</span>)
             </button>
 
             <div className="pt-2 text-center text-[11px] text-[#665E57] flex items-center justify-center gap-1.5">

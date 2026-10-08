@@ -213,7 +213,7 @@ export default function SareesClient() {
           </h1>
           <div className="w-16 h-0.5 bg-[#D6B878] mx-auto mt-4 mb-4" />
           <p className="text-xs sm:text-sm text-[#F4EFE6] leading-relaxed max-w-xl mx-auto drop-shadow-xs">
-            Explore {SAREE_PRODUCTS.length} signature handloom sarees, 100% pure silk mark guaranteed with complimentary fall and pico finishing.
+            Explore <span className="tabular-nums">{SAREE_PRODUCTS.length}</span> signature handloom sarees, 100% pure silk mark guaranteed with complimentary fall and pico finishing.
           </p>
 
           {/* Luxury Highlights Bar */}
@@ -245,7 +245,7 @@ export default function SareesClient() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter by name, color, origin..."
+            placeholder="Filter by name, color, origin"
             aria-label="Filter sarees by name, color, or origin"
             className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
           />
@@ -258,7 +258,7 @@ export default function SareesClient() {
           aria-live="polite"
           aria-atomic="true"
         >
-          Showing <span className="text-[#2B211D] font-bold">{filteredSarees.length}</span> sarees
+          Showing <span className="text-[#2B211D] font-bold tabular-nums">{filteredSarees.length}</span> sarees
         </div>
 
         {/* Mobile filter toggle & Sort */}

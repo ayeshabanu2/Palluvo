@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function SareesPage(): React.JSX.Element {
   return (
-    <Suspense fallback={<div className="text-center py-20 font-serif">Loading signature collection...</div>}>
+    <Suspense fallback={<div className="text-center py-20 font-serif">Loading signature collection</div>}>
       <SareesClient />
     </Suspense>
   );

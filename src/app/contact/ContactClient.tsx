@@ -146,7 +146,7 @@ export default function ContactClient(): React.JSX.Element {
                     autoComplete="tel"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    placeholder="+91..."
+                    placeholder="+91"
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
@@ -181,7 +181,7 @@ export default function ContactClient(): React.JSX.Element {
                   rows={5}
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Share your wedding theme, date, preference of weave or any specific questions..."
+                  placeholder="Share your wedding theme, date, preference of weave or any specific questions"
                   className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-3 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                 />
               </div>

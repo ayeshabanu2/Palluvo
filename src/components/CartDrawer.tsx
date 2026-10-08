@@ -123,7 +123,7 @@ export default function CartDrawer(): React.JSX.Element | null {
             ) : (
               <div>
                 <p className="text-[#6D625D]">
-                  Add <span className="font-bold text-[#641C2D]">{formatINR(999 - subtotal)}</span> more for Free Express Shipping
+                  Add <span className="font-bold text-[#641C2D] tabular-nums">{formatINR(999 - subtotal)}</span> more for Free Express Shipping
                 </p>
                 <div className="w-full bg-[#EDE3D5] h-1.5 rounded-full mt-2 overflow-hidden">
                   <div 
@@ -182,7 +182,7 @@ export default function CartDrawer(): React.JSX.Element | null {
                       </div>
                       <p className="text-[11px] text-[#665E57] mt-0.5">{item.sareeType} • {item.selectedColor}</p>
                       {item.blousePrice !== undefined && item.blousePrice > 0 && (
-                        <p className="text-[10px] text-[#641C2D] font-medium">+ {item.blouseOptionName} ({formatINR(item.blousePrice)})</p>
+                        <p className="text-[10px] text-[#641C2D] font-medium">+ {item.blouseOptionName} (<span className="tabular-nums">{formatINR(item.blousePrice)}</span>)</p>
                       )}
                     </div>
 
@@ -196,7 +196,7 @@ export default function CartDrawer(): React.JSX.Element | null {
                         >
                           <Minus className="w-3.5 h-3.5" />
                         </button>
-                        <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center">{item.qty}</span>
+                        <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center tabular-nums">{item.qty}</span>
                         <button
                           type="button"
                           onClick={() => updateCartQty(item.id, item.qty + 1)}
@@ -206,7 +206,7 @@ export default function CartDrawer(): React.JSX.Element | null {
                           <Plus className="w-3.5 h-3.5" />
                         </button>
                       </div>
-                      <span className="text-sm font-bold text-[#641C2D]">
+                      <span className="text-sm font-bold text-[#641C2D] tabular-nums">
                         {formatINR((item.price + (item.blousePrice || 0)) * item.qty)}
                       </span>
                     </div>
@@ -221,28 +221,28 @@ export default function CartDrawer(): React.JSX.Element | null {
             <div className="px-6 py-5 bg-white border-t border-[#EDE3D5] space-y-3">
               {coupon && (
                 <div className="flex items-center justify-between text-xs bg-amber-50 text-amber-900 px-3 py-2 rounded border border-amber-200">
-                  <span>Promo ({coupon.code}): -{formatINR(discountAmount)}</span>
+                  <span>Promo ({coupon.code}): <span className="tabular-nums">-{formatINR(discountAmount)}</span></span>
                   <button onClick={removeCoupon} className="text-xs text-red-600 font-semibold underline min-h-[44px] px-2 flex items-center">Remove</button>
                 </div>
               )}
               <div className="space-y-1.5 text-xs text-[#6D625D]">
                 <div className="flex justify-between">
                   <span>Subtotal</span>
-                  <span className="font-semibold text-[#2B211D]">{formatINR(subtotal)}</span>
+                  <span className="font-semibold text-[#2B211D] tabular-nums">{formatINR(subtotal)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-[#641C2D]">
                     <span>Discount</span>
-                    <span>-{formatINR(discountAmount)}</span>
+                    <span className="tabular-nums">-{formatINR(discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Insured Shipping</span>
-                  <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : formatINR(shippingFee)}</span>
+                  <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : <span className="tabular-nums">{formatINR(shippingFee)}</span>}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-[#2B211D] pt-2 border-t border-[#EDE3D5]">
                   <span>Total (incl. taxes)</span>
-                  <span className="text-[#641C2D]">{formatINR(grandTotal)}</span>
+                  <span className="text-[#641C2D] tabular-nums">{formatINR(grandTotal)}</span>
                 </div>
               </div>
 

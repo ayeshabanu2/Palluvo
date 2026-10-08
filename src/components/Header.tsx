@@ -282,7 +282,7 @@ export default function Header(): React.JSX.Element {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Kanjivaram, Banarasi, Organza..."
+                  placeholder="Search Kanjivaram, Banarasi, Organza"
                   aria-label="Search sarees catalog"
                   className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] shadow-xs transition"
                 />
@@ -478,7 +478,7 @@ export default function Header(): React.JSX.Element {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by silk type, color, region, or weave..."
+                placeholder="Search by silk type, color, region, or weave"
                 aria-label="Search by silk type, color, region, or weave"
                 className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg pl-12 pr-4 py-3 text-base text-[#241F1D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               />

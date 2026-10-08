@@ -184,12 +184,12 @@ export default function QuickViewModal(): React.JSX.Element | null {
             </h2>
 
             <div className="flex items-baseline gap-3 my-3">
-              <span className="text-2xl font-bold text-[#641C2D]">{formatINR(product.price + currentBlouse.price)}</span>
+              <span className="text-2xl font-bold text-[#641C2D] tabular-nums">{formatINR(product.price + currentBlouse.price)}</span>
               {product.compareAtPrice && (
-                <span className="text-sm text-[#665E57] line-through">{formatINR(product.compareAtPrice)}</span>
+                <span className="text-sm text-[#665E57] line-through tabular-nums">{formatINR(product.compareAtPrice)}</span>
               )}
               {product.discount && (
-                <span className="text-xs bg-[#B08D57]/20 text-[#8C6A35] font-bold px-2 py-0.5 rounded">
+                <span className="text-xs bg-[#B08D57]/20 text-[#8C6A35] font-bold px-2 py-0.5 rounded tabular-nums">
                   {product.discount}
                 </span>
               )}
@@ -252,7 +252,7 @@ export default function QuickViewModal(): React.JSX.Element | null {
                       />
                       <span>{opt.name}</span>
                     </div>
-                    <span>{opt.price === 0 ? 'FREE' : `+${formatINR(opt.price)}`}</span>
+                    <span className="tabular-nums">{opt.price === 0 ? 'FREE' : `+${formatINR(opt.price)}`}</span>
                   </label>
                 ))}
               </div>

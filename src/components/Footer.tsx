@@ -88,7 +88,7 @@ export default function Footer(): React.JSX.Element {
                 disabled
                 aria-disabled="true"
                 aria-label="Newsletter subscriptions opening soon"
-                placeholder="Subscriptions opening soon..."
+                placeholder="Enter email address"
                 className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               />
               <button 
