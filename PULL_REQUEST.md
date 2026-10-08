@@ -213,6 +213,12 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **100% Saree Merchandising Audit:** Zero non-saree imagery across all 8 occasion cards and 29-item catalog.
 - [x] **All Routes HTTP 200:** `/`, `/sarees`, `/product/[slug]`, `/cart`, `/checkout`, `/wishlist`, `/about`, `/contact`, `/account`.
 - [x] **Cart & Wishlist Reactivity:** Item quantity, blouse selection, promo code (`PALLUVO10`), order persistence, and cart drawer verified.
+- [x] **[P3] Typography & Iconography Flaw:** Replaced raw unicode arrows (→) with semantic Lucide `ArrowRight` SVG icons and aligned with `inline-flex` layout.
+- [x] **[P3] Typography & SEO Metadata Anti-Slop:** Replaced em-dashes (—) with vertical pipes (|) in metadata and commas/prepositions in editorial copy.
+- [x] **[P3] Monospaced Numerical Alignment:** Applied `tabular-nums` CSS utility to all currency displays, discount callouts, and subtotal rows.
+- [x] **[P3] Typography Anti-Slop:** Removed trailing triple-dot ASCII ellipses (...) from placeholders and fallback loading screens, replacing with confident prompt text.
+- [x] **[P3] Typography Anti-Slop (En-Dashes):** Replaced raw unicode en-dashes (–) with clean prepositions (e.g. "2 to 4 business days") in delivery info and concierge hours.
+- [x] **[P2] WCAG 4.1.2 Color Swatch State:** Added `aria-pressed` attributes to color shade toggle buttons across the PDP and QuickViewModal.
 
 ---
 
