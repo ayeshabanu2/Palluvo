@@ -224,7 +224,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         showToast('Item removed from wishlist');
       } else {
         updated = [...prevWishlist, productId];
-        showToast('Item added to your wishlist ❤️');
+        showToast('Item added to your wishlist');
       }
       try {
         localStorage.setItem('palluvo_wishlist', JSON.stringify(updated));

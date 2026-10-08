@@ -455,7 +455,7 @@ export default function SareesClient() {
 
           {filteredSarees.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl border border-[#EDE3D5]">
-              <div className="text-4xl mb-3">🔍</div>
+              <div className="flex justify-center mb-4 text-[#665E57]"><Search className="w-10 h-10" /></div>
               <h3 className="font-serif text-2xl text-[#2B211D]">No sarees match your filters</h3>
               <p className="text-xs text-[#665E57] mt-2 mb-6">
                 Try loosening your filters or resetting to discover our full catalogue.

@@ -4,7 +4,7 @@ import React, { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
-import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { X, Trash2, Plus, Minus, ArrowRight, ShieldCheck, Sparkles, ShoppingBag } from 'lucide-react';
 import { formatINR } from '@/utils/format';
 import { useBodyScrollLock } from '@/utils/useBodyScrollLock';
 
@@ -140,7 +140,7 @@ export default function CartDrawer(): React.JSX.Element | null {
             {cart.length === 0 ? (
               <div className="text-center py-16">
                 <div className="w-16 h-16 rounded-full bg-[#EDE3D5] flex items-center justify-center mx-auto mb-4 text-[#665E57]">
-                  🧺
+                  <ShoppingBag className="w-8 h-8" />
                 </div>
                 <h3 className="font-serif text-xl text-[#2B211D]">Your bag is currently empty</h3>
                 <p className="text-xs text-[#665E57] mt-2 mb-6">Explore our curated collection of master-woven sarees.</p>

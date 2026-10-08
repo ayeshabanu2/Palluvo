@@ -219,6 +219,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P3] Typography Anti-Slop:** Removed trailing triple-dot ASCII ellipses (...) from placeholders and fallback loading screens, replacing with confident prompt text.
 - [x] **[P3] Typography Anti-Slop (En-Dashes):** Replaced raw unicode en-dashes (–) with clean prepositions (e.g. "2 to 4 business days") in delivery info and concierge hours.
 - [x] **[P2] WCAG 4.1.2 Color Swatch State:** Added `aria-pressed` attributes to color shade toggle buttons across the PDP and QuickViewModal.
+- [x] **[P2] WCAG 3.3.1 / 4.1.3 Promo Code Error Feedback:** Linked validation feedback message using `aria-invalid`, `aria-describedby`, and `role="alert"` in cart promo input.
+- [x] **[P3] Design Anti-Slop (Empty State Emojis):** Replaced raw OS emojis (🧺, 🔍, ❤️) with standard Lucide `ShoppingBag`, `Search` icons, and clean text across cart, search, and wishlist.
 
 ---
 

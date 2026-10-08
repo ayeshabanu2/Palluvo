@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
-import { Trash2, Plus, Minus, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Trash2, Plus, Minus, ArrowRight, ShieldCheck, ShoppingBag } from 'lucide-react';
 import { CouponResult } from '@/types';
 
 export default function CartClient(): React.JSX.Element {
@@ -46,8 +46,8 @@ export default function CartClient(): React.JSX.Element {
 
       {cart.length === 0 ? (
         <div className="max-w-md mx-auto text-center py-16 bg-white p-8 rounded-2xl border border-[#EDE3D5] shadow-xs">
-          <div className="w-16 h-16 rounded-full bg-[#EDE3D5] flex items-center justify-center mx-auto mb-4 text-2xl">
-            🧺
+          <div className="w-16 h-16 rounded-full bg-[#EDE3D5] flex items-center justify-center mx-auto mb-4 text-[#665E57]">
+            <ShoppingBag className="w-8 h-8" />
           </div>
           <h2 className="font-serif text-2xl font-bold text-[#2B211D]">Your shopping bag is empty</h2>
           <p className="text-xs text-[#665E57] mt-2 mb-6">
@@ -172,6 +172,8 @@ export default function CartClient(): React.JSX.Element {
                       name="couponCode"
                       type="text"
                       aria-label="Enter promotional coupon code"
+                      aria-invalid={Boolean(couponMsg && !couponMsg.success)}
+                      aria-describedby={couponMsg ? "coupon-feedback" : undefined}
                       autoComplete="off"
                       value={couponInput}
                       onChange={(e) => setCouponInput(e.target.value)}
@@ -187,7 +189,7 @@ export default function CartClient(): React.JSX.Element {
                   </button>
                 </form>
                 {couponMsg && (
-                  <p className={`text-[11px] mt-1.5 font-medium ${couponMsg.success ? 'text-emerald-700' : 'text-red-600'}`}>
+                  <p id="coupon-feedback" role="alert" className={`text-[11px] mt-1.5 font-medium ${couponMsg.success ? 'text-emerald-700' : 'text-red-600'}`}>
                     {couponMsg.message}
                   </p>
                 )}
