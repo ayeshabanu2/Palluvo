@@ -8,8 +8,83 @@ import {
   Coupon, 
   AddToCartOptions, 
   SareeProduct, 
-  CouponResult 
+  CouponResult,
+  PlacedOrder,
+  CreateOrderInput
 } from '@/types';
+
+const INITIAL_ORDERS: PlacedOrder[] = [
+  {
+    id: 'PLV-849201',
+    orderNumber: 'PLV-849201',
+    date: '18 Sep 2026',
+    status: 'Delivered',
+    items: [
+      {
+        id: 'init_item_1',
+        productId: 'saree-001',
+        name: 'Royal Banarasi Silk Saree',
+        price: 8199,
+        image: 'images/hero_saree_art.jpg',
+        sareeType: 'Banarasi',
+        qty: 1,
+        selectedColor: 'Deep Crimson',
+        blouseOptionName: 'Custom Tailored Blouse',
+        blousePrice: 1200
+      }
+    ],
+    subtotal: 8199,
+    discountAmount: 0,
+    shippingFee: 0,
+    grandTotal: 8199,
+    paymentMethod: 'card',
+    customer: {
+      firstName: 'Ananya',
+      lastName: 'Sharma',
+      email: 'ananya.sharma@example.com',
+      phone: '+91 98765 43210',
+      address: 'Apartment 402, Royal Palms, 12th Main Road, Indiranagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      pincode: '560038'
+    }
+  },
+  {
+    id: 'PLV-712049',
+    orderNumber: 'PLV-712049',
+    date: '02 Aug 2026',
+    status: 'Delivered',
+    items: [
+      {
+        id: 'init_item_2',
+        productId: 'saree-004',
+        name: 'Elegant Organza Saree',
+        price: 3899,
+        image: 'images/categories/organza.jpg',
+        sareeType: 'Organza',
+        qty: 1,
+        selectedColor: 'Sage Green',
+        blouseOptionName: 'Unstitched Blouse',
+        blousePrice: 0
+      }
+    ],
+    subtotal: 3899,
+    discountAmount: 0,
+    shippingFee: 0,
+    grandTotal: 3899,
+    paymentMethod: 'upi',
+    customer: {
+      firstName: 'Ananya',
+      lastName: 'Sharma',
+      email: 'ananya.sharma@example.com',
+      phone: '+91 98765 43210',
+      address: 'Apartment 402, Royal Palms, 12th Main Road, Indiranagar',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      pincode: '560038'
+    }
+  }
+];
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
@@ -17,6 +92,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [wishlist, setWishlist] = useState<string[]>([]);
   const [coupon, setCoupon] = useState<Coupon | null>(null);
+  const [orders, setOrders] = useState<PlacedOrder[]>(INITIAL_ORDERS);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [quickViewProduct, setQuickViewProduct] = useState<SareeProduct | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -32,6 +108,18 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       const savedCoupon = localStorage.getItem('palluvo_coupon');
       if (savedCoupon) setCoupon(JSON.parse(savedCoupon));
+
+      const savedOrders = localStorage.getItem('palluvo_orders');
+      if (savedOrders) {
+        try {
+          const parsed = JSON.parse(savedOrders);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOrders(parsed);
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      }
     } catch (e) {
       console.error('Failed to load local storage state', e);
     }
@@ -175,6 +263,29 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     showToast('Promo code removed');
   }, [showToast]);
 
+  const recordOrder = useCallback((orderInput: CreateOrderInput): PlacedOrder => {
+    const orderNumber = orderInput.orderNumber || 'PLV-' + Math.floor(100000 + Math.random() * 900000);
+    const newOrder: PlacedOrder = {
+      ...orderInput,
+      id: orderNumber,
+      orderNumber,
+      date: new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+      status: 'Confirmed'
+    };
+
+    setOrders((prev) => {
+      const updated = [newOrder, ...prev];
+      try {
+        localStorage.setItem('palluvo_orders', JSON.stringify(updated));
+      } catch (e) {
+        console.error('Failed to save order to localStorage', e);
+      }
+      return updated;
+    });
+
+    return newOrder;
+  }, []);
+
   // Cart financial calculations (memoized)
   const subtotal = useMemo(() => {
     return cart.reduce((acc, item) => acc + (item.price + (item.blousePrice || 0)) * item.qty, 0);
@@ -207,6 +318,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     cart,
     wishlist,
     coupon,
+    orders,
     isCartOpen,
     setIsCartOpen,
     quickViewProduct,
@@ -220,6 +332,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleWishlist,
     applyCouponCode,
     removeCoupon,
+    recordOrder,
     subtotal,
     shippingFee,
     discountAmount,
@@ -229,6 +342,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     cart,
     wishlist,
     coupon,
+    orders,
     isCartOpen,
     quickViewProduct,
     toastMessage,
@@ -240,6 +354,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     toggleWishlist,
     applyCouponCode,
     removeCoupon,
+    recordOrder,
     subtotal,
     shippingFee,
     discountAmount,

@@ -51,7 +51,7 @@ export default function CartPage(): React.JSX.Element {
           </div>
           <h2 className="font-serif text-2xl font-bold text-[#2B211D]">Your shopping bag is empty</h2>
           <p className="text-xs text-[#665E57] mt-2 mb-6">
-            Adorn your wardrobe with India's finest handloom silks and artisanal drapes.
+            Adorn your wardrobe with India&apos;s finest handloom silks and artisanal drapes.
           </p>
           <Link
             href="/sarees"

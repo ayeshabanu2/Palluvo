@@ -74,11 +74,12 @@ export default function SareesClient() {
 
     document.addEventListener('keydown', handleKeyDown);
 
+    const triggerEl = filterTriggerRef.current;
     return () => {
       clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
-      if (filterTriggerRef.current) {
-        filterTriggerRef.current.focus();
+      if (triggerEl) {
+        triggerEl.focus();
       }
     };
   }, [mobileFilterOpen]);
@@ -423,7 +424,7 @@ export default function SareesClient() {
               )}
               {searchQuery && (
                 <span className="inline-flex items-center pl-3 pr-1 py-0.5 bg-[#EDE3D5] text-[#241F1D] border border-[#B08D57]/30 rounded-full text-xs font-semibold">
-                  <span>Search: "{searchQuery}"</span>
+                  <span>Search: &ldquo;{searchQuery}&rdquo;</span>
                   <button
                     type="button"
                     onClick={() => setSearchQuery('')}

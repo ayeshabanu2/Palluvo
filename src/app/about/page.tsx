@@ -71,7 +71,7 @@ export default function AboutPage(): React.JSX.Element {
             We believe the Indian saree is the pinnacle of sculptural fashion — six yards of unstitched poetry that transforms the posture, grace, and aura of whoever adorns it.
           </p>
           <p>
-            By working directly with master weaving clusters in Varanasi, Kanchipuram, Yeola, Pochampally, and Chanderi, we ensure India's national textile heritage flourishes with fair artisan pricing and authenticated silk certification.
+            By working directly with master weaving clusters in Varanasi, Kanchipuram, Yeola, Pochampally, and Chanderi, we ensure India&apos;s national textile heritage flourishes with fair artisan pricing and authenticated silk certification.
           </p>
         </div>
       </div>

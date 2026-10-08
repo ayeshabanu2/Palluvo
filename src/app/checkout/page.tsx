@@ -21,7 +21,7 @@ interface CheckoutFormData {
 type PaymentMethod = 'upi' | 'card' | 'cod';
 
 export default function CheckoutPage(): React.JSX.Element {
-  const { cart, grandTotal, subtotal, shippingFee, discountAmount, clearCart, showToast } = useStore();
+  const { cart, grandTotal, subtotal, shippingFee, discountAmount, clearCart, showToast, recordOrder } = useStore();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
   const [formData, setFormData] = useState<CheckoutFormData>({
@@ -50,6 +50,19 @@ export default function CheckoutPage(): React.JSX.Element {
 
     const generatedOrder = 'PLV-' + Math.floor(100000 + Math.random() * 900000);
     setOrderNumber(generatedOrder);
+
+    // Persist order in StoreContext and localStorage
+    recordOrder({
+      orderNumber: generatedOrder,
+      items: [...cart],
+      subtotal,
+      discountAmount,
+      shippingFee,
+      grandTotal,
+      paymentMethod,
+      customer: { ...formData }
+    });
+
     setIsSubmitted(true);
     clearCart();
     showToast(`Order ${generatedOrder} confirmed successfully!`);
@@ -89,10 +102,10 @@ export default function CheckoutPage(): React.JSX.Element {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/"
-              className="bg-[#641C2D] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#4E1422] transition"
+              href="/account"
+              className="bg-[#641C2D] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#4E1422] transition shadow-md"
             >
-              Return to Boutique Home
+              View Order in Account
             </Link>
             <Link
               href="/sarees"

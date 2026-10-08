@@ -146,10 +146,47 @@ export interface CouponResult {
   message: string;
 }
 
+export interface OrderCustomerDetails {
+  firstName: string;
+  lastName?: string;
+  email: string;
+  phone: string;
+  address: string;
+  city: string;
+  state?: string;
+  pincode: string;
+}
+
+export interface PlacedOrder {
+  id: string;
+  orderNumber: string;
+  date: string;
+  status: 'Confirmed' | 'Delivered' | 'In Transit';
+  items: CartItem[];
+  subtotal: number;
+  discountAmount: number;
+  shippingFee: number;
+  grandTotal: number;
+  paymentMethod: 'upi' | 'card' | 'cod';
+  customer: OrderCustomerDetails;
+}
+
+export interface CreateOrderInput {
+  orderNumber?: string;
+  items: CartItem[];
+  subtotal: number;
+  discountAmount: number;
+  shippingFee: number;
+  grandTotal: number;
+  paymentMethod: 'upi' | 'card' | 'cod';
+  customer: OrderCustomerDetails;
+}
+
 export interface StoreContextType {
   cart: CartItem[];
   wishlist: string[];
   coupon: Coupon | null;
+  orders: PlacedOrder[];
   isCartOpen: boolean;
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
   quickViewProduct: SareeProduct | null;
@@ -163,6 +200,7 @@ export interface StoreContextType {
   toggleWishlist: (productId: string) => void;
   applyCouponCode: (code: string) => CouponResult;
   removeCoupon: () => void;
+  recordOrder: (orderInput: CreateOrderInput) => PlacedOrder;
   subtotal: number;
   shippingFee: number;
   discountAmount: number;

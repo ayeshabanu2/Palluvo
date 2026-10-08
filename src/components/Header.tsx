@@ -131,12 +131,13 @@ export default function Header(): React.JSX.Element {
 
     document.addEventListener('keydown', handleKeyDown);
 
+    const triggerEl = menuTriggerRef.current;
     return () => {
       clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
       // Restore focus to the trigger button that opened the drawer
-      if (menuTriggerRef.current) {
-        menuTriggerRef.current.focus();
+      if (triggerEl) {
+        triggerEl.focus();
       }
     };
   }, [mobileMenuOpen]);
@@ -186,12 +187,13 @@ export default function Header(): React.JSX.Element {
 
     document.addEventListener('keydown', handleKeyDown);
 
+    const triggerEl = searchTriggerRef.current;
     return () => {
       clearTimeout(timer);
       document.removeEventListener('keydown', handleKeyDown);
       // Restore focus to the trigger button that opened search modal
-      if (searchTriggerRef.current) {
-        searchTriggerRef.current.focus();
+      if (triggerEl) {
+        triggerEl.focus();
       }
     };
   }, [showSearchModal]);
