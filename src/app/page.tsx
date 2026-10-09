@@ -166,12 +166,6 @@ export default function HomePage(): React.JSX.Element {
                   sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
                   className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute top-2.5 left-2.5 sm:top-4 sm:left-4">
-                  <span className="bg-[#641C2D]/90 backdrop-blur-xs text-white text-[9px] sm:text-[10px] font-bold px-2 py-0.5 sm:px-2.5 sm:py-1 rounded uppercase tracking-wider">
-                    {model.tag}
-                  </span>
-                </div>
               </div>
               <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                 <div className="mb-2.5 sm:mb-3 border-b border-[#EDE3D5]/50 pb-2.5 sm:pb-3">
