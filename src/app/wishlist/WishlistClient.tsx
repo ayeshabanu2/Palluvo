@@ -42,7 +42,7 @@ export default function WishlistClient(): React.JSX.Element {
         </div>
       ) : (
         <div>
-          <p className="text-xs text-[#665E57] mb-6">
+          <p className="text-xs text-[#665E57] mb-6" role="status" aria-live="polite">
             Showing <strong className="text-[#2B211D]">{wishlistedProducts.length}</strong> saved saree(s)
           </p>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">

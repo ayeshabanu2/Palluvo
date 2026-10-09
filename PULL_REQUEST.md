@@ -232,6 +232,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P3] WCAG 4.1.2 PDP Gallery Thumbnail Selection Semantics:** Upgraded gallery thumbnail controls with explicit `type="button"`, dynamic `aria-current="true"` state to reflect the actively displayed main image, and grouped the thumbnails under a semantic `role="group"` with an `aria-label`.
 - [x] **[P2] WCAG 4.1.3 / 2.4.3 Contact Confirmation Live Region & Focus:** Added WAI-ARIA `role="status"` and `aria-live="polite"` to the contact form submission confirmation view, and used a `useEffect` hook to programmatically transfer keyboard focus to the "Inquiry Dispatched" heading.
 - [x] **[P3] WCAG 1.3.1 / 4.1.2 Category Navigation Active Semantics:** Conditionally bound `aria-current="page"` to the active category `<Link>` in the header's sub-navigation bar to clearly convey the active collection route to screen readers.
+- [x] **[P3] Design & Typography Polish:** Applied `tabular-nums` to all currency outputs and quantity indicators on the Cart page to ensure horizontally stable rendering without layout jitter during quantity or discount changes.
+- [x] **[P3] WCAG 4.1.3 Wishlist Live Region:** Added WAI-ARIA `role="status"` and `aria-live="polite"` to the wishlist items counter, ensuring assistive technology announces count decrements when a user removes a product.
 
 ---
 

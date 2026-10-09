@@ -88,7 +88,7 @@ export default function CartClient(): React.JSX.Element {
                       {item.sareeType} • Color: {item.selectedColor}
                     </p>
                     {item.blousePrice !== undefined && item.blousePrice > 0 ? (
-                      <p className="text-xs text-[#B08D57] font-medium mt-1">
+                      <p className="text-xs text-[#B08D57] font-medium mt-1 tabular-nums">
                         + {item.blouseOptionName} ({formatINR(item.blousePrice)})
                       </p>
                     ) : (
@@ -96,7 +96,7 @@ export default function CartClient(): React.JSX.Element {
                         ✓ Unstitched 0.8m Matching Blouse Included
                       </p>
                     )}
-                    <p className="text-xs font-bold text-[#641C2D] mt-2 sm:hidden">
+                    <p className="text-xs font-bold text-[#641C2D] mt-2 sm:hidden tabular-nums">
                       {formatINR((item.price + (item.blousePrice || 0)) * item.qty)}
                     </p>
                   </div>
@@ -113,7 +113,7 @@ export default function CartClient(): React.JSX.Element {
                     >
                       <Minus className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center">{item.qty}</span>
+                    <span className="text-xs font-bold px-1 text-[#2B211D] min-w-[20px] text-center tabular-nums">{item.qty}</span>
                     <button
                       type="button"
                       onClick={() => updateCartQty(item.id, item.qty + 1)}
@@ -125,7 +125,7 @@ export default function CartClient(): React.JSX.Element {
                   </div>
 
                   <div className="hidden sm:block text-right min-w-24">
-                    <span className="text-base font-bold text-[#641C2D]">
+                    <span className="text-base font-bold text-[#641C2D] tabular-nums">
                       {formatINR((item.price + (item.blousePrice || 0)) * item.qty)}
                     </span>
                   </div>
@@ -207,21 +207,21 @@ export default function CartClient(): React.JSX.Element {
               <div className="space-y-2 text-xs text-[#6D625D] pt-2 border-t border-[#EDE3D5]">
                 <div className="flex justify-between">
                   <span>Bag Subtotal</span>
-                  <span className="font-bold text-[#2B211D]">{formatINR(subtotal)}</span>
+                  <span className="font-bold text-[#2B211D] tabular-nums">{formatINR(subtotal)}</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-[#641C2D] font-medium">
                     <span>Privilege Discount</span>
-                    <span>-{formatINR(discountAmount)}</span>
+                    <span className="tabular-nums">-{formatINR(discountAmount)}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
                   <span>Standard Insured Shipping</span>
-                  <span>{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : formatINR(shippingFee)}</span>
+                  <span className="tabular-nums">{shippingFee === 0 ? <strong className="text-emerald-700">FREE</strong> : formatINR(shippingFee)}</span>
                 </div>
                 <div className="flex justify-between text-base font-bold text-[#2B211D] pt-3 border-t border-[#EDE3D5]">
                   <span>Total Amount</span>
-                  <span className="text-[#641C2D]">{formatINR(grandTotal)}</span>
+                  <span className="text-[#641C2D] tabular-nums">{formatINR(grandTotal)}</span>
                 </div>
                 <p className="text-[10px] text-[#665E57] text-right">Inclusive of all GST taxes</p>
               </div>
