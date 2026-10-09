@@ -418,7 +418,6 @@ export default function Header(): React.JSX.Element {
                     className="hover:text-[#641C2D] py-1 border-b border-[#EDE3D5]/50 flex items-center justify-between"
                   >
                     <span>{model.name}</span>
-                    <span className="text-[11px] text-[#665E57] lowercase font-serif italic">{model.region}</span>
                   </Link>
                 ))}
                 <Link href="/about" onClick={() => setMobileMenuOpen(false)} className="hover:text-[#641C2D] py-1">
