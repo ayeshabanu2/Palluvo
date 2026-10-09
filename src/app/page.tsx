@@ -53,7 +53,7 @@ export default function HomePage(): React.JSX.Element {
 
         {/* Responsive Grid Container */}
         <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-10 lg:gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 lg:gap-12 items-center">
             
             {/* Mobile View: Dedicated Image Grid Card */}
             <div className="lg:hidden w-full order-1">
@@ -77,7 +77,7 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             {/* Editorial Text Column (renders in grid below image on mobile, left column on desktop) */}
-            <div className="w-full order-2 flex flex-col items-start text-left text-white mx-auto lg:mx-0 lg:max-w-2xl pt-2 sm:pt-4">
+            <div className="w-full order-2 flex flex-col items-start text-left text-white mx-auto lg:mx-0 lg:max-w-2xl pt-0 lg:pt-4">
               {/* Desktop-only Editorial Collection Pill (mobile already carries campaign badge in the image card) */}
               <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
                 <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
