@@ -230,6 +230,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P3] WCAG 1.3.1 / 4.1.3 Toast Notification Semantics:** Upgraded Toast component to support message types (success, error, warning) conditionally rendering an AlertTriangle icon, role="alert", and aria-live="assertive" for errors.
 - [x] **[P3] WCAG 1.3.1 / 4.1.2 Header Dynamic Counts & Dialog Popup Semantics:** Updated `aria-label` attributes on Wishlist and Shopping Bag controls to dynamically announce current item counts to screen readers; added `aria-haspopup="dialog"` to the Shopping Bag button.
 - [x] **[P3] WCAG 4.1.2 PDP Gallery Thumbnail Selection Semantics:** Upgraded gallery thumbnail controls with explicit `type="button"`, dynamic `aria-current="true"` state to reflect the actively displayed main image, and grouped the thumbnails under a semantic `role="group"` with an `aria-label`.
+- [x] **[P2] WCAG 4.1.3 / 2.4.3 Contact Confirmation Live Region & Focus:** Added WAI-ARIA `role="status"` and `aria-live="polite"` to the contact form submission confirmation view, and used a `useEffect` hook to programmatically transfer keyboard focus to the "Inquiry Dispatched" heading.
+- [x] **[P3] WCAG 1.3.1 / 4.1.2 Category Navigation Active Semantics:** Conditionally bound `aria-current="page"` to the active category `<Link>` in the header's sub-navigation bar to clearly convey the active collection route to screen readers.
 
 ---
 

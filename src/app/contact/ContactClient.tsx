@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
@@ -22,6 +22,13 @@ export default function ContactClient(): React.JSX.Element {
     subject: 'Styling Assistance',
     message: ''
   });
+  const confirmationRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (submitted && confirmationRef.current) {
+      confirmationRef.current.focus();
+    }
+  }, [submitted]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -83,11 +90,17 @@ export default function ContactClient(): React.JSX.Element {
         {/* Message Form */}
         <div className="lg:col-span-2 bg-white p-6 sm:p-8 rounded-2xl border border-[#EDE3D5] shadow-xs">
           {submitted ? (
-            <div className="text-center py-12 space-y-4">
+            <div className="text-center py-12 space-y-4" role="status" aria-live="polite">
               <div className="w-14 h-14 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto">
                 <CheckCircle2 className="w-7 h-7" />
               </div>
-              <h3 className="font-serif text-2xl font-bold text-[#2B211D]">Inquiry Dispatched</h3>
+              <h3 
+                ref={confirmationRef} 
+                tabIndex={-1} 
+                className="font-serif text-2xl font-bold text-[#2B211D] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] rounded"
+              >
+                Inquiry Dispatched
+              </h3>
               <p className="text-xs text-[#6D625D] max-w-md mx-auto">
                 Thank you for contacting PALLUVO. Our dedicated saree stylist will review your request and get back to you within 4 business hours.
               </p>

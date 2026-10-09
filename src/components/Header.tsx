@@ -55,6 +55,7 @@ function CategoryNav(): React.JSX.Element {
           <Link
             key={item.label}
             href={item.href}
+            aria-current={active ? 'page' : undefined}
             className={`transition shrink-0 whitespace-nowrap pb-0.5 border-b-2 ${
               active
                 ? 'text-[#641C2D] border-[#641C2D] font-bold'
