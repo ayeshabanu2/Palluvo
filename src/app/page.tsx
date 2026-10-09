@@ -172,22 +172,21 @@ export default function HomePage(): React.JSX.Element {
                     {model.tag}
                   </span>
                 </div>
-                <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-4 sm:left-4 sm:right-4 text-white">
-                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium block truncate">
+              </div>
+              <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
+                <div className="mb-2.5 sm:mb-3 border-b border-[#EDE3D5]/50 pb-2.5 sm:pb-3">
+                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#B08D57] font-bold block truncate">
                     <span className="sm:hidden">{model.shortRegion || model.region}</span>
                     <span className="hidden sm:inline">{model.region}</span>
                   </span>
-                  <h3 className="font-serif text-base sm:text-2xl font-bold mt-0.5 sm:mt-1 text-white leading-tight line-clamp-1">
+                  <h3 className="font-serif text-base sm:text-xl font-bold mt-0.5 sm:mt-1 text-[#2B211D] leading-tight line-clamp-1">
                     {model.name}
                   </h3>
-                  <p className="text-[10px] sm:text-xs text-[#EDE3D5]/90 line-clamp-2 mt-0.5 font-light leading-snug">
+                  <p className="text-[10px] sm:text-xs text-[#6D625D] line-clamp-2 mt-0.5 font-medium leading-snug">
                     <span className="sm:hidden">{model.shortSubtitle || model.subtitle}</span>
                     <span className="hidden sm:inline">{model.subtitle}</span>
                   </p>
                 </div>
-              </div>
-
-              <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
                 <p className="text-[11px] sm:text-xs text-[#6D625D] leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
                   {model.desc}
                 </p>
