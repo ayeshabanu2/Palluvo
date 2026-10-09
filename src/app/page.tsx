@@ -112,7 +112,7 @@ export default function HomePage(): React.JSX.Element {
                         aria-label={`Shop ${saree.name}`}
                       >
                         <Image
-                          src={saree.images[0]}
+                          src={`/${saree.images[0]}`}
                           alt={saree.name}
                           fill
                           sizes="96px"
