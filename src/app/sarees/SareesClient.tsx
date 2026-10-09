@@ -310,7 +310,7 @@ export default function SareesClient() {
           {/* Saree Type / Model Filter */}
           <div>
             <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2.5">
-              Saree Weave / Model
+              Choose Category
             </label>
             <div className="space-y-1 text-xs">
               <button
@@ -340,7 +340,7 @@ export default function SareesClient() {
           {/* Occasion Filter */}
           <div className="pt-4 border-t border-[#EDE3D5]">
             <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2.5">
-              Occasion
+              Choose Occasion
             </label>
             <div className="flex flex-wrap gap-1.5">
               {['All', 'Wedding', 'Bridal', 'Festive', 'Party Wear', 'Office Wear', 'Traditional'].map((occ) => (
@@ -360,10 +360,33 @@ export default function SareesClient() {
             </div>
           </div>
 
+          {/* Fabric Filter */}
+          <div className="pt-4 border-t border-[#EDE3D5]">
+            <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2.5">
+              Choose Fabric
+            </label>
+            <div className="flex flex-wrap gap-1.5">
+              {fabrics.map((fab) => (
+                <button
+                  key={fab}
+                  onClick={() => setSelectedFabric(fab)}
+                  aria-pressed={selectedFabric === fab}
+                  className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
+                    selectedFabric === fab
+                      ? 'bg-[#641C2D] text-white border-[#641C2D]'
+                      : 'border-[#EDE3D5] text-[#6D625D] hover:border-[#B08D57]'
+                  }`}
+                >
+                  {fab}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Price Range Filter */}
           <div className="pt-4 border-t border-[#EDE3D5]">
             <div className="flex justify-between text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2">
-              <span>Max Price</span>
+              <span>Set Price Range</span>
               <span className="text-[#641C2D]">₹{priceRange.toLocaleString('en-IN')}</span>
             </div>
             <input
@@ -518,7 +541,7 @@ export default function SareesClient() {
             {/* Saree Type */}
             <div>
               <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2">
-                Saree Type
+                Choose Category
               </label>
               <select
                 value={selectedType}
@@ -535,7 +558,7 @@ export default function SareesClient() {
             {/* Occasion */}
             <div>
               <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2">
-                Occasion
+                Choose Occasion
               </label>
               <select
                 value={selectedOccasion}
@@ -548,10 +571,26 @@ export default function SareesClient() {
               </select>
             </div>
 
+            {/* Fabric */}
+            <div>
+              <label className="block text-xs font-bold text-[#2B211D] uppercase tracking-wider mb-2">
+                Choose Fabric
+              </label>
+              <select
+                value={selectedFabric}
+                onChange={(e) => setSelectedFabric(e.target.value)}
+                className="w-full p-2 border border-[#EDE3D5] rounded text-xs focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+              >
+                {fabrics.map((fab) => (
+                  <option key={fab} value={fab}>{fab}</option>
+                ))}
+              </select>
+            </div>
+
             {/* Max Price */}
             <div>
               <div className="flex justify-between text-xs font-bold uppercase mb-2">
-                <span>Max Price</span>
+                <span>Set Price Range</span>
                 <span>₹{priceRange.toLocaleString('en-IN')}</span>
               </div>
               <input
