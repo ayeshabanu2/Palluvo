@@ -37,6 +37,7 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
 
         {/* Wishlist Button - 44x44px touch target, product-specific label, and aria-pressed */}
         <button
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             toggleWishlist(product.id);
@@ -52,6 +53,8 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
         {/* Quick Action Overlay (Touch-visible, Keyboard focus-within & Desktop hover) */}
         <div className="absolute inset-x-0 bottom-0 p-1.5 xs:p-2 sm:p-3 bg-gradient-to-t from-black/70 via-black/40 to-transparent flex items-center justify-between gap-1.5 sm:gap-2 transition-transform duration-300 md:translate-y-full md:group-hover:translate-y-0 md:group-focus-within:translate-y-0 focus-within:translate-y-0 z-10">
           <button
+            type="button"
+            aria-haspopup="dialog"
             onClick={() => {
               addToCart(product.id);
               setIsCartOpen(true);
@@ -63,6 +66,8 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
             <span className="truncate"><span className="hidden xs:inline">Quick </span>Add</span>
           </button>
           <button
+            type="button"
+            aria-haspopup="dialog"
             onClick={() => setQuickViewProduct(product)}
             className="w-11 h-11 min-w-[44px] min-h-[44px] shrink-0 rounded-full bg-white/95 text-[#2B211D] hover:bg-[#641C2D] hover:text-white focus:bg-[#641C2D] focus:text-white flex items-center justify-center transition shadow-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white"
             aria-label={`Quick view details for ${product.name}`}

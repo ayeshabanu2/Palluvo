@@ -278,6 +278,7 @@ export default function SareesClient() {
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
+              aria-label="Sort sarees catalog"
               className="bg-[#F8F5EF] border border-[#EDE3D5] rounded-full px-3 py-2 text-xs text-[#2B211D] font-medium focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
             >
               <option value="featured">Featured Collection</option>
@@ -371,6 +372,8 @@ export default function SareesClient() {
               step="500"
               value={priceRange}
               onChange={(e) => setPriceRange(Number(e.target.value))}
+              aria-label="Filter sarees by maximum price"
+              aria-valuetext={`₹${priceRange.toLocaleString('en-IN')}`}
               className="w-full accent-[#641C2D] cursor-pointer"
             />
           </div>
@@ -557,6 +560,8 @@ export default function SareesClient() {
                 step="500"
                 value={priceRange}
                 onChange={(e) => setPriceRange(Number(e.target.value))}
+                aria-label="Filter sarees by maximum price"
+                aria-valuetext={`₹${priceRange.toLocaleString('en-IN')}`}
                 className="w-full accent-[#641C2D]"
               />
             </div>
