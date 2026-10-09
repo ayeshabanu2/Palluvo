@@ -219,7 +219,7 @@ export default function Header(): React.JSX.Element {
   return (
     <>
       {/* Top Luxury Announcement Bar */}
-      <aside aria-label="Announcement" className="bg-[#2B211D] text-[#D6B878] text-[11px] sm:text-xs py-1.5 sm:py-2 px-2 sm:px-4 tracking-wider text-center flex items-center justify-center gap-1.5 sm:gap-2 border-b border-[#3D302A] overflow-hidden whitespace-nowrap">
+      <aside aria-label="Announcement" className="hidden sm:flex bg-[#2B211D] text-[#D6B878] text-[11px] sm:text-xs py-1.5 sm:py-2 px-2 sm:px-4 tracking-wider text-center items-center justify-center gap-1.5 sm:gap-2 border-b border-[#3D302A] overflow-hidden whitespace-nowrap">
         <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-[#B08D57] animate-pulse shrink-0" />
         <Link href="/sarees?occasion=Festive" className="font-semibold hover:underline text-[#D6B878] transition shrink-0">
           THE FESTIVE EDIT
@@ -323,7 +323,7 @@ export default function Header(): React.JSX.Element {
                 href="/account"
                 aria-label="Account"
                 title="Account"
-                className="hidden sm:flex items-center gap-1.5 px-3 min-h-[44px] text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition rounded-full"
+                className="hidden lg:flex items-center gap-1.5 px-3 min-h-[44px] text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition rounded-full"
               >
                 <User className="w-5 h-5" />
                 <span className="hidden xl:inline">Account</span>
@@ -344,7 +344,7 @@ export default function Header(): React.JSX.Element {
 
               <button
                 onClick={() => setIsCartOpen(true)}
-                className="relative w-11 h-11 min-w-[44px] min-h-[44px] sm:w-auto sm:min-w-0 sm:h-11 sm:px-4 flex items-center justify-center sm:gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white rounded-full transition shadow-sm cursor-pointer shrink-0"
+                className="hidden lg:flex relative w-11 h-11 min-w-[44px] min-h-[44px] sm:w-auto sm:min-w-0 sm:h-11 sm:px-4 items-center justify-center sm:gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white rounded-full transition shadow-sm cursor-pointer shrink-0"
                 aria-label={totalCartCount > 0 ? `Shopping bag (${totalCartCount} items)` : "Shopping bag"}
                 aria-haspopup="dialog"
               >
