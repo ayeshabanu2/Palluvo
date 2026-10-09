@@ -270,28 +270,6 @@ export default function HomePage(): React.JSX.Element {
       </section>
 
 
-      {/* TRUST ASSURANCES BAND (Moved to end) */}
-      <section className="border-y border-[#EDE3D5] bg-[#F8F5EF] py-8 sm:py-10 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-center gap-4 md:gap-8 text-sm sm:text-base text-[#2B211D]">
-            <div className="flex items-center gap-3 whitespace-nowrap">
-              <ShieldCheck className="w-5 h-5 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Silk Mark Certified Purity</span>
-            </div>
-            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
-            <div className="flex items-center gap-3 whitespace-nowrap">
-              <HeartHandshake className="w-5 h-5 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Direct from Master Weavers</span>
-            </div>
-            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
-            <div className="flex items-center gap-3 whitespace-nowrap">
-              <Scissors className="w-5 h-5 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Custom Blouse Tailoring</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 }
