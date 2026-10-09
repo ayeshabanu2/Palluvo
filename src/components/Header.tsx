@@ -261,12 +261,12 @@ export default function Header(): React.JSX.Element {
             </div>
 
             {/* Brand Logo & Tagline */}
-            <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-0.5 xs:px-1">
+            <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-0.5 xs:px-1 flex justify-center">
               <Link href="/" className="inline-block group max-w-full">
-                <span className="font-serif text-[20px] xs:text-[26px] sm:text-4xl tracking-[0.10em] xs:tracking-[0.16em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight">
+                <span className="font-serif text-[18px] xs:text-[22px] sm:text-4xl tracking-[0.08em] xs:tracking-[0.12em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight w-full truncate">
                   PALLUVO
                 </span>
-                <span className="text-[7px] xs:text-[7.5px] sm:text-[9px] md:text-[11px] tracking-[0.02em] xs:tracking-[0.04em] sm:tracking-[0.14em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold whitespace-normal sm:whitespace-nowrap leading-tight">
+                <span className="text-[6.5px] xs:text-[7.5px] sm:text-[9px] md:text-[11px] tracking-[0.01em] xs:tracking-[0.04em] sm:tracking-[0.14em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold whitespace-nowrap leading-tight truncate max-w-full">
                   Every drape, a little magic.
                 </span>
               </Link>

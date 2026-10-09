@@ -57,7 +57,7 @@ export default function HomePage(): React.JSX.Element {
             
             {/* Mobile View: Dedicated Image Grid Card */}
             <div className="lg:hidden w-full order-1">
-              <div className="relative rounded-2xl overflow-hidden aspect-[4/5] sm:aspect-[16/10] shadow-2xl border border-[#D6B878]/30 bg-[#241B17] max-w-md mx-auto">
+              <div className="relative rounded-[16px] overflow-hidden aspect-[4/5] sm:aspect-[3/4] shadow-2xl border border-[#D6B878]/30 bg-[#241B17] w-full max-w-md mx-auto">
                 <Image
                   src="/images/hero_campaign.jpg"
                   alt="Model draped in an emerald green handloom silk saree with gold zari border in a sandstone palace courtyard"
@@ -66,10 +66,10 @@ export default function HomePage(): React.JSX.Element {
                   sizes="(max-width: 640px) 100vw, 448px"
                   className="object-cover object-[75%_center]"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent pointer-events-none" />
-                <div className="absolute bottom-3 left-3 sm:bottom-4 sm:left-4 bg-[#2B211D]/85 backdrop-blur-md border border-[#D6B878]/40 px-3 py-1.5 rounded-full flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-[#D6B878] animate-pulse" />
-                  <span className="text-[10px] xs:text-[11px] uppercase tracking-wider text-[#D6B878] font-medium">
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent pointer-events-none" />
+                <div className="absolute bottom-4 left-4 right-4 mx-auto w-max bg-[#2B211D]/85 backdrop-blur-md border border-[#D6B878]/40 px-4 py-2 rounded-full flex items-center gap-2 max-w-[calc(100%-32px)]">
+                  <span className="w-2 h-2 rounded-full bg-[#D6B878] animate-pulse shrink-0" />
+                  <span className="text-[10px] sm:text-xs uppercase tracking-wider text-[#D6B878] font-bold truncate">
                     Autumn / Festive 2026 Drape
                   </span>
                 </div>
@@ -77,35 +77,35 @@ export default function HomePage(): React.JSX.Element {
             </div>
 
             {/* Editorial Text Column (renders in grid below image on mobile, left column on desktop) */}
-            <div className="max-w-sm sm:max-w-md md:max-w-md lg:max-w-2xl text-left text-white mx-auto lg:mx-0 w-full order-2">
+            <div className="w-full order-2 flex flex-col items-start text-left text-white mx-auto lg:mx-0 lg:max-w-2xl pt-2 sm:pt-4">
               {/* Desktop-only Editorial Collection Pill (mobile already carries campaign badge in the image card) */}
-              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md max-w-full">
+              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
                 <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
                 <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
                   Autumn / Festive 2026 Collection
                 </span>
               </div>
 
-              <h1 className="font-serif text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-[1.15] drop-shadow-sm">
-                Every drape, <br />
+              <h1 className="font-serif text-[32px] xs:text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-[1.2] lg:leading-[1.15] drop-shadow-sm w-full">
+                Every drape, <br className="hidden sm:block" />
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
               </h1>
 
-              <p className="text-sm sm:text-base text-[#EDE3D5] font-light tracking-wide leading-relaxed mb-6 sm:mb-8 max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg">
+              <p className="text-[15px] sm:text-base text-[#EDE3D5] font-light tracking-wide leading-[1.6] mb-6 sm:mb-8 w-full">
                 India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
                 Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
               </p>
 
-              <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3.5 sm:gap-4 max-w-xs sm:max-w-sm lg:max-w-none">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full">
                 <Link
                   href="/sarees"
-                  className="w-full sm:w-auto max-w-xs sm:max-w-none bg-[#641C2D] hover:bg-[#7A3043] text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-2xl flex items-center justify-center gap-2 border border-[#8B1E2B] whitespace-nowrap min-h-[48px]"
+                  className="w-full sm:w-auto bg-[#641C2D] hover:bg-[#7A3043] text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-xl flex items-center justify-center gap-2 border border-[#8B1E2B] min-h-[48px]"
                 >
                   Shop Curated Collection <ArrowRight className="w-4 h-4" />
                 </Link>
                 <a
                   href="#signature-models"
-                  className="w-full sm:w-auto max-w-xs sm:max-w-none bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-7 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center whitespace-nowrap min-h-[48px]"
+                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center min-h-[48px]"
                 >
                   Explore Top Models
                 </a>
