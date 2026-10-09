@@ -189,7 +189,7 @@ export default function SareesClient() {
       {/* Editorial Luxury Catalog Hero Banner with Saree Photo Background */}
 
       {/* Control Bar: Search, Count, Mobile Filter Button, Sort Dropdown */}
-      <div className="relative z-20 bg-white p-4 rounded-xl border border-[#EDE3D5] shadow-xs mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="relative z-20 mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Search input in catalog */}
         <div className="relative w-full md:w-80">
           <label htmlFor="catalogSearchInput" className="sr-only">
@@ -205,15 +205,6 @@ export default function SareesClient() {
             className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
           />
           <Search className="w-3.5 h-3.5 text-[#665E57] absolute left-3.5 top-3 pointer-events-none" aria-hidden="true" />
-        </div>
-
-        {/* Results Counter */}
-        <div
-          className="text-xs text-[#665E57] font-medium"
-          aria-live="polite"
-          aria-atomic="true"
-        >
-          Showing <span className="text-[#2B211D] font-bold tabular-nums">{filteredSarees.length}</span> sarees
         </div>
 
         {/* Mobile filter toggle & Sort */}
