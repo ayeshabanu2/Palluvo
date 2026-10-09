@@ -31,6 +31,8 @@ export default function HomePage(): React.JSX.Element {
     SAREE_PRODUCTS[4]   // Traditional Paithani
   ].filter((s): s is SareeProduct => Boolean(s));
 
+  const newCollectionSarees: SareeProduct[] = SAREE_PRODUCTS.slice(5, 13);
+
   return (
     <div className="space-y-12 sm:space-y-16 pb-0">
       
@@ -130,60 +132,18 @@ export default function HomePage(): React.JSX.Element {
       </section>
 
 
-      {/* 3. THE TOP SAREE MODELS (Signature 8 Curation) */}
-      <section id="signature-models" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 sm:scroll-mt-36">
+      {/* 2. NEW COLLECTION */}
+      <section id="new-collection" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 sm:scroll-mt-36 pt-12 sm:pt-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
-            The Top Saree Models
+            New Collection
           </h2>
           <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
-          {PALLUVO_TOP_MODELS.map((model) => (
-            <Link
-              key={model.id}
-              href={`/sarees?type=${encodeURIComponent(model.filterType)}`}
-              className="group relative rounded-xl overflow-hidden bg-white border border-[#EDE3D5] shadow-xs hover:shadow-2xl transition-all duration-500 flex flex-col"
-            >
-              <div className="relative aspect-[4/5] overflow-hidden bg-[#EDE3D5]">
-                <Image
-                  src={`/${model.image}`}
-                  alt={model.name}
-                  fill
-                  sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 300px"
-                  className="object-cover object-top transition-transform duration-700 group-hover:scale-105"
-                />
-              </div>
-              <div className="p-3 sm:p-5 flex-1 flex flex-col justify-between">
-                <div className="mb-2.5 sm:mb-3 border-b border-[#EDE3D5]/50 pb-2.5 sm:pb-3">
-                  <span className="text-[9px] sm:text-[11px] uppercase tracking-wider text-[#B08D57] font-bold block truncate">
-                    <span className="sm:hidden">{model.shortRegion || model.region}</span>
-                    <span className="hidden sm:inline">{model.region}</span>
-                  </span>
-                  <h3 className="font-serif text-base sm:text-xl font-bold mt-0.5 sm:mt-1 text-[#2B211D] leading-tight line-clamp-1">
-                    {model.name}
-                  </h3>
-                  <p className="text-[10px] sm:text-xs text-[#6D625D] line-clamp-2 mt-0.5 font-medium leading-snug">
-                    <span className="sm:hidden">{model.shortSubtitle || model.subtitle}</span>
-                    <span className="hidden sm:inline">{model.subtitle}</span>
-                  </p>
-                </div>
-                <p className="text-[11px] sm:text-xs text-[#6D625D] leading-relaxed mb-3 sm:mb-4 line-clamp-2 sm:line-clamp-none">
-                  {model.desc}
-                </p>
-                <div className="flex flex-wrap sm:flex-nowrap items-center justify-between gap-x-2 gap-y-1.5 text-[10px] sm:text-xs pt-2.5 sm:pt-3 border-t border-[#EDE3D5] text-[#2B211D]">
-                  <span className="text-[#665E57] font-semibold flex items-center gap-1.5 shrink-0">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] shrink-0" aria-hidden="true" />
-                    <span className="sm:hidden">{model.shortArtisanHours || model.artisanHours}</span>
-                    <span className="hidden sm:inline">{model.artisanHours}</span>
-                  </span>
-                  <span className="font-semibold uppercase tracking-wider text-[#641C2D] group-hover:translate-x-1 transition-transform flex items-center gap-0.5 sm:gap-1 shrink-0 ml-auto sm:ml-0">
-                    Explore <span className="hidden sm:inline">Drapes</span> <ArrowRight className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                  </span>
-                </div>
-              </div>
-            </Link>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
+          {newCollectionSarees.map((saree) => (
+            <ProductCard key={saree.id} product={saree} />
           ))}
         </div>
       </section>
