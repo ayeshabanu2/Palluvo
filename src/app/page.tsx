@@ -32,7 +32,7 @@ export default function HomePage(): React.JSX.Element {
   ].filter((s): s is SareeProduct => Boolean(s));
 
   return (
-    <div className="space-y-20 pb-20">
+    <div className="space-y-12 sm:space-y-16 pb-0">
       
       {/* 1. EDITORIAL HERO SECTION */}
       <section className="relative bg-[#2B211D] text-white overflow-hidden lg:min-h-[85vh] lg:flex lg:items-center">
