@@ -4,6 +4,18 @@ import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 
+function getSafeRedirect(rawRedirect: unknown): string {
+  if (typeof rawRedirect !== 'string') {
+    return '/account'
+  }
+  const trimmed = rawRedirect.trim()
+  // Reject empty string, protocol-relative (//example.com), absolute URLs (http:// or https:// or javascript:), and null-byte/control characters
+  if (!trimmed.startsWith('/') || trimmed.startsWith('//') || trimmed.includes('\\') || trimmed.includes(':')) {
+    return '/account'
+  }
+  return trimmed
+}
+
 export async function login(formData: FormData) {
   const supabase = await createClient()
 
@@ -20,7 +32,7 @@ export async function login(formData: FormData) {
 
   revalidatePath('/', 'layout')
   
-  const redirectTo = formData.get('redirect') as string || '/account'
+  const redirectTo = getSafeRedirect(formData.get('redirect'))
   redirect(redirectTo)
 }
 
@@ -44,7 +56,7 @@ export async function signup(formData: FormData) {
   }
 
   revalidatePath('/', 'layout')
-  const redirectTo = formData.get('redirect') as string || '/account'
+  const redirectTo = getSafeRedirect(formData.get('redirect'))
   redirect(redirectTo)
 }
 
@@ -55,3 +67,4 @@ export async function logout() {
   revalidatePath('/', 'layout')
   redirect('/')
 }
+

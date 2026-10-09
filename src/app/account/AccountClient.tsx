@@ -9,6 +9,7 @@ import { formatINR } from '@/utils/format';
 
 import { LogOut } from 'lucide-react';
 import { logout } from '../login/actions';
+import { PlacedOrder } from '@/types';
 
 type AccountTab = 'orders' | 'addresses';
 
@@ -16,19 +17,59 @@ interface AccountClientProps {
   userEmail?: string;
   userId?: string;
   userName?: string;
+  serverOrders?: PlacedOrder[] | null;
 }
 
-export default function AccountClient({ userEmail, userId, userName }: AccountClientProps): React.JSX.Element {
-  const { wishlist, orders } = useStore();
+export default function AccountClient({ userEmail, userId, userName, serverOrders }: AccountClientProps): React.JSX.Element {
+  const { wishlist } = useStore();
   const [activeTab, setActiveTab] = useState<AccountTab>('orders');
+
+  // Load account-scoped orders: prefer server-side RLS records; fallback to per-user partitioned storage
+  const [userOrders, setUserOrders] = useState<PlacedOrder[]>(() => {
+    if (serverOrders && Array.isArray(serverOrders)) {
+      return serverOrders;
+    }
+    if (typeof window !== 'undefined' && userId) {
+      try {
+        const scopedKey = `palluvo_orders_${userId}`;
+        const saved = localStorage.getItem(scopedKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) return parsed;
+        }
+      } catch {}
+    }
+    return [];
+  });
+
+  // Keep in sync with user-partitioned storage or server changes
+  React.useEffect(() => {
+    if (serverOrders && Array.isArray(serverOrders)) {
+      setUserOrders(serverOrders);
+    } else if (userId) {
+      try {
+        const scopedKey = `palluvo_orders_${userId}`;
+        const saved = localStorage.getItem(scopedKey);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed)) setUserOrders(parsed);
+        } else {
+          setUserOrders([]);
+        }
+      } catch {}
+    } else {
+      setUserOrders([]);
+    }
+  }, [serverOrders, userId]);
 
   const customerName = userName || 'PALLUVO Guest';
   const customerEmail = userEmail || 'guest@example.com';
-  const customerPhone = '+91 98765 43210'; // Would be fetched from profile
+  const customerPhone = '+91 98765 43210';
   const customerAddress = {
     street: 'Add a new address to place orders',
     cityStatePin: ''
   };
+
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -64,7 +105,7 @@ export default function AccountClient({ userEmail, userId, userName }: AccountCl
                 activeTab === 'orders' ? 'bg-[#641C2D] text-white' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
               }`}
             >
-              <Package className="w-4 h-4" /> My Orders ({orders.length})
+              <Package className="w-4 h-4" /> My Orders ({userOrders.length})
             </button>
             <button
               id="tab-addresses"
@@ -89,7 +130,15 @@ export default function AccountClient({ userEmail, userId, userName }: AccountCl
               </Link>
               
               <button
-                onClick={() => logout()}
+                onClick={async () => {
+                  try {
+                    localStorage.removeItem('palluvo_orders');
+                    if (userId) {
+                      localStorage.removeItem(`palluvo_orders_${userId}`);
+                    }
+                  } catch {}
+                  await logout();
+                }}
                 className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-red-700 hover:bg-red-50 transition"
               >
                 <LogOut className="w-4 h-4" /> Sign Out
@@ -103,7 +152,7 @@ export default function AccountClient({ userEmail, userId, userName }: AccountCl
             <div id="panel-orders" role="tabpanel" aria-labelledby="tab-orders" className="space-y-4">
               <h2 className="font-serif text-xl font-bold text-[#2B211D]">Recent Orders</h2>
               
-              {orders.length === 0 ? (
+              {userOrders.length === 0 ? (
                 <div className="bg-white p-8 rounded-xl border border-[#EDE3D5] text-center space-y-3">
                   <Package className="w-10 h-10 text-[#B08D57] mx-auto opacity-70" />
                   <h3 className="font-serif text-lg font-bold text-[#2B211D]">No Orders Placed Yet</h3>
@@ -116,7 +165,7 @@ export default function AccountClient({ userEmail, userId, userName }: AccountCl
                   </Link>
                 </div>
               ) : (
-                orders.map((order) => (
+                userOrders.map((order) => (
                   <div key={order.id} className="bg-white p-6 rounded-xl border border-[#EDE3D5] shadow-xs space-y-4">
                     <div className="flex flex-wrap items-center justify-between text-xs pb-3 border-b border-[#EDE3D5] gap-2">
                       <div>

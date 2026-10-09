@@ -44,10 +44,28 @@ export default async function AccountPage() {
     return <AccountPortal />;
   }
 
-  // Pass user details down to AccountClient (will need to update AccountClient props)
-  return <AccountClient 
-    userEmail={user.email} 
-    userId={user.id} 
-    userName={user.user_metadata?.full_name} 
-  />;
+  // Attempt to fetch server-side orders scoped to this authenticated user via RLS
+  let initialOrders = null;
+  try {
+    const { data: serverOrders, error } = await supabase
+      .from('orders')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (!error && serverOrders) {
+      initialOrders = serverOrders;
+    }
+  } catch {
+    // If Supabase table is not provisioned, AccountClient will partition client storage by userId
+  }
+
+  return (
+    <AccountClient 
+      userEmail={user.email} 
+      userId={user.id} 
+      userName={user.user_metadata?.full_name} 
+      serverOrders={initialOrders}
+    />
+  );
 }
