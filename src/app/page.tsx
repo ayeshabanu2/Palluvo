@@ -87,7 +87,7 @@ export default function HomePage(): React.JSX.Element {
               </div>
 
               <h1 className="font-serif text-[32px] xs:text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-[1.2] lg:leading-[1.15] drop-shadow-sm w-full">
-                Every drape, <br className="hidden sm:block" />
+                Every drape, <br />
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
               </h1>
 
