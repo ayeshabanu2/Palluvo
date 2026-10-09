@@ -95,7 +95,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const [orders, setOrders] = useState<PlacedOrder[]>(INITIAL_ORDERS);
   const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
   const [quickViewProduct, setQuickViewProduct] = useState<SareeProduct | null>(null);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<{ text: string; type: 'success' | 'error' | 'warning' } | null>(null);
 
   // Load from localStorage on mount
   useEffect(() => {
@@ -125,10 +125,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
-  const showToast = useCallback((msg: string) => {
-    setToastMessage(msg);
+  const showToast = useCallback((msg: string, type: 'success' | 'error' | 'warning' = 'success') => {
+    setToastMessage({ text: msg, type });
     setTimeout(() => {
-      setToastMessage((current) => (current === msg ? null : current));
+      setToastMessage((current) => (current?.text === msg ? null : current));
     }, 3500);
   }, []);
 
@@ -252,6 +252,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       showToast('Coupon applied: ₹500 Off!');
       return { success: true, message: '₹500 welcome discount applied!' };
     }
+    showToast('Invalid or expired promo code.', 'error');
     return { success: false, message: 'Invalid or expired promo code.' };
   }, [showToast]);
 

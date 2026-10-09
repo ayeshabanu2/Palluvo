@@ -36,6 +36,7 @@ export default function CheckoutClient(): React.JSX.Element {
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [orderNumber, setOrderNumber] = useState<string>('');
+  const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
   
   const confirmationRef = useRef<HTMLHeadingElement>(null);
 
@@ -51,10 +52,28 @@ export default function CheckoutClient(): React.JSX.Element {
 
   const handlePlaceOrder = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!formData.firstName || !formData.email || !formData.phone || !formData.address || !formData.pincode) {
-      showToast('Please fill all mandatory shipping details.');
+    
+    const errors: Partial<Record<keyof CheckoutFormData, string>> = {};
+    if (!formData.firstName) errors.firstName = "First name is required";
+    if (!formData.email) errors.email = "Email address is required";
+    if (!formData.phone) errors.phone = "Mobile number is required";
+    if (!formData.address) errors.address = "Street address is required";
+    if (!formData.city) errors.city = "City is required";
+    if (!formData.pincode) errors.pincode = "PIN code is required";
+
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      showToast('Please fill all mandatory shipping details.', 'error');
+      
+      const firstInvalidField = Object.keys(errors)[0];
+      const element = document.getElementById(`checkout-${firstInvalidField}`);
+      if (element) {
+        element.focus();
+      }
       return;
     }
+    
+    setFormErrors({});
 
     const generatedOrder = 'PLV-' + Math.floor(100000 + Math.random() * 900000);
     setOrderNumber(generatedOrder);
@@ -176,8 +195,13 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="given-name"
                     value={formData.firstName}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-invalid={formErrors.firstName ? "true" : "false"}
+                    aria-describedby={formErrors.firstName ? "checkout-firstName-error" : undefined}
+                    className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.firstName ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                   />
+                  {formErrors.firstName && (
+                    <p id="checkout-firstName-error" className="text-red-600 text-[10px] mt-1">{formErrors.firstName}</p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="checkout-lastName" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
@@ -208,8 +232,13 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="email"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-invalid={formErrors.email ? "true" : "false"}
+                    aria-describedby={formErrors.email ? "checkout-email-error" : undefined}
+                    className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.email ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                   />
+                  {formErrors.email && (
+                    <p id="checkout-email-error" className="text-red-600 text-[10px] mt-1">{formErrors.email}</p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="checkout-phone" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
@@ -225,8 +254,13 @@ export default function CheckoutClient(): React.JSX.Element {
                     value={formData.phone}
                     onChange={handleChange}
                     placeholder="+91 98765 43210"
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-invalid={formErrors.phone ? "true" : "false"}
+                    aria-describedby={formErrors.phone ? "checkout-phone-error" : undefined}
+                    className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.phone ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                   />
+                  {formErrors.phone && (
+                    <p id="checkout-phone-error" className="text-red-600 text-[10px] mt-1">{formErrors.phone}</p>
+                  )}
                 </div>
               </div>
 
@@ -242,8 +276,13 @@ export default function CheckoutClient(): React.JSX.Element {
                   autoComplete="street-address"
                   value={formData.address}
                   onChange={handleChange}
-                  className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                  aria-invalid={formErrors.address ? "true" : "false"}
+                  aria-describedby={formErrors.address ? "checkout-address-error" : undefined}
+                  className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.address ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                 />
+                {formErrors.address && (
+                  <p id="checkout-address-error" className="text-red-600 text-[10px] mt-1">{formErrors.address}</p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -259,8 +298,13 @@ export default function CheckoutClient(): React.JSX.Element {
                     autoComplete="address-level2"
                     value={formData.city}
                     onChange={handleChange}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-invalid={formErrors.city ? "true" : "false"}
+                    aria-describedby={formErrors.city ? "checkout-city-error" : undefined}
+                    className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.city ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                   />
+                  {formErrors.city && (
+                    <p id="checkout-city-error" className="text-red-600 text-[10px] mt-1">{formErrors.city}</p>
+                  )}
                 </div>
                 <div>
                   <label htmlFor="checkout-state" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
@@ -292,8 +336,13 @@ export default function CheckoutClient(): React.JSX.Element {
                     value={formData.pincode}
                     onChange={handleChange}
                     placeholder="e.g. 560001"
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                    aria-invalid={formErrors.pincode ? "true" : "false"}
+                    aria-describedby={formErrors.pincode ? "checkout-pincode-error" : undefined}
+                    className={`w-full bg-[#F8F5EF] border rounded-lg p-2.5 text-xs text-[#2B211D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] ${formErrors.pincode ? 'border-red-500' : 'border-[#EDE3D5] focus:border-[#641C2D]'}`}
                   />
+                  {formErrors.pincode && (
+                    <p id="checkout-pincode-error" className="text-red-600 text-[10px] mt-1">{formErrors.pincode}</p>
+                  )}
                 </div>
               </div>
             </form>

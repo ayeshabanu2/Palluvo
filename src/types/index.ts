@@ -191,8 +191,8 @@ export interface StoreContextType {
   setIsCartOpen: React.Dispatch<React.SetStateAction<boolean>>;
   quickViewProduct: SareeProduct | null;
   setQuickViewProduct: React.Dispatch<React.SetStateAction<SareeProduct | null>>;
-  toastMessage: string | null;
-  showToast: (msg: string) => void;
+  toastMessage: { text: string; type: 'success' | 'error' | 'warning' } | null;
+  showToast: (msg: string, type?: 'success' | 'error' | 'warning') => void;
   addToCart: (productId: string, qty?: number, options?: AddToCartOptions) => void;
   updateCartQty: (cartItemId: string, newQty: number) => void;
   removeFromCart: (cartItemId: string) => void;
