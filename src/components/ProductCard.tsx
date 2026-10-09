@@ -69,9 +69,7 @@ export default function ProductCard({ product }: ProductCardProps): React.JSX.El
           <h3 className="font-bold text-[13px] sm:text-sm text-[#212121] truncate">
             {product.sareeType || product.category || 'Palluvo Signature'}
           </h3>
-          <p className="text-[11px] sm:text-xs text-[#878787] truncate mt-0.5">
-            {product.name}
-          </p>
+
         </Link>
 
         <div className="mt-1 flex items-center flex-wrap gap-x-1.5 gap-y-0.5">
