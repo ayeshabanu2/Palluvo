@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Truck, RotateCcw, Lock, ShieldCheck } from 'lucide-react';
+import { Truck, RotateCcw, Lock, ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
 
 export default function Footer(): React.JSX.Element {
   return (
@@ -36,9 +36,23 @@ export default function Footer(): React.JSX.Element {
             <p className="text-xs tracking-[0.16em] uppercase text-[#B8B0A5] mb-4 font-semibold">
               Every drape, a little magic.
             </p>
-            <p className="text-xs text-[#B8B0A5] leading-relaxed">
+            <p className="text-xs text-[#B8B0A5] leading-relaxed mb-4">
               A contemporary Indian luxury saree fashion house dedicated exclusively to 100% authentic handloom sarees. Honoring master weavers with timeless drapes.
             </p>
+            <ul className="space-y-3 text-xs text-[#B8B0A5]">
+              <li className="flex items-start gap-2.5">
+                <MapPin className="w-4 h-4 text-[#D6B878] shrink-0" />
+                <span>123 Heritage Loom Lane, Banjara Hills,<br/>Hyderabad, Telangana 500034, India</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Phone className="w-4 h-4 text-[#D6B878] shrink-0" />
+                <span>+91 98765 43210</span>
+              </li>
+              <li className="flex items-center gap-2.5">
+                <Mail className="w-4 h-4 text-[#D6B878] shrink-0" />
+                <span>concierge@palluvo.com</span>
+              </li>
+            </ul>
           </div>
 
           {/* Signature Drapes */}
