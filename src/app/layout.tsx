@@ -5,6 +5,7 @@ import { Plus_Jakarta_Sans, Cormorant_Garamond, Playfair_Display, Alex_Brush } f
 import { StoreProvider } from '@/context/StoreContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import BottomNav from '@/components/BottomNav';
 import CartDrawer from '@/components/CartDrawer';
 import QuickViewModal from '@/components/QuickViewModal';
 import Toast from '@/components/Toast';
@@ -136,10 +137,11 @@ export default function RootLayout({
       <body className="antialiased min-h-screen flex flex-col bg-[#F8F5EF] text-[#241F1D]">
         <StoreProvider>
           <Header />
-          <main className="flex-1">
+          <main className="flex-1 pb-[60px] lg:pb-0">
             {children}
           </main>
           <Footer />
+          <BottomNav />
           <CartDrawer />
           <QuickViewModal />
           <Toast />
