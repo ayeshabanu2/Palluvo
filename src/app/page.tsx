@@ -190,7 +190,7 @@ export default function HomePage(): React.JSX.Element {
         <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 gap-4">
           <div>
             <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D]">
-              Trending In Atelier
+              Trending
             </h2>
           </div>
           <Link
