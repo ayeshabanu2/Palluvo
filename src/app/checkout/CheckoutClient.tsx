@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
@@ -36,6 +36,14 @@ export default function CheckoutClient(): React.JSX.Element {
   });
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
   const [orderNumber, setOrderNumber] = useState<string>('');
+  
+  const confirmationRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    if (isSubmitted && confirmationRef.current) {
+      confirmationRef.current.focus();
+    }
+  }, [isSubmitted]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -70,7 +78,7 @@ export default function CheckoutClient(): React.JSX.Element {
 
   if (isSubmitted) {
     return (
-      <div className="max-w-2xl mx-auto px-4 py-20 text-center">
+      <div className="max-w-2xl mx-auto px-4 py-20 text-center" role="status" aria-live="polite">
         <div className="bg-white p-8 sm:p-12 rounded-2xl border border-[#EDE3D5] shadow-lg">
           <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto mb-4">
             <CheckCircle2 className="w-8 h-8" />
@@ -78,7 +86,11 @@ export default function CheckoutClient(): React.JSX.Element {
           <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold">
             Order Confirmed
           </span>
-          <h1 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D] mt-2 mb-2">
+          <h1 
+            ref={confirmationRef}
+            tabIndex={-1}
+            className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D] mt-2 mb-2 focus:outline-none"
+          >
             Every drape, a little magic.
           </h1>
           <p className="text-xs sm:text-sm text-[#6D625D] max-w-md mx-auto mb-6">

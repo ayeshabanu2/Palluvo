@@ -221,6 +221,11 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P2] WCAG 4.1.2 Color Swatch State:** Added `aria-pressed` attributes to color shade toggle buttons across the PDP and QuickViewModal.
 - [x] **[P2] WCAG 3.3.1 / 4.1.3 Promo Code Error Feedback:** Linked validation feedback message using `aria-invalid`, `aria-describedby`, and `role="alert"` in cart promo input.
 - [x] **[P3] Design Anti-Slop (Empty State Emojis):** Replaced raw OS emojis (🧺, 🔍, ❤️) with standard Lucide `ShoppingBag`, `Search` icons, and clean text across cart, search, and wishlist.
+- [x] **[P2] WCAG 4.1.2 Account Dashboard Tab Semantics:** Added WAI-ARIA tab semantics (`role="tablist"`, `role="tab"`, `aria-selected`, `aria-controls`, `role="tabpanel"`, `aria-labelledby`) to Account Dashboard sidebar and visually separated the external wishlist link.
+- [x] **[P3] WCAG 4.1.2 Catalogue Filter Pressed State:** Added `aria-pressed` state tracking to "Saree Weave / Model" and "Occasion" filter buttons in the catalogue sidebar.
+- [x] **[P2] WCAG 4.1.3 / 2.4.3 Checkout Confirmation Focus & Live Region:** Added `role="status"` and `aria-live="polite"` to the checkout confirmation screen and implemented a `useEffect` hook to programmatically shift focus to the confirmation heading on render.
+- [x] **[P3] WCAG 2.5.5 / 2.5.8 Footer Newsletter Touch Targets:** Applied `min-h-[44px]` to the newsletter input and join button in the footer to ensure a compliant minimum touch target size.
+- [x] **[P2] Hero Campaign Image Update:** Generated and replaced the hero campaign image with a premium wide 16:9 photorealistic editorial shot, ensuring perfect mobile (object-[75%_center]) and desktop responsiveness.
 
 ---
 

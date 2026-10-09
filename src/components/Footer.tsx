@@ -89,13 +89,13 @@ export default function Footer(): React.JSX.Element {
                 aria-disabled="true"
                 aria-label="Newsletter subscriptions opening soon"
                 placeholder="Enter email address"
-                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                className="bg-[#1F1714]/60 border border-[#3D302A] px-3 py-2 min-h-[44px] text-xs text-[#B8B0A5] placeholder-[#B8B0A5]/80 rounded-l-md cursor-not-allowed flex-1 min-w-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
               />
               <button 
                 type="button"
                 disabled
                 aria-disabled="true"
-                className="bg-[#3D302A] text-[#B8B0A5] px-3.5 sm:px-4 py-2 text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
+                className="bg-[#3D302A] text-[#B8B0A5] px-3.5 sm:px-4 py-2 min-h-[44px] text-xs font-semibold rounded-r-md tracking-wider uppercase cursor-not-allowed shrink-0 border border-l-0 border-[#3D302A]"
               >
                 Join
               </button>

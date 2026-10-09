@@ -313,6 +313,7 @@ export default function SareesClient() {
             <div className="space-y-1 text-xs">
               <button
                 onClick={() => setSelectedType('All')}
+                aria-pressed={selectedType === 'All'}
                 className={`w-full text-left px-2.5 py-1.5 rounded transition ${
                   selectedType === 'All' ? 'bg-[#641C2D] text-white font-medium' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
                 }`}
@@ -323,6 +324,7 @@ export default function SareesClient() {
                 <button
                   key={model.id}
                   onClick={() => setSelectedType(model.filterType)}
+                  aria-pressed={selectedType === model.filterType}
                   className={`w-full text-left px-2.5 py-1.5 rounded transition flex items-center justify-between ${
                     selectedType === model.filterType ? 'bg-[#641C2D] text-white font-medium' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
                   }`}
@@ -343,6 +345,7 @@ export default function SareesClient() {
                 <button
                   key={occ}
                   onClick={() => setSelectedOccasion(occ)}
+                  aria-pressed={selectedOccasion === occ}
                   className={`text-[11px] px-2.5 py-1 rounded-full border transition ${
                     selectedOccasion === occ
                       ? 'bg-[#641C2D] text-white border-[#641C2D]'

@@ -52,35 +52,47 @@ export default function AccountClient(): React.JSX.Element {
         
         {/* Navigation Sidebar */}
         <div className="space-y-1 bg-white p-4 rounded-xl border border-[#EDE3D5] shadow-xs h-fit">
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition ${
-              activeTab === 'orders' ? 'bg-[#641C2D] text-white' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
-            }`}
-          >
-            <Package className="w-4 h-4" /> My Orders ({orders.length})
-          </button>
-          <Link
-            href="/wishlist"
-            className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-[#6D625D] hover:bg-[#F8F5EF] transition"
-          >
-            <span className="flex items-center gap-2.5"><Heart className="w-4 h-4" /> Wishlist</span>
-            <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
-          </Link>
-          <button
-            onClick={() => setActiveTab('addresses')}
-            className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition ${
-              activeTab === 'addresses' ? 'bg-[#641C2D] text-white' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
-            }`}
-          >
-            <MapPin className="w-4 h-4" /> Saved Addresses
-          </button>
+          <div role="tablist" aria-label="Account Views" className="space-y-1">
+            <button
+              id="tab-orders"
+              role="tab"
+              aria-selected={activeTab === 'orders'}
+              aria-controls="panel-orders"
+              onClick={() => setActiveTab('orders')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition ${
+                activeTab === 'orders' ? 'bg-[#641C2D] text-white' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
+              }`}
+            >
+              <Package className="w-4 h-4" /> My Orders ({orders.length})
+            </button>
+            <button
+              id="tab-addresses"
+              role="tab"
+              aria-selected={activeTab === 'addresses'}
+              aria-controls="panel-addresses"
+              onClick={() => setActiveTab('addresses')}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider transition ${
+                activeTab === 'addresses' ? 'bg-[#641C2D] text-white' : 'text-[#6D625D] hover:bg-[#F8F5EF]'
+              }`}
+            >
+              <MapPin className="w-4 h-4" /> Saved Addresses
+            </button>
+          </div>
+          <div className="pt-2 mt-2 border-t border-[#EDE3D5]">
+            <Link
+              href="/wishlist"
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-[#6D625D] hover:bg-[#F8F5EF] transition"
+            >
+              <span className="flex items-center gap-2.5"><Heart className="w-4 h-4" /> Wishlist</span>
+              <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
+            </Link>
+          </div>
         </div>
 
         {/* Content View */}
         <div className="md:col-span-3 space-y-6">
           {activeTab === 'orders' && (
-            <div className="space-y-4">
+            <div id="panel-orders" role="tabpanel" aria-labelledby="tab-orders" className="space-y-4">
               <h2 className="font-serif text-xl font-bold text-[#2B211D]">Recent Orders</h2>
               
               {orders.length === 0 ? (
@@ -162,7 +174,7 @@ export default function AccountClient(): React.JSX.Element {
           )}
 
           {activeTab === 'addresses' && (
-            <div className="space-y-4">
+            <div id="panel-addresses" role="tabpanel" aria-labelledby="tab-addresses" className="space-y-4">
               <h2 className="font-serif text-xl font-bold text-[#2B211D]">Saved Delivery Addresses</h2>
               <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] shadow-xs text-xs space-y-2">
                 <div className="flex justify-between items-center">
