@@ -319,15 +319,47 @@ export default function Header(): React.JSX.Element {
                 <Search className="w-5 h-5" />
               </button>
 
-              <Link
-                href="/account"
-                aria-label="Account"
-                title="Account"
-                className="hidden lg:flex items-center gap-1.5 px-3 min-h-[44px] text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition rounded-full"
-              >
-                <User className="w-5 h-5" />
-                <span className="hidden xl:inline">Account</span>
-              </Link>
+              <div className="relative group hidden lg:block">
+                <Link
+                  href="/account"
+                  aria-label="Account"
+                  title="Account"
+                  className="flex items-center gap-1.5 px-3 min-h-[44px] text-[#241F1D] hover:text-[#641C2D] text-xs font-medium tracking-wider uppercase transition rounded-full"
+                >
+                  <User className="w-5 h-5" />
+                  <span className="hidden xl:inline">Account</span>
+                </Link>
+
+                {/* Dropdown Menu */}
+                <div className="absolute top-full right-0 pt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 z-50 transform translate-y-2 group-hover:translate-y-0">
+                  <div className="bg-white shadow-2xl rounded-xl border border-[#EDE3D5] p-5 flex flex-col gap-4">
+                    <div>
+                      <h4 className="font-serif text-lg font-bold text-[#2B211D]">Welcome to PALLUVO</h4>
+                      <p className="text-xs text-[#6D625D] mt-1">To access your account</p>
+                    </div>
+                    
+                    <Link href="/register" className="w-full bg-[#641C2D] text-white text-center py-2.5 rounded-lg text-sm font-bold tracking-wider hover:bg-[#4E1422] transition">
+                      Sign Up
+                    </Link>
+                    
+                    <Link href="/login" className="w-full bg-transparent text-[#641C2D] border border-[#641C2D] text-center py-2.5 rounded-lg text-sm font-bold tracking-wider hover:bg-[#F8F5EF] transition">
+                      User Login
+                    </Link>
+
+                    <div className="h-px bg-[#EDE3D5] w-full my-1"></div>
+
+                    <Link href="/account" className="flex items-center gap-3 text-sm text-[#2B211D] font-medium hover:text-[#641C2D] transition">
+                      <ShoppingBag className="w-4 h-4" /> My Orders
+                    </Link>
+
+                    <div className="h-px bg-[#EDE3D5] w-full my-1"></div>
+
+                    <Link href="/admin/login" className="flex items-center gap-3 text-sm text-[#6D625D] font-medium hover:text-[#641C2D] transition">
+                      <User className="w-4 h-4" /> Admin Login
+                    </Link>
+                  </div>
+                </div>
+              </div>
 
               <Link
                 href="/wishlist"
