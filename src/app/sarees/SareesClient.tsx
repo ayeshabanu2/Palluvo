@@ -234,7 +234,7 @@ export default function SareesClient() {
       </div>
 
       {/* Control Bar: Search, Count, Mobile Filter Button, Sort Dropdown */}
-      <div className="bg-white p-4 rounded-xl border border-[#EDE3D5] shadow-xs mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="relative z-20 bg-white p-4 rounded-xl border border-[#EDE3D5] shadow-xs mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
         {/* Search input in catalog */}
         <div className="relative w-full md:w-80">
           <label htmlFor="catalogSearchInput" className="sr-only">
@@ -264,6 +264,7 @@ export default function SareesClient() {
         {/* Mobile filter toggle & Sort */}
         <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
           <button
+            type="button"
             ref={filterTriggerRef}
             onClick={() => setMobileFilterOpen(true)}
             aria-expanded={mobileFilterOpen}
