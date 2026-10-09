@@ -98,7 +98,7 @@ const organizationJsonLd = {
   ],
   contactPoint: {
     '@type': 'ContactPoint',
-    telephone: '+91-98765-43210',
+    telephone: '+91 84988 54323',
     contactType: 'customer service',
     areaServed: 'IN',
     availableLanguage: ['en', 'hi'],
