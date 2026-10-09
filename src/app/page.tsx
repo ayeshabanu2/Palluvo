@@ -97,7 +97,7 @@ export default function HomePage(): React.JSX.Element {
                         aria-label={`Shop ${saree.name}`}
                       >
                         <Image
-                          src={`/${saree.images[0]}`}
+                          src={`/${(saree.images && saree.images.length > 0 ? saree.images[0] : 'images/hero_saree_art.jpg')}`}
                           alt={saree.name}
                           fill
                           sizes="(max-width: 640px) 144px, (max-width: 1024px) 176px, 192px"

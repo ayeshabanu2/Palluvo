@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { User, LogIn, UserPlus, Shield } from 'lucide-react';
+import { User, LogIn, UserPlus } from 'lucide-react';
 
 export default function AccountPortal() {
   return (
@@ -31,14 +31,6 @@ export default function AccountPortal() {
         </Link>
       </div>
 
-      <div className="mt-12 pt-8 border-t border-[#EDE3D5] text-center">
-        <Link 
-          href="/admin/login"
-          className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-widest text-[#6D625D] hover:text-[#641C2D] transition"
-        >
-          <Shield className="w-3.5 h-3.5" /> Admin Sign In
-        </Link>
-      </div>
     </div>
   );
 }

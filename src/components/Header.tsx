@@ -351,12 +351,6 @@ export default function Header(): React.JSX.Element {
                     <Link href="/account" className="flex items-center gap-3 text-sm text-[#2B211D] font-medium hover:text-[#641C2D] transition">
                       <ShoppingBag className="w-4 h-4" /> My Orders
                     </Link>
-
-                    <div className="h-px bg-[#EDE3D5] w-full my-1"></div>
-
-                    <Link href="/admin/login" className="flex items-center gap-3 text-sm text-[#6D625D] font-medium hover:text-[#641C2D] transition">
-                      <User className="w-4 h-4" /> Admin Login
-                    </Link>
                   </div>
                 </div>
               </div>
