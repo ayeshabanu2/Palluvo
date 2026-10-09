@@ -228,6 +228,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P2] Hero Campaign Image Update:** Generated and replaced the hero campaign image with a premium wide 16:9 photorealistic editorial shot, ensuring perfect mobile (object-[75%_center]) and desktop responsiveness.
 - [x] **[P2] WCAG 3.3.1 / 3.3.3 Checkout Form Error Validation:** Added inline validation errors with aria-invalid="true" and aria-describedby for missing mandatory shipping fields, and programmatic focus shift to the first invalid field upon form submission failure.
 - [x] **[P3] WCAG 1.3.1 / 4.1.3 Toast Notification Semantics:** Upgraded Toast component to support message types (success, error, warning) conditionally rendering an AlertTriangle icon, role="alert", and aria-live="assertive" for errors.
+- [x] **[P3] WCAG 1.3.1 / 4.1.2 Header Dynamic Counts & Dialog Popup Semantics:** Updated `aria-label` attributes on Wishlist and Shopping Bag controls to dynamically announce current item counts to screen readers; added `aria-haspopup="dialog"` to the Shopping Bag button.
+- [x] **[P3] WCAG 4.1.2 PDP Gallery Thumbnail Selection Semantics:** Upgraded gallery thumbnail controls with explicit `type="button"`, dynamic `aria-current="true"` state to reflect the actively displayed main image, and grouped the thumbnails under a semantic `role="group"` with an `aria-label`.
 
 ---
 

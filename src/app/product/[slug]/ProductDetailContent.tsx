@@ -113,11 +113,13 @@ export default function ProductDetailContent({ product }: { product: SareeProduc
 
           {/* Thumbnails */}
           {images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-2">
+            <div className="flex gap-3 overflow-x-auto pb-2" aria-label="Product image thumbnails" role="group">
               {images.map((img, i) => (
                 <button
                   key={i}
+                  type="button"
                   onClick={() => setActiveImage(img)}
+                  aria-current={activeImage === img ? 'true' : undefined}
                   className={`relative w-20 h-24 rounded-lg overflow-hidden border-2 transition flex-shrink-0 ${
                     activeImage === img ? 'border-[#641C2D] scale-102 shadow-sm' : 'border-[#EDE3D5] opacity-75 hover:opacity-100'
                   }`}

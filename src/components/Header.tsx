@@ -331,7 +331,7 @@ export default function Header(): React.JSX.Element {
               <Link
                 href="/wishlist"
                 className="relative w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
-                aria-label="Wishlist"
+                aria-label={wishlist.length > 0 ? `Wishlist (${wishlist.length} items)` : "Wishlist"}
               >
                 <Heart className="w-5 h-5" />
                 {wishlist.length > 0 && (
@@ -344,7 +344,8 @@ export default function Header(): React.JSX.Element {
               <button
                 onClick={() => setIsCartOpen(true)}
                 className="relative w-11 h-11 min-w-[44px] min-h-[44px] sm:w-auto sm:min-w-0 sm:h-11 sm:px-4 flex items-center justify-center sm:gap-2 bg-[#641C2D] hover:bg-[#4E1422] text-white rounded-full transition shadow-sm cursor-pointer shrink-0"
-                aria-label="Shopping bag"
+                aria-label={totalCartCount > 0 ? `Shopping bag (${totalCartCount} items)` : "Shopping bag"}
+                aria-haspopup="dialog"
               >
                 <ShoppingBag className="w-5 h-5 sm:w-4 sm:h-4" />
                 <span className="hidden sm:inline text-xs font-semibold tracking-wider">BAG</span>
