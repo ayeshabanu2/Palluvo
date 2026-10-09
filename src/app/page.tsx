@@ -77,30 +77,30 @@ export default function HomePage(): React.JSX.Element {
               </h1>
 
               <div className="w-full mt-2">
-                <div className="flex items-center gap-3 mb-4">
-                  <h2 className="text-[11px] sm:text-xs font-serif font-bold text-[#D6B878] uppercase tracking-[0.2em] whitespace-nowrap">Best Sellers</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-[#D6B878]/30 to-transparent"></div>
+                <div className="flex items-center gap-4 mb-6">
+                  <h2 className="text-base sm:text-lg lg:text-xl font-serif font-bold text-[#D6B878] uppercase tracking-[0.15em] whitespace-nowrap">Best Sellers</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-[#D6B878]/50 to-transparent"></div>
                 </div>
                 
                 <div className="relative w-full overflow-hidden flex items-center group mask-image-fade">
                   {/* Fading edges for the marquee */}
-                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#2B211D] to-transparent z-10"></div>
-                  <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#2B211D] to-transparent z-10"></div>
+                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
+                  <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
                   
-                  <div className="flex gap-4 animate-marquee hover:pause-marquee w-max">
+                  <div className="flex gap-4 sm:gap-6 animate-marquee hover:pause-marquee w-max py-2">
                     {/* Double the array for seamless infinite scrolling */}
                     {[...trendingSarees, ...trendingSarees].map((saree, i) => (
                       <Link 
                         href={`/product/${saree.id}`} 
                         key={`${saree.id}-${i}`}
-                        className="relative w-20 h-28 sm:w-24 sm:h-32 rounded-lg overflow-hidden border border-white/10 shrink-0 shadow-lg hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-1"
+                        className="relative w-36 h-52 sm:w-44 sm:h-64 lg:w-48 lg:h-72 rounded-xl overflow-hidden border border-white/10 shrink-0 shadow-lg hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-1.5"
                         aria-label={`Shop ${saree.name}`}
                       >
                         <Image
                           src={`/${saree.images[0]}`}
                           alt={saree.name}
                           fill
-                          sizes="96px"
+                          sizes="(max-width: 640px) 144px, (max-width: 1024px) 176px, 192px"
                           className="object-cover"
                         />
                       </Link>
