@@ -7,27 +7,28 @@ import { Package, Heart, MapPin, ShieldCheck, ArrowRight } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 
+import { LogOut } from 'lucide-react';
+import { logout } from '../login/actions';
+
 type AccountTab = 'orders' | 'addresses';
 
-export default function AccountClient(): React.JSX.Element {
+interface AccountClientProps {
+  userEmail?: string;
+  userId?: string;
+  userName?: string;
+}
+
+export default function AccountClient({ userEmail, userId, userName }: AccountClientProps): React.JSX.Element {
   const { wishlist, orders } = useStore();
   const [activeTab, setActiveTab] = useState<AccountTab>('orders');
 
-  const latestCustomer = orders.length > 0 ? orders[0].customer : null;
-  const customerName = latestCustomer
-    ? `${latestCustomer.firstName} ${latestCustomer.lastName || ''}`.trim()
-    : 'Ananya Sharma';
-  const customerEmail = latestCustomer?.email || 'ananya.sharma@example.com';
-  const customerPhone = latestCustomer?.phone || '+91 98765 43210';
-  const customerAddress = latestCustomer
-    ? {
-        street: latestCustomer.address,
-        cityStatePin: `${latestCustomer.city}${latestCustomer.state ? `, ${latestCustomer.state}` : ''} - ${latestCustomer.pincode}`
-      }
-    : {
-        street: 'Apartment 402, Royal Palms, 12th Main Road, Indiranagar',
-        cityStatePin: 'Bengaluru, Karnataka - 560038'
-      };
+  const customerName = userName || 'PALLUVO Guest';
+  const customerEmail = userEmail || 'guest@example.com';
+  const customerPhone = '+91 98765 43210'; // Would be fetched from profile
+  const customerAddress = {
+    street: 'Add a new address to place orders',
+    cityStatePin: ''
+  };
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -78,15 +79,22 @@ export default function AccountClient(): React.JSX.Element {
               <MapPin className="w-4 h-4" /> Saved Addresses
             </button>
           </div>
-          <div className="pt-2 mt-2 border-t border-[#EDE3D5]">
-            <Link
-              href="/wishlist"
-              className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-[#6D625D] hover:bg-[#F8F5EF] transition"
-            >
-              <span className="flex items-center gap-2.5"><Heart className="w-4 h-4" /> Wishlist</span>
-              <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
-            </Link>
-          </div>
+            <div className="pt-2 mt-2 border-t border-[#EDE3D5] flex flex-col gap-1">
+              <Link
+                href="/wishlist"
+                className="w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-[#6D625D] hover:bg-[#F8F5EF] transition"
+              >
+                <span className="flex items-center gap-2.5"><Heart className="w-4 h-4" /> Wishlist</span>
+                <span className="bg-[#B08D57] text-[#1C1613] text-[10px] font-bold px-1.5 py-0.5 rounded-full">{wishlist.length}</span>
+              </Link>
+              
+              <button
+                onClick={() => logout()}
+                className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs font-semibold uppercase tracking-wider text-red-700 hover:bg-red-50 transition"
+              >
+                <LogOut className="w-4 h-4" /> Sign Out
+              </button>
+            </div>
         </div>
 
         {/* Content View */}

@@ -33,6 +33,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function AccountPage(): React.JSX.Element {
-  return <AccountClient />;
+import { createClient } from '@/utils/supabase/server';
+import AccountPortal from './AccountPortal';
+
+export default async function AccountPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return <AccountPortal />;
+  }
+
+  // Pass user details down to AccountClient (will need to update AccountClient props)
+  return <AccountClient 
+    userEmail={user.email} 
+    userId={user.id} 
+    userName={user.user_metadata?.full_name} 
+  />;
 }
