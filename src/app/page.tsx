@@ -262,7 +262,6 @@ export default function HomePage(): React.JSX.Element {
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                 <div className="absolute bottom-4 left-4 right-4 text-white">
                   <h3 className="font-serif text-lg sm:text-xl font-bold">{occ.name}</h3>
-                  <p className="text-[11px] sm:text-xs text-[#D6B878] leading-snug line-clamp-2">{occ.subtitle}</p>
                 </div>
               </Link>
             ))}
