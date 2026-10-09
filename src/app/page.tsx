@@ -91,20 +91,37 @@ export default function HomePage(): React.JSX.Element {
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
               </h1>
 
-
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full">
-                <Link
-                  href="/sarees"
-                  className="w-full sm:w-auto bg-[#641C2D] hover:bg-[#7A3043] text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition shadow-xl flex items-center justify-center gap-2 border border-[#8B1E2B] min-h-[48px]"
-                >
-                  Shop Curated Collection <ArrowRight className="w-4 h-4" />
-                </Link>
-                <a
-                  href="#signature-models"
-                  className="w-full sm:w-auto bg-white/10 hover:bg-white/20 text-[#EDE3D5] hover:text-white px-6 sm:px-8 py-3.5 sm:py-4 rounded-full text-xs font-semibold tracking-[0.18em] uppercase transition backdrop-blur-sm border border-white/20 flex items-center justify-center min-h-[48px]"
-                >
-                  Explore Top Models
-                </a>
+              <div className="w-full mt-2">
+                <div className="flex items-center gap-3 mb-4">
+                  <h2 className="text-[11px] sm:text-xs font-serif font-bold text-[#D6B878] uppercase tracking-[0.2em] whitespace-nowrap">Best Sellers</h2>
+                  <div className="flex-1 h-px bg-gradient-to-r from-[#D6B878]/30 to-transparent"></div>
+                </div>
+                
+                <div className="relative w-full overflow-hidden flex items-center group mask-image-fade">
+                  {/* Fading edges for the marquee */}
+                  <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-[#2B211D] to-transparent z-10"></div>
+                  <div className="absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-[#2B211D] to-transparent z-10"></div>
+                  
+                  <div className="flex gap-4 animate-marquee hover:pause-marquee w-max">
+                    {/* Double the array for seamless infinite scrolling */}
+                    {[...trendingSarees, ...trendingSarees].map((saree, i) => (
+                      <Link 
+                        href={`/product/${saree.id}`} 
+                        key={`${saree.id}-${i}`}
+                        className="relative w-20 h-28 sm:w-24 sm:h-32 rounded-lg overflow-hidden border border-white/10 shrink-0 shadow-lg hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-1"
+                        aria-label={`Shop ${saree.name}`}
+                      >
+                        <Image
+                          src={saree.images[0]}
+                          alt={saree.name}
+                          fill
+                          sizes="96px"
+                          className="object-cover"
+                        />
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
