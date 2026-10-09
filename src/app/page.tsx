@@ -91,10 +91,6 @@ export default function HomePage(): React.JSX.Element {
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
               </h1>
 
-              <p className="text-[15px] sm:text-base text-[#EDE3D5] font-light tracking-wide leading-[1.6] mb-6 sm:mb-8 w-full">
-                India&apos;s most celebrated handwoven traditions reimagined for the modern muse. 
-                Strictly 100% authentic pure silk sarees, directly curated from master weaving ateliers.
-              </p>
 
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 sm:gap-4 w-full">
                 <Link
@@ -124,9 +120,6 @@ export default function HomePage(): React.JSX.Element {
             The Top Saree Models
           </h2>
           <div className="w-16 h-0.5 bg-[#B08D57] mx-auto mt-4 mb-4" />
-          <p className="text-xs sm:text-sm text-[#6D625D]">
-            Explore our eight signature saree styles, each masterfully crafted with authentic silk, heritage motifs, and enduring artistry.
-          </p>
         </div>
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-6">
@@ -277,56 +270,6 @@ export default function HomePage(): React.JSX.Element {
         </div>
       </section>
 
-
-      {/* 6. CRAFTSMANSHIP & WEAVING CLUSTERS */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="relative rounded-2xl overflow-hidden bg-[#EDE3D5] aspect-[4/3] shadow-lg">
-            <Image
-              src="/images/craftsmanship.jpg"
-              alt="Handloom Weaving Craftsmanship"
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-[#641C2D]/10" />
-          </div>
-
-          <div className="space-y-6">
-            <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#B08D57] shrink-0" aria-hidden="true" />
-              Heritage Preservation
-            </span>
-            <h2 className="font-serif text-3xl sm:text-4xl font-bold text-[#2B211D] leading-tight">
-              Honoring India’s Master Handloom Weavers
-            </h2>
-            <p className="text-xs sm:text-sm text-[#6D625D] leading-relaxed">
-              Every Palluvo saree is an artistic conversation that takes between 75 and 210 meticulous weaving hours on traditional pit looms. From the Kadhwa jaals of Varanasi to the interlocking Korvai temple borders of Kanchipuram, each fold preserves sacred Indian cultural artistry.
-            </p>
-
-            <div className="grid grid-cols-2 gap-4 pt-2">
-              <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
-                <h3 className="font-serif text-lg font-bold text-[#641C2D]">Pure Zari & Natural Fibers</h3>
-                <p className="text-xs text-[#665E57] mt-1">Lab-tested zari threads and authentic pure mulberry silk for enduring heirloom luster.</p>
-              </div>
-              <div className="p-4 bg-white rounded-lg border border-[#EDE3D5]">
-                <h3 className="font-serif text-lg font-bold text-[#641C2D]">Complimentary Fall & Pico</h3>
-                <p className="text-xs text-[#665E57] mt-1">Every saree arrives finished with premium matching fall and pico edging.</p>
-              </div>
-            </div>
-
-            <div>
-              <Link
-                href="/about"
-                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-[0.2em] font-semibold text-[#641C2D] hover:text-[#4E1422] underline underline-offset-4"
-              >
-                <span>Read Atelier Story</span>
-                <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
 
       {/* TRUST ASSURANCES BAND (Moved to end) */}
       <section className="border-y border-[#EDE3D5] bg-[#F8F5EF] py-8 sm:py-10 shadow-xs">
