@@ -116,28 +116,6 @@ export default function HomePage(): React.JSX.Element {
         </div>
       </section>
 
-      {/* 2. TRUST ASSURANCES BAND (Immediate post-hero strip) */}
-      <section className="!mt-0 border-y border-[#EDE3D5] bg-[#F8F5EF] py-4 sm:py-5 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row items-center justify-center md:justify-between gap-3.5 md:gap-6 text-xs md:text-sm text-[#2B211D]">
-            <div className="flex items-center gap-2.5 whitespace-nowrap">
-              <ShieldCheck className="w-4 h-4 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Silk Mark Certified Purity</span>
-            </div>
-            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
-            <div className="flex items-center gap-2.5 whitespace-nowrap">
-              <HeartHandshake className="w-4 h-4 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Direct from Master Weavers</span>
-            </div>
-            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
-            <div className="flex items-center gap-2.5 whitespace-nowrap">
-              <Scissors className="w-4 h-4 text-[#B08D57] shrink-0" />
-              <span className="font-medium tracking-wide">Custom Blouse Tailoring</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
 
       {/* 3. THE TOP SAREE MODELS (Signature 8 Curation) */}
       <section id="signature-models" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 scroll-mt-28 sm:scroll-mt-36">
@@ -345,6 +323,28 @@ export default function HomePage(): React.JSX.Element {
                 <span>Read Atelier Story</span>
                 <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
               </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TRUST ASSURANCES BAND (Moved to end) */}
+      <section className="border-y border-[#EDE3D5] bg-[#F8F5EF] py-8 sm:py-10 shadow-xs">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-center">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-center gap-4 md:gap-8 text-sm sm:text-base text-[#2B211D]">
+            <div className="flex items-center gap-3 whitespace-nowrap">
+              <ShieldCheck className="w-5 h-5 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Silk Mark Certified Purity</span>
+            </div>
+            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
+            <div className="flex items-center gap-3 whitespace-nowrap">
+              <HeartHandshake className="w-5 h-5 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Direct from Master Weavers</span>
+            </div>
+            <div className="hidden md:block w-1.5 h-1.5 rounded-full bg-[#B08D57]/40 shrink-0" />
+            <div className="flex items-center gap-3 whitespace-nowrap">
+              <Scissors className="w-5 h-5 text-[#B08D57] shrink-0" />
+              <span className="font-medium tracking-wide">Custom Blouse Tailoring</span>
             </div>
           </div>
         </div>
