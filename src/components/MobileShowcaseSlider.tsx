@@ -19,6 +19,11 @@ const slides = [
     image: "/images/premium_traditional_sari_hero_1791543082151.jpg",
     title: "FESTIVE EDIT",
     link: "/sarees?occasion=Festive",
+  },
+  {
+    image: "/images/premium_saree_hero_wide_1791524609290.jpg",
+    title: "SIGNATURE DRAPES",
+    link: "/sarees",
   }
 ];
 
