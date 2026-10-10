@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard, QrCode, Loader2, XCircle } from 'lucide-react';
-import { placeVerifiedOrder } from './actions';
+import { initiatePaymentSession, authorizePaymentGateway, placeVerifiedOrder } from './actions';
 import { PlacedOrder } from '@/types';
 
 interface CheckoutFormData {
@@ -41,8 +41,9 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
   const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
   
-  // Payment Modal state for UPI and Card verification
+  // Payment Provider session and verification state
   const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [upiId, setUpiId] = useState<string>('customer@okaxis');
@@ -88,22 +89,28 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
     return true;
   };
 
+  const getCheckoutItems = () => {
+    return cart.map((item) => ({
+      productId: item.productId,
+      qty: item.qty,
+      selectedColor: item.selectedColor,
+      blouseOptionId: item.blouseOptionId,
+      blouseOptionName: item.blouseOptionName,
+    }));
+  };
+
   const handlePlaceOrder = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!validateForm()) return;
+
+    const items = getCheckoutItems();
 
     if (paymentMethod === 'cod') {
       // Cash on Delivery: Process server-side verified order placement directly
       setIsSubmitting(true);
       try {
         const result = await placeVerifiedOrder({
-          items: cart.map((item) => ({
-            productId: item.productId,
-            qty: item.qty,
-            selectedColor: item.selectedColor,
-            blouseOptionId: item.blouseOptionId,
-            blouseOptionName: item.blouseOptionName,
-          })),
+          items,
           couponCode: coupon?.code,
           paymentMethod: 'cod',
           customer: formData,
@@ -127,32 +134,56 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
         setIsSubmitting(false);
       }
     } else {
-      // UPI or Card: Open payment authorization flow to verify payment before confirming
+      // UPI or Card: Initiate server-side payment provider session
+      setIsSubmitting(true);
       setPaymentError(null);
-      setShowPaymentModal(true);
+      try {
+        const sessionResult = await initiatePaymentSession(items, coupon?.code);
+        if (sessionResult.success && sessionResult.session) {
+          setActiveSessionId(sessionResult.session.sessionId);
+          setShowPaymentModal(true);
+        } else {
+          showToast(sessionResult.error || 'Could not initiate payment session.', 'error');
+        }
+      } catch (err: unknown) {
+        showToast('Payment session creation failed.', 'error');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   const handleAuthorizeOnlinePayment = async () => {
+    if (!activeSessionId) {
+      setPaymentError('Payment session expired. Please re-initiate checkout.');
+      return;
+    }
+
     setPaymentProcessing(true);
     setPaymentError(null);
 
     try {
-      // Generate verified payment transaction token from authorized payment gateway flow
-      const randomHex = Math.random().toString(36).substring(2, 8).toUpperCase();
-      const transactionToken = `TXN_${paymentMethod.toUpperCase()}_${Date.now()}_${randomHex}`;
+      const items = getCheckoutItems();
 
+      // Step 1: Request cryptographically signed authorization from server payment provider
+      const authResult = await authorizePaymentGateway(
+        activeSessionId,
+        paymentMethod as 'upi' | 'card',
+        items,
+        coupon?.code
+      );
+
+      if (!authResult.success || !authResult.verification) {
+        setPaymentError(authResult.error || 'Payment provider authorization declined.');
+        return;
+      }
+
+      // Step 2: Submit signed provider verification payload to server-verified order placement
       const result = await placeVerifiedOrder({
-        items: cart.map((item) => ({
-          productId: item.productId,
-          qty: item.qty,
-          selectedColor: item.selectedColor,
-          blouseOptionId: item.blouseOptionId,
-          blouseOptionName: item.blouseOptionName,
-        })),
+        items,
         couponCode: coupon?.code,
         paymentMethod,
-        paymentTransactionId: transactionToken,
+        paymentVerification: authResult.verification,
         customer: formData,
       });
 
@@ -167,10 +198,10 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
         clearCart();
         showToast(`Payment verified! Order #${result.order.orderNumber} confirmed.`);
       } else {
-        setPaymentError(result.error || 'Payment verification failed. Please try again.');
+        setPaymentError(result.error || 'Server rejected payment verification.');
       }
     } catch (err: unknown) {
-      setPaymentError('Payment verification server error. Please try again or select Cash on Delivery.');
+      setPaymentError('Payment gateway communication failed. Please try again or select Cash on Delivery.');
     } finally {
       setPaymentProcessing(false);
     }
@@ -194,13 +225,13 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             Every drape, a little magic.
           </h1>
           <p className="text-xs sm:text-sm text-[#6D625D] max-w-md mx-auto mb-6">
-            Thank you, <strong className="text-[#2B211D]">{confirmedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{confirmedOrder.orderNumber}</span> has been validated by master weavers for dispatch.
+            Thank you, <strong className="text-[#2B211D]">{confirmedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{confirmedOrder.orderNumber}</span> has been validated and confirmed for dispatch.
           </p>
 
           <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-left text-xs space-y-2 mb-8">
             <div className="flex justify-between">
               <span className="text-[#665E57]">Payment Method:</span>
-              <span className="font-bold text-[#2B211D] uppercase">{confirmedOrder.paymentMethod} (Verified)</span>
+              <span className="font-bold text-[#2B211D] uppercase">{confirmedOrder.paymentMethod} (Provider Verified)</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#665E57]">Verified Total:</span>
@@ -584,7 +615,7 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
 
       </div>
 
-      {/* Online Payment Verification Modal */}
+      {/* Online Payment Provider Verification Modal */}
       {showPaymentModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 border border-[#EDE3D5] shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
@@ -592,7 +623,7 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
               <div className="flex items-center gap-2">
                 <CreditCard className="w-5 h-5 text-[#641C2D]" />
                 <h3 className="font-serif text-lg font-bold text-[#2B211D]">
-                  {paymentMethod === 'upi' ? 'UPI Payment Verification' : 'Card Payment Authorization'}
+                  {paymentMethod === 'upi' ? 'UPI Gateway Payment Verification' : '3D Secure Card Payment'}
                 </h3>
               </div>
               <button
@@ -609,6 +640,10 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             </div>
 
             <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-xs space-y-1.5">
+              <div className="flex justify-between">
+                <span className="text-[#665E57]">Gateway Session ID:</span>
+                <span className="font-mono text-[#2B211D] text-[10px] truncate max-w-[200px]">{activeSessionId}</span>
+              </div>
               <div className="flex justify-between">
                 <span className="text-[#665E57]">Payable Amount:</span>
                 <span className="font-bold text-[#641C2D] text-sm">{formatINR(grandTotal)}</span>
@@ -699,11 +734,11 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
               >
                 {paymentProcessing ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying Payment with Gateway...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying with Gateway Provider...
                   </>
                 ) : (
                   <>
-                    <Lock className="w-4 h-4" /> Authorize Payment of {formatINR(grandTotal)}
+                    <Lock className="w-4 h-4" /> Authorize & Confirm Payment ({formatINR(grandTotal)})
                   </>
                 )}
               </button>
