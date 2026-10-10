@@ -93,12 +93,12 @@ header {
 }
 
 header .header-main-row {
-  min-height: 68px;
+  min-height: 72px;
 }
 
 @media (min-width: 640px) {
   header .header-main-row {
-    min-height: 76px;
+    min-height: 82px;
   }
 }
 

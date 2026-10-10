@@ -243,7 +243,7 @@ export default function Header(): React.JSX.Element {
       {/* Main Luxury Header */}
       <header className="sticky top-0 z-40 w-full bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] shadow-xs transition-all">
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between min-h-[68px] sm:min-h-[76px] py-1.5 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
+          <div className="flex items-center justify-between min-h-[72px] sm:min-h-[82px] py-2 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden shrink-0">
@@ -289,7 +289,7 @@ export default function Header(): React.JSX.Element {
             <div className="flex-1 min-w-0 flex justify-center text-center px-1">
               <Link href="/" className="flex items-center justify-center gap-2 sm:gap-3 group max-w-full" aria-label="PALLUVO home">
                 {/* Logo emblem */}
-                <span className="block relative overflow-hidden h-9 w-6.5 sm:h-11 sm:w-8 rounded-xs shrink-0">
+                <span className="block relative overflow-hidden h-11 w-8 sm:h-13 sm:w-9.5 md:h-14 md:w-10 rounded-xs shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/palluvo-logo.png"
@@ -299,7 +299,7 @@ export default function Header(): React.JSX.Element {
                 </span>
 
                 {/* Brand name in Cinzel font and #541920 */}
-                <span className="font-cinzel text-xl xs:text-2xl sm:text-3xl font-bold tracking-[0.14em] sm:tracking-[0.18em] text-[#541920] uppercase leading-none transition-transform group-hover:scale-[1.02]">
+                <span className="font-cinzel text-2xl xs:text-3xl sm:text-3.5xl md:text-4xl font-bold tracking-[0.14em] sm:tracking-[0.18em] text-[#541920] uppercase leading-none transition-transform group-hover:scale-[1.02]">
                   PALLUVO
                 </span>
               </Link>
