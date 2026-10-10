@@ -247,9 +247,8 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P1] Home Page TypeScript Type-Safety (`saree.images`):** Verified `npm run type-check` and `npm run build` pass with zero errors after guarding optional image access in `src/app/page.tsx:100`.
 - [x] **[P1] Customer Authentication Pages & Action Wiring:** Added `src/app/login/page.tsx`, `LoginForm.tsx`, `src/app/register/page.tsx`, and `RegisterForm.tsx` wired to Supabase `login` and `signup` server actions; wrapped in `<Suspense>` boundaries for static export compliance; pruned dead links to `/admin/login`.
 - [x] **[P2] Post-Auth Redirect Target Validation:** Added strict relative-path enforcement in `src/app/login/actions.ts` via `getSafeRedirect()`, rejecting external and protocol-relative phishing URLs.
-- [x] **[P2] Account-Scoped Order History:** Scoped account orders to authenticated user accounts via server queries and `userId`-partitioned local storage, eliminating data leakage across shared browsers; added cache purge on logout.
+- [x] **[P2] Account-Scoped Order History & Reconciliation:** Resolved issue where an existing empty `orders` database query result `[]` masked client user-scoped orders (`palluvo_orders_${userId}`). Implemented resilient order reconciliation and deduplication in `AccountClient.tsx` that safely preserves and displays local user orders when server records are empty, while persisting newly placed checkout orders directly to the user-scoped `orders` table in Supabase via RLS.
 - [x] **[P1] ESLint 9 Compatibility & Next 16 Lint Resolution:** Verified `npm run lint` successfully runs with `eslint .` without errors using `eslint^9.0.0` and flat `eslint.config.mjs`, resolving the incompatibility with Next 16.
-
 - [x] **[P2] High-Severity Dependency Vulnerability (GHSA-vfj7-8cjw) Mitigation & Risk Assessment:** Verified and documented that the GHSA-vfj7-8cjw vulnerability in the `braces` dependency has no patched upstream release in `braces@3` / `micromatch@4` and poses zero residual risk to production, as it only exists in the `devDependencies` pipeline and is stripped from production builds.
 
 ---

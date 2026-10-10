@@ -243,7 +243,7 @@ export default function Header(): React.JSX.Element {
       {/* Main Luxury Header */}
       <header className="sticky top-0 z-40 w-full bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] shadow-xs transition-all">
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-[64px] sm:h-[72px] gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
+          <div className="flex items-center justify-between min-h-[88px] sm:min-h-[104px] py-2 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden shrink-0">
@@ -261,12 +261,18 @@ export default function Header(): React.JSX.Element {
             </div>
 
             {/* Brand Logo & Tagline */}
-            <div className="flex-1 min-w-0 lg:flex-none text-center lg:text-left px-0.5 xs:px-1 flex justify-center">
-              <Link href="/" className="inline-block group max-w-full">
-                <span className="font-serif text-[18px] xs:text-[22px] sm:text-4xl tracking-[0.08em] xs:tracking-[0.12em] sm:tracking-[0.22em] text-[#641C2D] font-bold uppercase block transition-transform group-hover:scale-[1.01] leading-tight w-full truncate">
-                  PALLUVO
+            <div className="flex-1 min-w-0 lg:flex-none flex justify-center">
+              <Link href="/" className="flex flex-col items-center group max-w-full" aria-label="PALLUVO home">
+                {/* Crop the logo's built-in empty margin so the badge fills the box */}
+                <span className="block relative overflow-hidden h-14 w-10 sm:h-16 sm:w-12">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src="/images/palluvo-logo.png"
+                    alt="PALLUVO"
+                    className="absolute inset-0 h-full w-full object-cover scale-[1.35] mix-blend-multiply transition-transform group-hover:scale-[1.4]"
+                  />
                 </span>
-                <span className="text-[6.5px] xs:text-[7.5px] sm:text-[9px] md:text-[11px] tracking-[0.01em] xs:tracking-[0.04em] sm:tracking-[0.14em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans block -mt-0.5 sm:-mt-1 font-semibold whitespace-nowrap leading-tight truncate max-w-full">
+                <span className="mt-1 text-[8px] sm:text-[10px] md:text-[11px] tracking-[0.12em] sm:tracking-[0.2em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans font-semibold whitespace-nowrap leading-tight">
                   Every drape, a little magic.
                 </span>
               </Link>

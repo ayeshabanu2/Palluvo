@@ -20,45 +20,86 @@ interface AccountClientProps {
   serverOrders?: PlacedOrder[] | null;
 }
 
+import { createClient } from '@/utils/supabase/client';
+
+function reconcileOrders(serverOrders?: PlacedOrder[] | null, userId?: string): PlacedOrder[] {
+  const orderMap = new Map<string, PlacedOrder>();
+
+  // 1. Add server orders first (server state is authoritative for status / timestamps)
+  if (serverOrders && Array.isArray(serverOrders)) {
+    for (const order of serverOrders) {
+      const key = order.orderNumber || order.id;
+      if (key) {
+        orderMap.set(key, order);
+      }
+    }
+  }
+
+  // 2. Reconcile with client user-scoped orders (so checkout-confirmed or offline orders are never masked by empty query results)
+  if (typeof window !== 'undefined' && userId) {
+    try {
+      const scopedKey = `palluvo_orders_${userId}`;
+      const saved = localStorage.getItem(scopedKey);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          for (const order of parsed) {
+            const key = order.orderNumber || order.id;
+            if (key && !orderMap.has(key)) {
+              orderMap.set(key, order);
+            }
+          }
+        }
+      }
+    } catch {}
+  }
+
+  return Array.from(orderMap.values());
+}
+
 export default function AccountClient({ userEmail, userId, userName, serverOrders }: AccountClientProps): React.JSX.Element {
   const { wishlist } = useStore();
   const [activeTab, setActiveTab] = useState<AccountTab>('orders');
 
-  // Load account-scoped orders: prefer server-side RLS records; fallback to per-user partitioned storage
+  // Load account-scoped orders: reconcile server-side RLS records with per-user partitioned storage
   const [userOrders, setUserOrders] = useState<PlacedOrder[]>(() => {
-    if (serverOrders && Array.isArray(serverOrders)) {
-      return serverOrders;
-    }
-    if (typeof window !== 'undefined' && userId) {
-      try {
-        const scopedKey = `palluvo_orders_${userId}`;
-        const saved = localStorage.getItem(scopedKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) return parsed;
-        }
-      } catch {}
-    }
-    return [];
+    return reconcileOrders(serverOrders, userId);
   });
 
-  // Keep in sync with user-partitioned storage or server changes
+  // Keep in sync with user-partitioned storage and server changes, plus push unsynced local orders to server
   React.useEffect(() => {
-    if (serverOrders && Array.isArray(serverOrders)) {
-      setUserOrders(serverOrders);
-    } else if (userId) {
-      try {
-        const scopedKey = `palluvo_orders_${userId}`;
-        const saved = localStorage.getItem(scopedKey);
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) setUserOrders(parsed);
-        } else {
-          setUserOrders([]);
-        }
-      } catch {}
-    } else {
-      setUserOrders([]);
+    const reconciled = reconcileOrders(serverOrders, userId);
+    setUserOrders(reconciled);
+
+    // If there are local orders missing on the server, attempt to sync them
+    if (userId && serverOrders && Array.isArray(serverOrders)) {
+      const serverOrderKeys = new Set(serverOrders.map((o) => o.orderNumber || o.id));
+      const missingOnServer = reconciled.filter((o) => !serverOrderKeys.has(o.orderNumber || o.id));
+
+      if (missingOnServer.length > 0) {
+        try {
+          const supabase = createClient();
+          const payload = missingOnServer.map((order) => ({
+            id: order.id || order.orderNumber,
+            order_number: order.orderNumber || order.id,
+            user_id: userId,
+            items: order.items,
+            subtotal: order.subtotal,
+            discount_amount: order.discountAmount,
+            shipping_fee: order.shippingFee,
+            grand_total: order.grandTotal,
+            payment_method: order.paymentMethod,
+            customer: order.customer,
+            status: order.status || 'Confirmed'
+          }));
+
+          Promise.resolve(supabase.from('orders').insert(payload)).then((res) => {
+            if (res && 'error' in res && res.error) {
+              console.warn('Sync notice for missing orders:', res.error.message);
+            }
+          }).catch(() => {});
+        } catch {}
+      }
     }
   }, [serverOrders, userId]);
 

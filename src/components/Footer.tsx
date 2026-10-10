@@ -27,7 +27,7 @@ export default function Footer(): React.JSX.Element {
         </div>
 
         {/* Links Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10 py-12 border-b border-[#3D302A]">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 py-12 border-b border-[#3D302A]">
           {/* Brand Info */}
           <div>
             <span className="font-serif text-3xl tracking-[0.22em] text-[#D6B878] font-bold uppercase block mb-3">
@@ -52,19 +52,6 @@ export default function Footer(): React.JSX.Element {
                 <Mail className="w-4 h-4 text-[#D6B878] shrink-0" />
                 <span>concierge@palluvo.com</span>
               </li>
-            </ul>
-          </div>
-
-          {/* Signature Drapes */}
-          <div>
-            <h4 className="text-sm font-semibold tracking-wider uppercase text-white mb-4">Signature Weaves</h4>
-            <ul className="space-y-2 text-xs text-[#B8B0A5]">
-              <li><Link href="/sarees?type=Kanjivaram" className="hover:text-[#D6B878] transition">Kanchipuram Silk</Link></li>
-              <li><Link href="/sarees?type=Banarasi" className="hover:text-[#D6B878] transition">Varanasi Katan Banarasi</Link></li>
-              <li><Link href="/sarees?type=Paithani" className="hover:text-[#D6B878] transition">Yeola Paithani Peacock</Link></li>
-              <li><Link href="/sarees?type=Chanderi" className="hover:text-[#D6B878] transition">Chanderi Silk Tissue</Link></li>
-              <li><Link href="/sarees?type=Organza" className="hover:text-[#D6B878] transition">Hand-Cut Organza Sheer</Link></li>
-              <li><Link href="/sarees?type=Ready-to-Wear" className="hover:text-[#D6B878] transition">1-Minute Ready Drape</Link></li>
             </ul>
           </div>
 

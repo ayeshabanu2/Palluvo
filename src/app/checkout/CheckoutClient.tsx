@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
 import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard } from 'lucide-react';
+import { createClient } from '@/utils/supabase/client';
 
 interface CheckoutFormData {
   firstName: string;
@@ -90,6 +91,42 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
       customer: { ...formData },
       userId
     });
+
+    // Also persist order to user-scoped Supabase orders table if authenticated
+    if (userId) {
+      try {
+        const supabase = createClient();
+        Promise.resolve(
+          supabase
+            .from('orders')
+            .insert([
+              {
+                id: generatedOrder,
+                order_number: generatedOrder,
+                user_id: userId,
+                items: [...cart],
+                subtotal,
+                discount_amount: discountAmount,
+                shipping_fee: shippingFee,
+                grand_total: grandTotal,
+                payment_method: paymentMethod,
+                customer: { ...formData },
+                status: 'Confirmed'
+              }
+            ])
+        )
+          .then((res) => {
+            if (res && 'error' in res && res.error) {
+              console.warn('Supabase checkout order persistence notice:', res.error.message);
+            }
+          })
+          .catch((err: unknown) => {
+            console.warn('Supabase checkout order persistence error:', err);
+          });
+      } catch (e) {
+        console.warn('Failed to initiate Supabase order persistence:', e);
+      }
+    }
 
     setIsSubmitted(true);
     clearCart();

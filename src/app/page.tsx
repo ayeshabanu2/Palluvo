@@ -7,7 +7,6 @@ import {
   SAREE_PRODUCTS 
 } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
-import MobileShowcaseSlider from '@/components/MobileShowcaseSlider';
 import { Sparkles, ArrowRight, ShieldCheck, HeartHandshake, Scissors } from 'lucide-react';
 import { Metadata } from 'next';
 import { SareeProduct } from '@/types';
@@ -54,46 +53,38 @@ export default function HomePage(): React.JSX.Element {
           <div className="absolute inset-0 bg-gradient-to-t from-[#2B211D] via-transparent to-black/30" />
         </div>
 
-        {/* Responsive Grid Container */}
-        <div className="relative z-10 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-24">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-8 lg:gap-12 items-center">
+        {/* Responsive Container */}
+        <div className="relative z-10 w-full px-0 py-8 sm:py-12 lg:py-4">
+          <div className="flex flex-col items-center">
             
-            {/* Mobile View: Dedicated Image Grid Card */}
-            <MobileShowcaseSlider />
-
-            {/* Editorial Text Column (renders in grid below image on mobile, left column on desktop) */}
-            <div className="w-full order-2 flex flex-col items-start text-left text-white mx-auto lg:mx-0 lg:max-w-2xl pt-0 lg:pt-4">
+            {/* Editorial Text Column */}
+            <div className="w-full flex flex-col items-start lg:items-center text-left lg:text-center text-white mx-auto pt-0 lg:pt-4 px-0">
               {/* Desktop-only Editorial Collection Pill (mobile already carries campaign badge in the image card) */}
-              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-6 shadow-md">
+              <div className="hidden lg:inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-[#D6B878]/40 bg-[#2B211D]/75 backdrop-blur-md mb-3 shadow-md">
                 <Sparkles className="w-3.5 h-3.5 text-[#D6B878] shrink-0" />
                 <span className="text-[11px] uppercase tracking-[0.25em] text-[#D6B878] font-medium whitespace-nowrap">
                   Autumn / Festive 2026 Collection
                 </span>
               </div>
 
-              <h1 className="font-serif text-[32px] xs:text-4xl sm:text-5xl lg:text-6xl font-bold tracking-tight text-white mb-4 sm:mb-6 leading-[1.2] lg:leading-[1.15] drop-shadow-sm w-full">
+              <h2 className="font-serif text-[32px] xs:text-4xl sm:text-5xl lg:text-5xl font-bold tracking-tight text-white mt-2 mb-4 sm:mb-6 lg:mb-4 leading-[1.2] lg:leading-[1.15] drop-shadow-sm w-full text-center">
                 Every drape,{' '}
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
-              </h1>
+              </h2>
 
               <div className="w-full mt-2">
-                <div className="flex items-center gap-4 mb-6">
-                  <h2 className="text-base sm:text-lg lg:text-xl font-serif font-bold text-[#D6B878] uppercase tracking-[0.15em] whitespace-nowrap">Best Sellers</h2>
-                  <div className="flex-1 h-px bg-gradient-to-r from-[#D6B878]/50 to-transparent"></div>
-                </div>
-                
                 <div className="relative w-full overflow-hidden flex items-center group mask-image-fade">
                   {/* Fading edges for the marquee */}
                   <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
                   <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
                   
-                  <div className="flex gap-4 sm:gap-6 animate-marquee hover:pause-marquee w-max py-2">
+                  <div className="flex gap-4 sm:gap-6 animate-marquee hover:pause-marquee w-max py-2 px-4">
                     {/* Double the array for seamless infinite scrolling */}
                     {[...trendingSarees, ...trendingSarees].map((saree, i) => (
                       <Link 
                         href={`/product/${saree.id}`} 
                         key={`${saree.id}-${i}`}
-                        className="relative w-36 h-52 sm:w-44 sm:h-64 lg:w-48 lg:h-72 rounded-xl overflow-hidden border border-white/10 shrink-0 shadow-lg hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-1.5"
+                        className="relative w-64 h-[28rem] sm:w-80 sm:h-[34rem] lg:w-[17rem] lg:h-[26rem] rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-2xl hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-2"
                         aria-label={`Shop ${saree.name}`}
                       >
                         <Image
@@ -107,7 +98,13 @@ export default function HomePage(): React.JSX.Element {
                     ))}
                   </div>
                 </div>
+
+                <div className="flex items-center justify-center gap-4 mt-4 lg:mt-3">
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#D6B878] uppercase tracking-[0.15em] text-center w-full">Best Sellers</h1>
+                </div>
+
               </div>
+
             </div>
 
           </div>

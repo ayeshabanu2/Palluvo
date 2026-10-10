@@ -35,6 +35,7 @@ export const metadata: Metadata = {
 
 import { createClient } from '@/utils/supabase/server';
 import AccountPortal from './AccountPortal';
+import { PlacedOrder } from '@/types';
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -45,7 +46,7 @@ export default async function AccountPage() {
   }
 
   // Attempt to fetch server-side orders scoped to this authenticated user via RLS
-  let initialOrders = null;
+  let initialOrders: PlacedOrder[] | null = null;
   try {
     const { data: serverOrders, error } = await supabase
       .from('orders')
@@ -54,7 +55,19 @@ export default async function AccountPage() {
       .order('created_at', { ascending: false });
 
     if (!error && serverOrders) {
-      initialOrders = serverOrders;
+      initialOrders = serverOrders.map((o: Record<string, unknown>) => ({
+        id: (o.id as string) || (o.order_number as string) || (o.orderNumber as string),
+        orderNumber: (o.order_number as string) || (o.orderNumber as string) || (o.id as string),
+        date: (o.date as string) || (o.created_at ? new Date(o.created_at as string).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })),
+        status: (o.status as 'Confirmed' | 'Delivered' | 'In Transit') || 'Confirmed',
+        items: (o.items as PlacedOrder['items']) || [],
+        subtotal: Number(o.subtotal) || 0,
+        discountAmount: Number(o.discount_amount ?? o.discountAmount ?? 0),
+        shippingFee: Number(o.shipping_fee ?? o.shippingFee ?? 0),
+        grandTotal: Number(o.grand_total ?? o.grandTotal ?? 0),
+        paymentMethod: (o.payment_method as PlacedOrder['paymentMethod']) || (o.paymentMethod as PlacedOrder['paymentMethod']) || 'card',
+        customer: (o.customer as PlacedOrder['customer']) || {}
+      }));
     }
   } catch {
     // If Supabase table is not provisioned, AccountClient will partition client storage by userId
