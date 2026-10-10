@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail, Phone, MapPin, Send, CheckCircle2 } from 'lucide-react';
+import { Mail, Phone, MapPin, CheckCircle2, ExternalLink, MessageSquare } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 
 interface ContactFormData {
@@ -56,33 +56,96 @@ export default function ContactClient(): React.JSX.Element {
         
         {/* Contact Info Cards */}
         <div className="space-y-4">
+          {/* Phone & WhatsApp Concierge */}
           <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] flex items-start gap-4 shadow-xs">
-            <Phone className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
-            <div>
+            <div className="w-10 h-10 rounded-full bg-[#641C2D]/10 text-[#641C2D] flex items-center justify-center shrink-0 mt-0.5">
+              <Phone className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Phone & WhatsApp Concierge</h3>
-              <p className="text-xs text-[#665E57] mt-1">+91 84988 54323 / +91 81067 89789</p>
-              <p className="text-[11px] text-[#641C2D] mt-1 font-semibold">Available Mon to Sat: 10 AM to 7 PM IST</p>
+              <div className="mt-2 space-y-1 text-xs">
+                <div className="flex items-center justify-between">
+                  <a href="tel:+918897776984" className="font-medium text-[#2B211D] hover:text-[#641C2D] transition">
+                    +91 88977 76984
+                  </a>
+                  <a 
+                    href="https://wa.me/918897776984" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold"
+                  >
+                    <MessageSquare className="w-3 h-3" /> WhatsApp
+                  </a>
+                </div>
+                <div className="flex items-center justify-between">
+                  <a href="tel:+918498854323" className="font-medium text-[#2B211D] hover:text-[#641C2D] transition">
+                    +91 84988 54323
+                  </a>
+                  <a 
+                    href="https://wa.me/918498854323" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold"
+                  >
+                    <MessageSquare className="w-3 h-3" /> WhatsApp
+                  </a>
+                </div>
+                <div className="flex items-center justify-between">
+                  <a href="tel:+918106789789" className="font-medium text-[#2B211D] hover:text-[#641C2D] transition">
+                    +91 81067 89789
+                  </a>
+                  <a 
+                    href="https://wa.me/918106789789" 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="inline-flex items-center gap-1 text-[11px] text-emerald-700 hover:text-emerald-800 font-semibold"
+                  >
+                    <MessageSquare className="w-3 h-3" /> WhatsApp
+                  </a>
+                </div>
+              </div>
+              <p className="text-[11px] text-[#641C2D] mt-2 font-semibold">Available Mon to Sat: 10 AM to 7 PM IST</p>
             </div>
           </div>
 
+          {/* Email Concierge */}
           <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] flex items-start gap-4 shadow-xs">
-            <Mail className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
+            <div className="w-10 h-10 rounded-full bg-[#641C2D]/10 text-[#641C2D] flex items-center justify-center shrink-0 mt-0.5">
+              <Mail className="w-5 h-5" />
+            </div>
             <div>
               <h3 className="font-serif text-base font-bold text-[#2B211D]">Email Concierge</h3>
-              <p className="text-xs text-[#665E57] mt-1">contact@palluvo.com</p>
-              <p className="text-xs text-[#665E57]">concierge@palluvo.com</p>
+              <p className="text-xs text-[#665E57] mt-1">
+                <a href="mailto:info@palluvo.store" className="font-semibold text-[#641C2D] hover:underline">
+                  info@palluvo.store
+                </a>
+              </p>
+              <p className="text-[11px] text-[#6D625D] mt-1">
+                For order status, bespoke draping advice, and bulk trousseau inquiries.
+              </p>
             </div>
           </div>
 
+          {/* Flagship Atelier & Location Map */}
           <div className="bg-white p-6 rounded-xl border border-[#EDE3D5] flex items-start gap-4 shadow-xs">
-            <MapPin className="w-5 h-5 text-[#641C2D] flex-shrink-0 mt-1" />
-            <div>
-              <h3 className="font-serif text-base font-bold text-[#2B211D]">Flagship Atelier</h3>
-              <p className="text-xs text-[#665E57] mt-1">
+            <div className="w-10 h-10 rounded-full bg-[#641C2D]/10 text-[#641C2D] flex items-center justify-center shrink-0 mt-0.5">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-serif text-base font-bold text-[#2B211D]">Flagship Boutique & Atelier</h3>
+              <p className="text-xs text-[#665E57] mt-1 leading-relaxed">
                 PALLUVO Couture Atelier<br />
-                Kavuri Hills Road, Madhapur, Hitech City<br />
-                Hyderabad, Telangana 500081, India
+                Hyderabad, Telangana, India
               </p>
+              <a
+                href="https://maps.app.goo.gl/wkcLwsNgHp39z4pe7"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs text-[#641C2D] font-bold mt-2.5 hover:text-[#4E1422] transition underline underline-offset-4"
+              >
+                <span>View on Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
           </div>
         </div>
@@ -201,15 +264,16 @@ export default function ContactClient(): React.JSX.Element {
 
               <button
                 type="submit"
-                className="bg-[#641C2D] hover:bg-[#4E1422] text-white px-8 py-3.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase flex items-center justify-center gap-2 shadow-md transition"
+                className="bg-[#641C2D] hover:bg-[#4E1422] text-white px-8 py-3.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase transition shadow-md"
               >
-                <Send className="w-3.5 h-3.5" /> Submit Inquiry
+                Send Message
               </button>
             </form>
           )}
         </div>
 
       </div>
+
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { Truck, RotateCcw, Lock, ShieldCheck, MapPin, Phone, Mail } from 'lucide-react';
+import { Truck, RotateCcw, Lock, ShieldCheck, MapPin, Phone, Mail, ExternalLink } from 'lucide-react';
 
 export default function Footer(): React.JSX.Element {
   return (
@@ -22,13 +22,13 @@ export default function Footer(): React.JSX.Element {
           <div className="flex flex-col items-center">
             <Lock className="w-8 h-8 text-[#D6B878] mb-2" />
             <h4 className="text-white text-sm font-semibold tracking-wider uppercase">100% Secure Checkout</h4>
-            <p className="text-xs text-[#B8B0A5] mt-1">256-bit encrypted UPI, Cards, NetBanking & COD</p>
+            <p className="text-xs text-[#B8B0A5] mt-1">256-bit encrypted doorstep fulfillment</p>
           </div>
         </div>
 
         {/* Links Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10 py-12 border-b border-[#3D302A]">
-          {/* Brand Info */}
+          {/* Brand Info & Verified Contact */}
           <div>
             <span className="font-serif text-3xl tracking-[0.22em] text-[#D6B878] font-bold uppercase block mb-3">
               PALLUVO
@@ -41,16 +41,33 @@ export default function Footer(): React.JSX.Element {
             </p>
             <ul className="space-y-3 text-xs text-[#B8B0A5]">
               <li className="flex items-start gap-2.5">
-                <MapPin className="w-4 h-4 text-[#D6B878] shrink-0" />
-                <span>123 Heritage Loom Lane, Banjara Hills,<br/>Hyderabad, Telangana 500034, India</span>
+                <MapPin className="w-4 h-4 text-[#D6B878] shrink-0 mt-0.5" />
+                <div>
+                  <span>PALLUVO Couture Atelier, Hyderabad, Telangana, India</span>
+                  <a
+                    href="https://maps.app.goo.gl/wkcLwsNgHp39z4pe7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 text-[#D6B878] hover:underline mt-1 font-medium"
+                  >
+                    <span>View Atelier on Google Maps</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
               </li>
-              <li className="flex items-center gap-2.5">
-                <Phone className="w-4 h-4 text-[#D6B878] shrink-0" />
-                <span>+91 98765 43210</span>
+              <li className="flex items-start gap-2.5">
+                <Phone className="w-4 h-4 text-[#D6B878] shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <a href="tel:+918897776984" className="hover:text-white transition block">+91 88977 76984</a>
+                  <a href="tel:+918498854323" className="hover:text-white transition block">+91 84988 54323</a>
+                  <a href="tel:+918106789789" className="hover:text-white transition block">+91 81067 89789</a>
+                </div>
               </li>
               <li className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#D6B878] shrink-0" />
-                <span>concierge@palluvo.com</span>
+                <a href="mailto:info@palluvo.store" className="hover:text-white transition">
+                  info@palluvo.store
+                </a>
               </li>
             </ul>
           </div>

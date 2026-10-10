@@ -103,13 +103,29 @@ const organizationJsonLd = {
     'https://facebook.com/palluvo',
     'https://pinterest.com/palluvo',
   ],
-  contactPoint: {
-    '@type': 'ContactPoint',
-    telephone: '+91 84988 54323',
-    contactType: 'customer service',
-    areaServed: 'IN',
-    availableLanguage: ['en', 'hi'],
-  },
+  contactPoint: [
+    {
+      '@type': 'ContactPoint',
+      telephone: '+91 88977 76984',
+      email: 'info@palluvo.store',
+      contactType: 'customer service',
+      areaServed: 'IN',
+      availableLanguage: ['en', 'hi'],
+    },
+    {
+      '@type': 'ContactPoint',
+      telephone: '+91 84988 54323',
+      contactType: 'concierge styling',
+      areaServed: 'IN',
+    },
+    {
+      '@type': 'ContactPoint',
+      telephone: '+91 81067 89789',
+      contactType: 'bridal trousseau consultation',
+      areaServed: 'IN',
+    },
+  ],
+  hasMap: 'https://maps.app.goo.gl/wkcLwsNgHp39z4pe7',
 };
 
 const websiteJsonLd = {
