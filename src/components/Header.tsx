@@ -245,25 +245,49 @@ export default function Header(): React.JSX.Element {
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between min-h-[68px] sm:min-h-[76px] py-1.5 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
-            {/* Left Corner: Mobile Menu Trigger + Brand Logo & Name */}
-            <div className="flex items-center gap-1.5 xs:gap-2.5 sm:gap-3 shrink-0">
-              {/* Mobile menu trigger */}
-              <div className="flex items-center lg:hidden shrink-0">
-                <button 
-                  ref={menuTriggerRef}
-                  id="mobileMenuToggle"
-                  onClick={() => setMobileMenuOpen(true)}
-                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#541920] transition-colors rounded-full"
-                  aria-label="Open navigation menu"
-                  aria-expanded={mobileMenuOpen}
-                  aria-controls="mobileMenuDrawer"
-                >
-                  <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-                </button>
-              </div>
+            {/* Mobile menu trigger */}
+            <div className="flex items-center lg:hidden shrink-0">
+              <button 
+                ref={menuTriggerRef}
+                id="mobileMenuToggle"
+                onClick={() => setMobileMenuOpen(true)}
+                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#541920] transition-colors rounded-full"
+                aria-label="Open navigation menu"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobileMenuDrawer"
+              >
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
+            </div>
 
-              {/* Brand Logo & Name */}
-              <Link href="/" className="flex items-center gap-2 sm:gap-3 group max-w-full" aria-label="PALLUVO home">
+            {/* Desktop Direct Search Bar (Left on Desktop) */}
+            <div className="hidden lg:flex max-w-xs w-60 xl:w-72">
+              <form onSubmit={handleSearchSubmit} className="relative w-full" role="search">
+                <label htmlFor="desktopSearchInput" className="sr-only">
+                  Search sarees catalog
+                </label>
+                <input
+                  id="desktopSearchInput"
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search Kanjivaram, Banarasi..."
+                  aria-label="Search sarees catalog"
+                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-10 pr-4 py-2 text-xs text-[#241F1D] placeholder-[#665E57] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] shadow-xs transition"
+                />
+                <button
+                  type="submit"
+                  className="absolute left-3 top-2.5 text-[#665E57] hover:text-[#641C2D] transition"
+                  aria-label="Submit search"
+                >
+                  <Search className="w-3.5 h-3.5" />
+                </button>
+              </form>
+            </div>
+
+            {/* Centered Brand Logo & Title */}
+            <div className="flex-1 min-w-0 flex justify-center text-center px-1">
+              <Link href="/" className="flex items-center justify-center gap-2 sm:gap-3 group max-w-full" aria-label="PALLUVO home">
                 {/* Logo emblem */}
                 <span className="block relative overflow-hidden h-9 w-6.5 sm:h-11 sm:w-8 rounded-xs shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -281,41 +305,8 @@ export default function Header(): React.JSX.Element {
               </Link>
             </div>
 
-            {/* Desktop Direct Search Bar */}
-            <div className="hidden lg:flex flex-1 max-w-md mx-8">
-              <form onSubmit={handleSearchSubmit} className="relative w-full" role="search">
-                <label htmlFor="desktopSearchInput" className="sr-only">
-                  Search sarees catalog
-                </label>
-                <input
-                  id="desktopSearchInput"
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search Kanjivaram, Banarasi, Organza"
-                  aria-label="Search sarees catalog"
-                  className="w-full bg-[#FFFFFF] border border-[#EDE3D5] rounded-full pl-11 pr-20 py-2.5 text-sm text-[#241F1D] placeholder-[#665E57] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D] shadow-xs transition"
-                />
-                <button
-                  type="submit"
-                  className="absolute left-3.5 top-3 text-[#665E57] hover:text-[#641C2D] transition"
-                  aria-label="Submit search"
-                >
-                  <Search className="w-4 h-4" />
-                </button>
-                {searchQuery && (
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-2 px-3 py-1 bg-[#641C2D] text-white text-xs rounded-full hover:bg-[#4E1422] transition"
-                  >
-                    Search
-                  </button>
-                )}
-              </form>
-            </div>
-
             {/* Actions: Search (Mobile), Account, Wishlist, Bag */}
-            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-4 shrink-0">
+            <div className="flex items-center gap-1.5 xs:gap-2 sm:gap-4 shrink-0 justify-end lg:w-60 xl:w-72">
               <button 
                 ref={searchTriggerRef}
                 id="searchModalToggle"
