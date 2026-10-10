@@ -243,7 +243,7 @@ export default function Header(): React.JSX.Element {
       {/* Main Luxury Header */}
       <header className="sticky top-0 z-40 w-full bg-[#F8F5EF]/95 backdrop-blur-md border-b border-[#EDE3D5] shadow-xs transition-all">
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between min-h-[88px] sm:min-h-[104px] py-2 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
+          <div className="flex items-center justify-between min-h-[68px] sm:min-h-[76px] py-1.5 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
             {/* Mobile menu trigger */}
             <div className="flex items-center lg:hidden shrink-0">
@@ -260,9 +260,9 @@ export default function Header(): React.JSX.Element {
               </button>
             </div>
 
-            {/* Brand Logo & Tagline */}
+            {/* Brand Logo */}
             <div className="flex-1 min-w-0 lg:flex-none flex justify-center">
-              <Link href="/" className="flex flex-col items-center group max-w-full" aria-label="PALLUVO home">
+              <Link href="/" className="flex items-center justify-center group max-w-full" aria-label="PALLUVO home">
                 {/* Crop the logo's built-in empty margin so the badge fills the box */}
                 <span className="block relative overflow-hidden h-14 w-10 sm:h-16 sm:w-12">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -271,9 +271,6 @@ export default function Header(): React.JSX.Element {
                     alt="PALLUVO"
                     className="absolute inset-0 h-full w-full object-cover scale-[1.35] mix-blend-multiply transition-transform group-hover:scale-[1.4]"
                   />
-                </span>
-                <span className="mt-1 text-[8px] sm:text-[10px] md:text-[11px] tracking-[0.12em] sm:tracking-[0.2em] md:tracking-[0.28em] uppercase text-[#665E57] font-sans font-semibold whitespace-nowrap leading-tight">
-                  Every drape, a little magic.
                 </span>
               </Link>
             </div>
