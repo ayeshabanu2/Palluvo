@@ -98,7 +98,7 @@ header .header-main-row {
 
 @media (min-width: 640px) {
   header .header-main-row {
-    min-height: 82px;
+    min-height: 80px;
   }
 }
 
