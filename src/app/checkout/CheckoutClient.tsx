@@ -5,7 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
-import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard, Loader2 } from 'lucide-react';
 import { placeVerifiedOrder } from './actions';
 import { PlacedOrder } from '@/types';
 
@@ -20,7 +20,7 @@ interface CheckoutFormData {
   pincode: string;
 }
 
-type PaymentMethod = 'upi' | 'card' | 'cod';
+type PaymentMethod = 'cod';
 
 export default function CheckoutClient({ userId }: { userId?: string }): React.JSX.Element {
   const { cart, grandTotal, subtotal, shippingFee, discountAmount, coupon, clearCart, showToast, recordOrder } = useStore();
@@ -98,7 +98,7 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
       const items = getCheckoutItems();
 
       // Submit order to server-verified action
-      // Server calculates trusted totals from catalog and assigns 'Confirmed' for COD or 'Pending Payment' for online methods awaiting gateway capture
+      // Only clears cart and displays confirmation after durable database persistence succeeds
       const result = await placeVerifiedOrder({
         items,
         couponCode: coupon?.code,
@@ -114,38 +114,27 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
         setPlacedOrder(result.order);
         setIsSubmitted(true);
         clearCart();
-
-        if (result.order.status === 'Confirmed') {
-          showToast(`Order #${result.order.orderNumber} confirmed successfully!`);
-        } else {
-          showToast(`Order #${result.order.orderNumber} recorded. Payment pending.`);
-        }
+        showToast(`Order #${result.order.orderNumber} placed & confirmed successfully!`);
       } else {
-        showToast(result.error || 'Could not process order. Please try again.', 'error');
+        showToast(result.error || 'Could not complete order. Please try again.', 'error');
       }
     } catch (err: unknown) {
-      showToast('Server error while processing your order. Please try again.', 'error');
+      showToast(err instanceof Error ? err.message : 'Server error while processing your order. Please try again.', 'error');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   if (isSubmitted && placedOrder) {
-    const isConfirmed = placedOrder.status === 'Confirmed';
-
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center" role="status" aria-live="polite">
         <div className="bg-white p-8 sm:p-12 rounded-2xl border border-[#EDE3D5] shadow-lg">
-          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
-            isConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-          }`}>
-            {isConfirmed ? <CheckCircle2 className="w-8 h-8" /> : <Clock className="w-8 h-8" />}
+          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle2 className="w-8 h-8" />
           </div>
 
-          <span className={`text-xs uppercase tracking-[0.25em] font-semibold ${
-            isConfirmed ? 'text-emerald-800' : 'text-amber-800'
-          }`}>
-            {isConfirmed ? 'Order Confirmed' : 'Order Placed — Payment Pending'}
+          <span className="text-xs uppercase tracking-[0.25em] font-semibold text-emerald-800">
+            Order Confirmed & Saved
           </span>
 
           <h1 
@@ -157,28 +146,24 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
           </h1>
 
           <p className="text-xs sm:text-sm text-[#6D625D] max-w-md mx-auto mb-6">
-            {isConfirmed ? (
-              <>Thank you, <strong className="text-[#2B211D]">{placedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{placedOrder.orderNumber}</span> has been confirmed for doorstep dispatch.</>
-            ) : (
-              <>Thank you, <strong className="text-[#2B211D]">{placedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{placedOrder.orderNumber}</span> has been received. Payment verification is pending before final dispatch.</>
-            )}
+            Thank you, <strong className="text-[#2B211D]">{placedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{placedOrder.orderNumber}</span> has been confirmed and stored securely for fulfillment.
           </p>
 
           <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-left text-xs space-y-2 mb-8">
             <div className="flex justify-between">
               <span className="text-[#665E57]">Order Status:</span>
-              <span className={`font-bold ${isConfirmed ? 'text-emerald-800' : 'text-amber-800'}`}>
+              <span className="font-bold text-emerald-800">
                 {placedOrder.status}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#665E57]">Payment Method:</span>
               <span className="font-bold text-[#2B211D] uppercase">
-                {placedOrder.paymentMethod === 'cod' ? 'Cash on Delivery (Doorstep Payment)' : `${placedOrder.paymentMethod.toUpperCase()} (Online)`}
+                Cash on Delivery (Pay at Doorstep)
               </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Calculated Order Total:</span>
+              <span className="text-[#665E57]">Verified Order Total:</span>
               <span className="font-bold text-[#641C2D] tabular-nums">{formatINR(placedOrder.grandTotal)}</span>
             </div>
             <div className="flex justify-between">
@@ -190,7 +175,7 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
               <span className="font-medium text-[#2B211D]">{placedOrder.customer.city}, {placedOrder.customer.pincode}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Estimated Delivery:</span>
+              <span className="text-[#665E57]">Estimated Insured Delivery:</span>
               <span className="font-medium text-[#2B211D]">2 to 4 Business Days</span>
             </div>
           </div>
@@ -419,9 +404,8 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             </h2>
 
             <div className="space-y-3" role="radiogroup" aria-label="Select Payment Method">
-              <label htmlFor="checkout-payment-cod" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
-                paymentMethod === 'cod' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
-              }`}>
+              {/* Cash on Delivery (Enabled) */}
+              <label htmlFor="checkout-payment-cod" className="flex items-center justify-between p-4 rounded-xl border border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D] text-xs cursor-pointer transition">
                 <div className="flex items-center gap-3">
                   <input
                     id="checkout-payment-cod"
@@ -431,44 +415,58 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
                     onChange={() => setPaymentMethod('cod')}
                     className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
-                  <span>Cash on Delivery (COD — Direct Confirmation)</span>
+                  <span>Cash on Delivery (COD — Direct Confirmation & Doorstep Settlement)</span>
                 </div>
-                <span className="text-[11px] text-emerald-800 font-bold">Recommended</span>
+                <span className="text-[11px] text-emerald-800 font-bold bg-emerald-100 px-2 py-0.5 rounded-full">Available</span>
               </label>
 
-              <label htmlFor="checkout-payment-upi" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
-                paymentMethod === 'upi' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="checkout-payment-upi"
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'upi'}
-                    onChange={() => setPaymentMethod('upi')}
-                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                  />
-                  <span>Instant UPI (Payment Link / QR Invoice)</span>
+              {/* Instant UPI (Disabled until gateway integration) */}
+              <div className="flex flex-col p-4 rounded-xl border border-[#EDE3D5] bg-[#F8F5EF]/60 opacity-60 text-xs cursor-not-allowed">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="checkout-payment-upi"
+                      type="radio"
+                      name="payment"
+                      disabled
+                      className="cursor-not-allowed text-[#8E857B]"
+                    />
+                    <label htmlFor="checkout-payment-upi" className="text-[#6D625D] font-medium cursor-not-allowed">
+                      Instant UPI (Google Pay, PhonePe, Paytm, BHIM)
+                    </label>
+                  </div>
+                  <span className="text-[10px] text-[#6D625D] uppercase tracking-wider font-semibold bg-[#EDE3D5] px-2 py-0.5 rounded-full">
+                    Coming Soon
+                  </span>
                 </div>
-                <span className="text-[11px] text-[#B08D57] font-medium">Pending Verification</span>
-              </label>
+                <p className="text-[11px] text-[#8E857B] mt-1.5 pl-7">
+                  Online UPI gateway integration is in progress. Please select Cash on Delivery for instant order confirmation.
+                </p>
+              </div>
 
-              <label htmlFor="checkout-payment-card" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
-                paymentMethod === 'card' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="checkout-payment-card"
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'card'}
-                    onChange={() => setPaymentMethod('card')}
-                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                  />
-                  <span>Credit / Debit Card (Online Invoice)</span>
+              {/* Credit/Debit Card (Disabled until gateway integration) */}
+              <div className="flex flex-col p-4 rounded-xl border border-[#EDE3D5] bg-[#F8F5EF]/60 opacity-60 text-xs cursor-not-allowed">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="checkout-payment-card"
+                      type="radio"
+                      name="payment"
+                      disabled
+                      className="cursor-not-allowed text-[#8E857B]"
+                    />
+                    <label htmlFor="checkout-payment-card" className="text-[#6D625D] font-medium cursor-not-allowed">
+                      Credit / Debit Card (Visa, MasterCard, RuPay, Amex)
+                    </label>
+                  </div>
+                  <span className="text-[10px] text-[#6D625D] uppercase tracking-wider font-semibold bg-[#EDE3D5] px-2 py-0.5 rounded-full">
+                    Coming Soon
+                  </span>
                 </div>
-                <span className="text-[11px] text-[#665E57]">256-Bit SSL</span>
-              </label>
+                <p className="text-[11px] text-[#8E857B] mt-1.5 pl-7">
+                  Card gateway integration in progress. Please select Cash on Delivery for instant order confirmation.
+                </p>
+              </div>
             </div>
           </div>
 
@@ -538,15 +536,11 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Processing Order...
-                </>
-              ) : paymentMethod === 'cod' ? (
-                <>
-                  <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
+                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying Order & Saving...
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
+                  <Lock className="w-4 h-4" /> Confirm Cash on Delivery ({formatINR(grandTotal)})
                 </>
               )}
             </button>

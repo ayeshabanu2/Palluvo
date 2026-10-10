@@ -151,8 +151,8 @@ export async function initiatePaymentSession(
 
 /**
  * Server-side verified order placement action.
- * Computes canonical amounts from trusted catalog data and verifies payment provider transactions.
- * Fails closed for online payment methods if required secrets or verified captures are absent.
+ * Computes canonical amounts from trusted catalog data and verifies database persistence.
+ * Propagates Supabase insert errors and only returns success upon durable storage.
  */
 export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<PlaceOrderServerResult> {
   try {
@@ -185,11 +185,11 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       calculateTrustedOrderTotals(items, couponCode);
 
     // 3. Payment verification & status assignment
-    let orderStatus: PlacedOrder['status'] = 'Pending Payment';
+    let orderStatus: PlacedOrder['status'] = 'Confirmed';
     let paymentStatus = 'Unpaid';
 
     if (paymentMethod === 'cod') {
-      // Cash on Delivery is confirmed for dispatch with payment scheduled on doorstep delivery
+      // Cash on Delivery is confirmed for dispatch with doorstep collection
       orderStatus = 'Confirmed';
       paymentStatus = 'Pending COD Collection';
     } else if (paymentMethod === 'upi' || paymentMethod === 'card') {
@@ -212,16 +212,17 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
           orderStatus = 'Confirmed';
           paymentStatus = `Verified & Captured (${paymentMethod.toUpperCase()}: ${paymentVerification.paymentId})`;
         } else {
-          // If verification explicitly failed with invalid signature or replay, reject order
           return {
             success: false,
             error: verificationResult.error || 'Payment provider verification failed: invalid signature or transaction mismatch.',
           };
         }
       } else {
-        // Online order without completed gateway verification: keep order in 'Pending Payment' state
-        orderStatus = 'Pending Payment';
-        paymentStatus = `Awaiting ${paymentMethod.toUpperCase()} Payment Provider Settlement`;
+        // Online payments without an active provider completion flow are disabled
+        return {
+          success: false,
+          error: 'Online payment gateway integration is currently in progress. Please select Cash on Delivery for instant order confirmation.',
+        };
       }
     } else {
       return { success: false, error: 'Unsupported payment method.' };
@@ -253,14 +254,14 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       },
     };
 
-    // 4. Persist to Supabase orders table with RLS if user is authenticated
+    // 4. Persist to Supabase orders table with RLS and strictly verify database result
     try {
       const supabase = await createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
-      await supabase.from('orders').insert([
+      const { error: insertError } = await supabase.from('orders').insert([
         {
           id: orderNumber,
           order_number: orderNumber,
@@ -277,10 +278,23 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
           created_at: new Date().toISOString(),
         },
       ]);
-    } catch (dbErr) {
-      console.warn('Server notice: Could not write order to orders table:', dbErr);
+
+      if (insertError) {
+        console.error('Supabase orders table insertion error:', insertError);
+        return {
+          success: false,
+          error: `Order could not be saved to the database (${insertError.message}). Please try again or contact customer support.`,
+        };
+      }
+    } catch (dbException) {
+      console.error('Supabase client exception during order insertion:', dbException);
+      return {
+        success: false,
+        error: dbException instanceof Error ? dbException.message : 'Database connection error during order placement. Please try again.',
+      };
     }
 
+    // Return success strictly after database insertion succeeds
     return {
       success: true,
       order: verifiedOrder,
