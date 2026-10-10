@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef, Suspense } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useStore } from '@/context/StoreContext';
 import { Search, Heart, ShoppingBag, User, Menu, X, Sparkles } from 'lucide-react';
@@ -288,13 +289,15 @@ export default function Header(): React.JSX.Element {
             {/* Centered Brand Logo & Title */}
             <div className="flex-1 min-w-0 flex justify-center text-center px-1">
               <Link href="/" className="flex items-center justify-center gap-2 sm:gap-3 group max-w-full" aria-label="PALLUVO home">
-                {/* Logo emblem (scaled up while keeping name size intact) */}
-                <span className="block relative overflow-hidden h-11 w-8 sm:h-14 sm:w-10 md:h-15 md:w-11 rounded-xs shrink-0">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
+                {/* Logo emblem (optimized responsive Next.js Image) */}
+                <span className="block relative overflow-hidden h-11 w-7.5 sm:h-13 sm:w-9 md:h-14 md:w-9.5 rounded-xs shrink-0">
+                  <Image
                     src="/images/palluvo-logo.png"
                     alt="PALLUVO emblem"
-                    className="absolute inset-0 h-full w-full object-cover scale-[1.35] mix-blend-multiply transition-transform group-hover:scale-[1.4]"
+                    fill
+                    priority
+                    sizes="(max-width: 640px) 30px, 40px"
+                    className="object-contain mix-blend-multiply transition-transform group-hover:scale-105"
                   />
                 </span>
 

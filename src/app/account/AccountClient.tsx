@@ -61,9 +61,9 @@ export default function AccountClient({ userEmail, userId, userName, serverOrder
   const { wishlist } = useStore();
   const [activeTab, setActiveTab] = useState<AccountTab>('orders');
 
-  // Load account-scoped orders: reconcile server-side RLS records with per-user partitioned storage
+  // Hydration-safe initial state: initialize strictly from server data for deterministic SSR/hydration, then reconcile with client-scoped localStorage in useEffect
   const [userOrders, setUserOrders] = useState<PlacedOrder[]>(() => {
-    return reconcileOrders(serverOrders, userId);
+    return serverOrders && Array.isArray(serverOrders) ? serverOrders : [];
   });
 
   // Keep in sync with user-partitioned storage and server changes, plus push unsynced local orders to server
