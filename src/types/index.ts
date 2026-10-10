@@ -161,7 +161,7 @@ export interface PlacedOrder {
   id: string;
   orderNumber: string;
   date: string;
-  status: 'Confirmed' | 'Delivered' | 'In Transit';
+  status: 'Confirmed' | 'Delivered' | 'In Transit' | 'Pending Payment';
   items: CartItem[];
   subtotal: number;
   discountAmount: number;

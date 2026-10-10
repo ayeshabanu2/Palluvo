@@ -20,7 +20,6 @@ interface AccountClientProps {
   serverOrders?: PlacedOrder[] | null;
 }
 
-import { createClient } from '@/utils/supabase/client';
 
 function reconcileOrders(serverOrders?: PlacedOrder[] | null, userId?: string): PlacedOrder[] {
   const orderMap = new Map<string, PlacedOrder>();
@@ -66,41 +65,10 @@ export default function AccountClient({ userEmail, userId, userName, serverOrder
     return serverOrders && Array.isArray(serverOrders) ? serverOrders : [];
   });
 
-  // Keep in sync with user-partitioned storage and server changes, plus push unsynced local orders to server
+  // Reconcile server orders with client-scoped localStorage after hydration
   React.useEffect(() => {
     const reconciled = reconcileOrders(serverOrders, userId);
     setUserOrders(reconciled);
-
-    // If there are local orders missing on the server, attempt to sync them
-    if (userId && serverOrders && Array.isArray(serverOrders)) {
-      const serverOrderKeys = new Set(serverOrders.map((o) => o.orderNumber || o.id));
-      const missingOnServer = reconciled.filter((o) => !serverOrderKeys.has(o.orderNumber || o.id));
-
-      if (missingOnServer.length > 0) {
-        try {
-          const supabase = createClient();
-          const payload = missingOnServer.map((order) => ({
-            id: order.id || order.orderNumber,
-            order_number: order.orderNumber || order.id,
-            user_id: userId,
-            items: order.items,
-            subtotal: order.subtotal,
-            discount_amount: order.discountAmount,
-            shipping_fee: order.shippingFee,
-            grand_total: order.grandTotal,
-            payment_method: order.paymentMethod,
-            customer: order.customer,
-            status: order.status || 'Confirmed'
-          }));
-
-          Promise.resolve(supabase.from('orders').insert(payload)).then((res) => {
-            if (res && 'error' in res && res.error) {
-              console.warn('Sync notice for missing orders:', res.error.message);
-            }
-          }).catch(() => {});
-        } catch {}
-      }
-    }
   }, [serverOrders, userId]);
 
   const customerName = userName || 'PALLUVO Guest';
