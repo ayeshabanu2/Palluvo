@@ -36,6 +36,7 @@ export const metadata: Metadata = {
 import { createClient } from '@/utils/supabase/server';
 import AccountPortal from './AccountPortal';
 import { PlacedOrder } from '@/types';
+import { normalizeEmail } from '@/utils/format';
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -45,14 +46,16 @@ export default async function AccountPage() {
     return <AccountPortal />;
   }
 
-  // Claim any unlinked guest orders placed with this authenticated user's email
-  if (user.email) {
+  const normalizedUserEmail = normalizeEmail(user.email);
+
+  // Claim any unlinked guest orders placed with this authenticated user's email (case-insensitive)
+  if (normalizedUserEmail) {
     try {
       await supabase
         .from('orders')
         .update({ user_id: user.id })
         .is('user_id', null)
-        .eq('customer->>email', user.email.toLowerCase().trim());
+        .ilike('customer->>email', normalizedUserEmail);
     } catch {
       // Ignore if RLS restricts guest batch update
     }
@@ -64,7 +67,7 @@ export default async function AccountPage() {
     const { data: serverOrders, error } = await supabase
       .from('orders')
       .select('*')
-      .or(`user_id.eq.${user.id},and(user_id.is.null,customer->>email.eq.${user.email})`)
+      .or(`user_id.eq.${user.id},and(user_id.is.null,customer->>email.ilike.${normalizedUserEmail})`)
       .order('created_at', { ascending: false });
 
     if (!error && serverOrders) {
@@ -88,7 +91,7 @@ export default async function AccountPage() {
 
   return (
     <AccountClient 
-      userEmail={user.email} 
+      userEmail={normalizedUserEmail || user.email} 
       userId={user.id} 
       userName={user.user_metadata?.full_name} 
       serverOrders={initialOrders}

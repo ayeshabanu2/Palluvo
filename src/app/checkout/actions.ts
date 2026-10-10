@@ -9,6 +9,7 @@ import {
   isPaymentGatewayConfigured,
   PaymentSession,
 } from '@/utils/payment/provider';
+import { normalizeEmail } from '@/utils/format';
 
 export interface CheckoutItemInput {
   productId: string;
@@ -152,7 +153,7 @@ export async function initiatePaymentSession(
 /**
  * Server-side verified order placement action.
  * Computes canonical amounts from trusted catalog data and verifies database persistence.
- * Propagates Supabase insert errors and only returns success upon durable storage.
+ * Normalizes email casing for reliable guest-order claiming and retrieval.
  */
 export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<PlaceOrderServerResult> {
   try {
@@ -171,8 +172,9 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       return { success: false, error: 'Mandatory shipping and contact details are required.' };
     }
 
+    const normalizedEmail = normalizeEmail(customer.email);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(customer.email.trim())) {
+    if (!emailRegex.test(normalizedEmail)) {
       return { success: false, error: 'Invalid customer email address.' };
     }
 
@@ -245,7 +247,7 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       customer: {
         firstName: customer.firstName.trim(),
         lastName: (customer.lastName || '').trim(),
-        email: customer.email.trim(),
+        email: normalizedEmail,
         phone: customer.phone.trim(),
         address: customer.address.trim(),
         city: customer.city.trim(),
