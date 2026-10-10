@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useStore } from '@/context/StoreContext';
 import { formatINR } from '@/utils/format';
-import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard, QrCode, Loader2, XCircle } from 'lucide-react';
-import { initiatePaymentSession, authorizePaymentGateway, placeVerifiedOrder } from './actions';
+import { ShieldCheck, Lock, CheckCircle2, ArrowLeft, Truck, CreditCard, Clock, Loader2 } from 'lucide-react';
+import { placeVerifiedOrder } from './actions';
 import { PlacedOrder } from '@/types';
 
 interface CheckoutFormData {
@@ -25,7 +25,7 @@ type PaymentMethod = 'upi' | 'card' | 'cod';
 export default function CheckoutClient({ userId }: { userId?: string }): React.JSX.Element {
   const { cart, grandTotal, subtotal, shippingFee, discountAmount, coupon, clearCart, showToast, recordOrder } = useStore();
 
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cod');
   const [formData, setFormData] = useState<CheckoutFormData>({
     firstName: '',
     lastName: '',
@@ -38,18 +38,8 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
-  const [confirmedOrder, setConfirmedOrder] = useState<PlacedOrder | null>(null);
+  const [placedOrder, setPlacedOrder] = useState<PlacedOrder | null>(null);
   const [formErrors, setFormErrors] = useState<Partial<Record<keyof CheckoutFormData, string>>>({});
-  
-  // Payment Provider session and verification state
-  const [showPaymentModal, setShowPaymentModal] = useState<boolean>(false);
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [paymentProcessing, setPaymentProcessing] = useState<boolean>(false);
-  const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [upiId, setUpiId] = useState<string>('customer@okaxis');
-  const [cardNumber, setCardNumber] = useState<string>('4111 •••• •••• 1111');
-  const [cardExpiry, setCardExpiry] = useState<string>('12/28');
-  const [cardCvv, setCardCvv] = useState<string>('888');
 
   const confirmationRef = useRef<HTMLHeadingElement>(null);
 
@@ -103,87 +93,16 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
     e.preventDefault();
     if (!validateForm()) return;
 
-    const items = getCheckoutItems();
-
-    if (paymentMethod === 'cod') {
-      // Cash on Delivery: Process server-side verified order placement directly
-      setIsSubmitting(true);
-      try {
-        const result = await placeVerifiedOrder({
-          items,
-          couponCode: coupon?.code,
-          paymentMethod: 'cod',
-          customer: formData,
-        });
-
-        if (result.success && result.order) {
-          recordOrder({
-            ...result.order,
-            userId,
-          });
-          setConfirmedOrder(result.order);
-          setIsSubmitted(true);
-          clearCart();
-          showToast(`Order #${result.order.orderNumber} confirmed successfully!`);
-        } else {
-          showToast(result.error || 'Could not confirm COD order. Please try again.', 'error');
-        }
-      } catch (err: unknown) {
-        showToast('Server error while placing order. Please try again.', 'error');
-      } finally {
-        setIsSubmitting(false);
-      }
-    } else {
-      // UPI or Card: Initiate server-side payment provider session
-      setIsSubmitting(true);
-      setPaymentError(null);
-      try {
-        const sessionResult = await initiatePaymentSession(items, coupon?.code);
-        if (sessionResult.success && sessionResult.session) {
-          setActiveSessionId(sessionResult.session.sessionId);
-          setShowPaymentModal(true);
-        } else {
-          showToast(sessionResult.error || 'Could not initiate payment session.', 'error');
-        }
-      } catch (err: unknown) {
-        showToast('Payment session creation failed.', 'error');
-      } finally {
-        setIsSubmitting(false);
-      }
-    }
-  };
-
-  const handleAuthorizeOnlinePayment = async () => {
-    if (!activeSessionId) {
-      setPaymentError('Payment session expired. Please re-initiate checkout.');
-      return;
-    }
-
-    setPaymentProcessing(true);
-    setPaymentError(null);
-
+    setIsSubmitting(true);
     try {
       const items = getCheckoutItems();
 
-      // Step 1: Request cryptographically signed authorization from server payment provider
-      const authResult = await authorizePaymentGateway(
-        activeSessionId,
-        paymentMethod as 'upi' | 'card',
-        items,
-        coupon?.code
-      );
-
-      if (!authResult.success || !authResult.verification) {
-        setPaymentError(authResult.error || 'Payment provider authorization declined.');
-        return;
-      }
-
-      // Step 2: Submit signed provider verification payload to server-verified order placement
+      // Submit order to server-verified action
+      // Server calculates trusted totals from catalog and assigns 'Confirmed' for COD or 'Pending Payment' for online methods awaiting gateway capture
       const result = await placeVerifiedOrder({
         items,
         couponCode: coupon?.code,
         paymentMethod,
-        paymentVerification: authResult.verification,
         customer: formData,
       });
 
@@ -192,31 +111,43 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
           ...result.order,
           userId,
         });
-        setConfirmedOrder(result.order);
-        setShowPaymentModal(false);
+        setPlacedOrder(result.order);
         setIsSubmitted(true);
         clearCart();
-        showToast(`Payment verified! Order #${result.order.orderNumber} confirmed.`);
+
+        if (result.order.status === 'Confirmed') {
+          showToast(`Order #${result.order.orderNumber} confirmed successfully!`);
+        } else {
+          showToast(`Order #${result.order.orderNumber} recorded. Payment pending.`);
+        }
       } else {
-        setPaymentError(result.error || 'Server rejected payment verification.');
+        showToast(result.error || 'Could not process order. Please try again.', 'error');
       }
     } catch (err: unknown) {
-      setPaymentError('Payment gateway communication failed. Please try again or select Cash on Delivery.');
+      showToast('Server error while processing your order. Please try again.', 'error');
     } finally {
-      setPaymentProcessing(false);
+      setIsSubmitting(false);
     }
   };
 
-  if (isSubmitted && confirmedOrder) {
+  if (isSubmitted && placedOrder) {
+    const isConfirmed = placedOrder.status === 'Confirmed';
+
     return (
       <div className="max-w-2xl mx-auto px-4 py-20 text-center" role="status" aria-live="polite">
         <div className="bg-white p-8 sm:p-12 rounded-2xl border border-[#EDE3D5] shadow-lg">
-          <div className="w-16 h-16 bg-emerald-100 text-emerald-800 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle2 className="w-8 h-8" />
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 ${
+            isConfirmed ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+          }`}>
+            {isConfirmed ? <CheckCircle2 className="w-8 h-8" /> : <Clock className="w-8 h-8" />}
           </div>
-          <span className="text-xs uppercase tracking-[0.25em] text-[#641C2D] font-semibold">
-            Order Confirmed & Verified
+
+          <span className={`text-xs uppercase tracking-[0.25em] font-semibold ${
+            isConfirmed ? 'text-emerald-800' : 'text-amber-800'
+          }`}>
+            {isConfirmed ? 'Order Confirmed' : 'Order Placed — Payment Pending'}
           </span>
+
           <h1 
             ref={confirmationRef}
             tabIndex={-1}
@@ -224,30 +155,43 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
           >
             Every drape, a little magic.
           </h1>
+
           <p className="text-xs sm:text-sm text-[#6D625D] max-w-md mx-auto mb-6">
-            Thank you, <strong className="text-[#2B211D]">{confirmedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{confirmedOrder.orderNumber}</span> has been validated and confirmed for dispatch.
+            {isConfirmed ? (
+              <>Thank you, <strong className="text-[#2B211D]">{placedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{placedOrder.orderNumber}</span> has been confirmed for doorstep dispatch.</>
+            ) : (
+              <>Thank you, <strong className="text-[#2B211D]">{placedOrder.customer.firstName}</strong>. Your order <span className="font-mono text-[#641C2D] font-bold">#{placedOrder.orderNumber}</span> has been received. Payment verification is pending before final dispatch.</>
+            )}
           </p>
 
           <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-left text-xs space-y-2 mb-8">
             <div className="flex justify-between">
+              <span className="text-[#665E57]">Order Status:</span>
+              <span className={`font-bold ${isConfirmed ? 'text-emerald-800' : 'text-amber-800'}`}>
+                {placedOrder.status}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-[#665E57]">Payment Method:</span>
-              <span className="font-bold text-[#2B211D] uppercase">{confirmedOrder.paymentMethod} (Provider Verified)</span>
+              <span className="font-bold text-[#2B211D] uppercase">
+                {placedOrder.paymentMethod === 'cod' ? 'Cash on Delivery (Doorstep Payment)' : `${placedOrder.paymentMethod.toUpperCase()} (Online)`}
+              </span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Verified Total:</span>
-              <span className="font-bold text-[#641C2D]">{formatINR(confirmedOrder.grandTotal)}</span>
+              <span className="text-[#665E57]">Calculated Order Total:</span>
+              <span className="font-bold text-[#641C2D] tabular-nums">{formatINR(placedOrder.grandTotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Confirmation Email sent to:</span>
-              <span className="font-medium text-[#2B211D]">{confirmedOrder.customer.email}</span>
+              <span className="text-[#665E57]">Updates sent to:</span>
+              <span className="font-medium text-[#2B211D]">{placedOrder.customer.email}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-[#665E57]">Shipping Destination:</span>
-              <span className="font-medium text-[#2B211D]">{confirmedOrder.customer.city}, {confirmedOrder.customer.pincode}</span>
+              <span className="font-medium text-[#2B211D]">{placedOrder.customer.city}, {placedOrder.customer.pincode}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Estimated Insured Delivery:</span>
-              <span className="font-medium text-emerald-800">2 to 4 Business Days</span>
+              <span className="text-[#665E57]">Estimated Delivery:</span>
+              <span className="font-medium text-[#2B211D]">2 to 4 Business Days</span>
             </div>
           </div>
 
@@ -475,6 +419,23 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             </h2>
 
             <div className="space-y-3" role="radiogroup" aria-label="Select Payment Method">
+              <label htmlFor="checkout-payment-cod" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
+                paymentMethod === 'cod' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
+              }`}>
+                <div className="flex items-center gap-3">
+                  <input
+                    id="checkout-payment-cod"
+                    type="radio"
+                    name="payment"
+                    checked={paymentMethod === 'cod'}
+                    onChange={() => setPaymentMethod('cod')}
+                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
+                  />
+                  <span>Cash on Delivery (COD — Direct Confirmation)</span>
+                </div>
+                <span className="text-[11px] text-emerald-800 font-bold">Recommended</span>
+              </label>
+
               <label htmlFor="checkout-payment-upi" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
                 paymentMethod === 'upi' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
               }`}>
@@ -487,9 +448,9 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
                     onChange={() => setPaymentMethod('upi')}
                     className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
-                  <span>Instant UPI (Google Pay / PhonePe / Paytm / Any UPI ID)</span>
+                  <span>Instant UPI (Payment Link / QR Invoice)</span>
                 </div>
-                <span className="text-[11px] text-[#B08D57] font-bold">Fastest</span>
+                <span className="text-[11px] text-[#B08D57] font-medium">Pending Verification</span>
               </label>
 
               <label htmlFor="checkout-payment-card" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
@@ -504,26 +465,9 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
                     onChange={() => setPaymentMethod('card')}
                     className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
-                  <span>Credit / Debit Card (Visa, MasterCard, RuPay, Amex)</span>
+                  <span>Credit / Debit Card (Online Invoice)</span>
                 </div>
                 <span className="text-[11px] text-[#665E57]">256-Bit SSL</span>
-              </label>
-
-              <label htmlFor="checkout-payment-cod" className={`flex items-center justify-between p-4 rounded-xl border text-xs cursor-pointer transition ${
-                paymentMethod === 'cod' ? 'border-[#641C2D] bg-[#641C2D]/5 font-semibold text-[#641C2D]' : 'border-[#EDE3D5]'
-              }`}>
-                <div className="flex items-center gap-3">
-                  <input
-                    id="checkout-payment-cod"
-                    type="radio"
-                    name="payment"
-                    checked={paymentMethod === 'cod'}
-                    onChange={() => setPaymentMethod('cod')}
-                    className="accent-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
-                  />
-                  <span>Cash on Delivery (COD)</span>
-                </div>
-                <span className="text-[11px] text-[#665E57]">Pay at Doorstep</span>
               </label>
             </div>
           </div>
@@ -594,15 +538,15 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" /> Verifying Order...
+                  <Loader2 className="w-4 h-4 animate-spin" /> Processing Order...
                 </>
               ) : paymentMethod === 'cod' ? (
                 <>
-                  <Lock className="w-4 h-4" /> Confirm Cash on Delivery ({formatINR(grandTotal)})
+                  <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
                 </>
               ) : (
                 <>
-                  <Lock className="w-4 h-4" /> Pay & Verify ({formatINR(grandTotal)})
+                  <Lock className="w-4 h-4" /> Place Order ({formatINR(grandTotal)})
                 </>
               )}
             </button>
@@ -614,146 +558,6 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
         </div>
 
       </div>
-
-      {/* Online Payment Provider Verification Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" role="dialog" aria-modal="true">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 sm:p-8 border border-[#EDE3D5] shadow-2xl space-y-6 animate-in fade-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-[#EDE3D5]">
-              <div className="flex items-center gap-2">
-                <CreditCard className="w-5 h-5 text-[#641C2D]" />
-                <h3 className="font-serif text-lg font-bold text-[#2B211D]">
-                  {paymentMethod === 'upi' ? 'UPI Gateway Payment Verification' : '3D Secure Card Payment'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  if (!paymentProcessing) setShowPaymentModal(false);
-                }}
-                disabled={paymentProcessing}
-                className="text-[#6D625D] hover:text-[#2B211D] p-1 rounded-full hover:bg-[#F8F5EF] transition"
-                aria-label="Close payment verification"
-              >
-                <XCircle className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-4 bg-[#F8F5EF] rounded-xl border border-[#EDE3D5] text-xs space-y-1.5">
-              <div className="flex justify-between">
-                <span className="text-[#665E57]">Gateway Session ID:</span>
-                <span className="font-mono text-[#2B211D] text-[10px] truncate max-w-[200px]">{activeSessionId}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#665E57]">Payable Amount:</span>
-                <span className="font-bold text-[#641C2D] text-sm">{formatINR(grandTotal)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-[#665E57]">Merchant:</span>
-                <span className="font-semibold text-[#2B211D]">PALLUVO Luxury Sarees</span>
-              </div>
-            </div>
-
-            {paymentError && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg">
-                {paymentError}
-              </div>
-            )}
-
-            {paymentMethod === 'upi' ? (
-              <div className="space-y-4">
-                <div className="text-center p-4 border border-dashed border-[#B08D57] rounded-xl bg-[#F8F5EF]/50">
-                  <QrCode className="w-16 h-16 text-[#641C2D] mx-auto mb-2" />
-                  <p className="text-xs font-semibold text-[#2B211D]">Scan UPI QR or use UPI ID</p>
-                  <p className="text-[11px] font-mono text-[#665E57] mt-1">VPA: palluvo.atelier@icici</p>
-                </div>
-                <div>
-                  <label htmlFor="upi-vpa-input" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
-                    Your UPI ID / VPA
-                  </label>
-                  <input
-                    id="upi-vpa-input"
-                    type="text"
-                    value={upiId}
-                    onChange={(e) => setUpiId(e.target.value)}
-                    placeholder="e.g. yourname@oksbi"
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <label htmlFor="card-number-input" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
-                    Card Number
-                  </label>
-                  <input
-                    id="card-number-input"
-                    type="text"
-                    value={cardNumber}
-                    onChange={(e) => setCardNumber(e.target.value)}
-                    className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] font-mono focus:border-[#641C2D] focus-visible:outline-none"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="card-expiry-input" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
-                      Expiry (MM/YY)
-                    </label>
-                    <input
-                      id="card-expiry-input"
-                      type="text"
-                      value={cardExpiry}
-                      onChange={(e) => setCardExpiry(e.target.value)}
-                      className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] font-mono focus:border-[#641C2D] focus-visible:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="card-cvv-input" className="block text-xs font-bold uppercase tracking-wider text-[#2B211D] mb-1">
-                      CVV
-                    </label>
-                    <input
-                      id="card-cvv-input"
-                      type="password"
-                      maxLength={4}
-                      value={cardCvv}
-                      onChange={(e) => setCardCvv(e.target.value)}
-                      className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] font-mono focus:border-[#641C2D] focus-visible:outline-none"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col gap-2 pt-2">
-              <button
-                type="button"
-                onClick={handleAuthorizeOnlinePayment}
-                disabled={paymentProcessing}
-                className="w-full bg-[#641C2D] hover:bg-[#4E1422] disabled:opacity-50 text-white py-3.5 rounded-full text-xs font-bold tracking-wider uppercase flex items-center justify-center gap-2 shadow-lg transition"
-              >
-                {paymentProcessing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Verifying with Gateway Provider...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="w-4 h-4" /> Authorize & Confirm Payment ({formatINR(grandTotal)})
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowPaymentModal(false)}
-                disabled={paymentProcessing}
-                className="w-full bg-transparent hover:bg-[#F8F5EF] text-[#6D625D] py-2 rounded-full text-xs font-semibold transition"
-              >
-                Cancel & Return
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

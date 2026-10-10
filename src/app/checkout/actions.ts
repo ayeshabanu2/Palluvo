@@ -5,8 +5,8 @@ import { createClient } from '@/utils/supabase/server';
 import { CartItem, OrderCustomerDetails, PlacedOrder } from '@/types';
 import {
   createServerPaymentSession,
-  signPaymentAuthorization,
   verifyPaymentProviderServer,
+  isPaymentGatewayConfigured,
   PaymentSession,
 } from '@/utils/payment/provider';
 
@@ -40,6 +40,7 @@ export interface PlaceOrderServerResult {
 
 export interface PaymentSessionResult {
   success: boolean;
+  isGatewayConfigured: boolean;
   session?: PaymentSession;
   subtotal?: number;
   discountAmount?: number;
@@ -48,14 +49,8 @@ export interface PaymentSessionResult {
   error?: string;
 }
 
-export interface AuthorizePaymentResult {
-  success: boolean;
-  verification?: PaymentVerificationData;
-  error?: string;
-}
-
 /**
- * Computes canonical, trusted financial amounts on the server from the product catalog.
+ * Computes canonical, trusted financial amounts on the server directly from the catalog.
  */
 function calculateTrustedOrderTotals(items: CheckoutItemInput[], couponCode?: string) {
   const canonicalItems: CartItem[] = [];
@@ -127,17 +122,19 @@ export async function initiatePaymentSession(
 ): Promise<PaymentSessionResult> {
   try {
     if (!items || items.length === 0) {
-      return { success: false, error: 'Shopping bag is empty.' };
+      return { success: false, isGatewayConfigured: false, error: 'Shopping bag is empty.' };
     }
 
     const { trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
       calculateTrustedOrderTotals(items, couponCode);
 
-    const session = createServerPaymentSession(trustedGrandTotal, 'INR');
+    const isConfigured = isPaymentGatewayConfigured();
+    const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR') : undefined;
 
     return {
       success: true,
-      session,
+      isGatewayConfigured: isConfigured,
+      session: session || undefined,
       subtotal: trustedSubtotal,
       discountAmount: trustedDiscount,
       shippingFee: trustedShipping,
@@ -146,51 +143,16 @@ export async function initiatePaymentSession(
   } catch (err: unknown) {
     return {
       success: false,
+      isGatewayConfigured: false,
       error: err instanceof Error ? err.message : 'Could not initiate payment session.',
     };
   }
 }
 
 /**
- * Server-side payment provider authorization endpoint.
- * Processes payment through the payment gateway and generates a cryptographically signed verification payload.
- */
-export async function authorizePaymentGateway(
-  sessionId: string,
-  paymentMethod: 'upi' | 'card',
-  items: CheckoutItemInput[],
-  couponCode?: string
-): Promise<AuthorizePaymentResult> {
-  try {
-    if (!sessionId) {
-      return { success: false, error: 'Payment session ID is required.' };
-    }
-
-    const { trustedGrandTotal } = calculateTrustedOrderTotals(items, couponCode);
-
-    // Simulate payment gateway capture & signed verification token generation
-    const paymentId = `pay_${paymentMethod}_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
-    const signature = signPaymentAuthorization(sessionId, paymentId, trustedGrandTotal, 'INR');
-
-    return {
-      success: true,
-      verification: {
-        paymentId,
-        sessionId,
-        signature,
-      },
-    };
-  } catch (err: unknown) {
-    return {
-      success: false,
-      error: err instanceof Error ? err.message : 'Payment authorization failed.',
-    };
-  }
-}
-
-/**
  * Server-side verified order placement action.
- * Computes canonical amounts from trusted catalog data and verifies payment provider signatures.
+ * Computes canonical amounts from trusted catalog data and verifies payment provider transactions.
+ * Fails closed for online payment methods if required secrets or verified captures are absent.
  */
 export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<PlaceOrderServerResult> {
   try {
@@ -222,40 +184,45 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     const { canonicalItems, trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
       calculateTrustedOrderTotals(items, couponCode);
 
-    // 3. Payment verification
+    // 3. Payment verification & status assignment
     let orderStatus: PlacedOrder['status'] = 'Pending Payment';
     let paymentStatus = 'Unpaid';
 
     if (paymentMethod === 'cod') {
-      // Cash on Delivery is verified for delivery scheduling with payment on arrival
+      // Cash on Delivery is confirmed for dispatch with payment scheduled on doorstep delivery
       orderStatus = 'Confirmed';
       paymentStatus = 'Pending COD Collection';
     } else if (paymentMethod === 'upi' || paymentMethod === 'card') {
-      if (!paymentVerification || !paymentVerification.paymentId || !paymentVerification.sessionId || !paymentVerification.signature) {
-        return {
-          success: false,
-          error: 'Missing payment provider verification data. Online payment must be verified before confirmation.',
-        };
+      if (
+        paymentVerification &&
+        paymentVerification.paymentId &&
+        paymentVerification.sessionId &&
+        paymentVerification.signature
+      ) {
+        // Attempt strict cryptographic verification against payment provider
+        const verificationResult = verifyPaymentProviderServer({
+          paymentId: paymentVerification.paymentId,
+          sessionId: paymentVerification.sessionId,
+          signature: paymentVerification.signature,
+          amount: trustedGrandTotal,
+          currency: 'INR',
+        });
+
+        if (verificationResult.verified) {
+          orderStatus = 'Confirmed';
+          paymentStatus = `Verified & Captured (${paymentMethod.toUpperCase()}: ${paymentVerification.paymentId})`;
+        } else {
+          // If verification explicitly failed with invalid signature or replay, reject order
+          return {
+            success: false,
+            error: verificationResult.error || 'Payment provider verification failed: invalid signature or transaction mismatch.',
+          };
+        }
+      } else {
+        // Online order without completed gateway verification: keep order in 'Pending Payment' state
+        orderStatus = 'Pending Payment';
+        paymentStatus = `Awaiting ${paymentMethod.toUpperCase()} Payment Provider Settlement`;
       }
-
-      // Verify cryptographic signature and provider payment status on the server
-      const verificationResult = verifyPaymentProviderServer({
-        paymentId: paymentVerification.paymentId,
-        sessionId: paymentVerification.sessionId,
-        signature: paymentVerification.signature,
-        amount: trustedGrandTotal,
-        currency: 'INR',
-      });
-
-      if (!verificationResult.verified) {
-        return {
-          success: false,
-          error: verificationResult.error || 'Payment provider verification failed: invalid transaction or signature mismatch.',
-        };
-      }
-
-      orderStatus = 'Confirmed';
-      paymentStatus = `Verified & Captured (${paymentMethod.toUpperCase()}: ${paymentVerification.paymentId})`;
     } else {
       return { success: false, error: 'Unsupported payment method.' };
     }
