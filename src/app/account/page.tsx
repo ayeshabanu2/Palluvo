@@ -45,13 +45,26 @@ export default async function AccountPage() {
     return <AccountPortal />;
   }
 
-  // Attempt to fetch server-side orders scoped to this authenticated user via RLS
+  // Claim any unlinked guest orders placed with this authenticated user's email
+  if (user.email) {
+    try {
+      await supabase
+        .from('orders')
+        .update({ user_id: user.id })
+        .is('user_id', null)
+        .eq('customer->>email', user.email.toLowerCase().trim());
+    } catch {
+      // Ignore if RLS restricts guest batch update
+    }
+  }
+
+  // Attempt to fetch server-side orders scoped to this authenticated user
   let initialOrders: PlacedOrder[] | null = null;
   try {
     const { data: serverOrders, error } = await supabase
       .from('orders')
       .select('*')
-      .eq('user_id', user.id)
+      .or(`user_id.eq.${user.id},and(user_id.is.null,customer->>email.eq.${user.email})`)
       .order('created_at', { ascending: false });
 
     if (!error && serverOrders) {
@@ -65,12 +78,12 @@ export default async function AccountPage() {
         discountAmount: Number(o.discount_amount ?? o.discountAmount ?? 0),
         shippingFee: Number(o.shipping_fee ?? o.shippingFee ?? 0),
         grandTotal: Number(o.grand_total ?? o.grandTotal ?? 0),
-        paymentMethod: (o.payment_method as PlacedOrder['paymentMethod']) || (o.paymentMethod as PlacedOrder['paymentMethod']) || 'card',
+        paymentMethod: (o.payment_method as PlacedOrder['paymentMethod']) || (o.paymentMethod as PlacedOrder['paymentMethod']) || 'cod',
         customer: (o.customer as PlacedOrder['customer']) || {}
       }));
     }
   } catch {
-    // If Supabase table is not provisioned, AccountClient will partition client storage by userId
+    // If Supabase table query fails, AccountClient will reconcile client storage
   }
 
   return (

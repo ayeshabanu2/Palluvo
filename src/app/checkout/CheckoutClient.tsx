@@ -167,7 +167,7 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
               <span className="font-bold text-[#641C2D] tabular-nums">{formatINR(placedOrder.grandTotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#665E57]">Updates sent to:</span>
+              <span className="text-[#665E57]">Contact Email:</span>
               <span className="font-medium text-[#2B211D]">{placedOrder.customer.email}</span>
             </div>
             <div className="flex justify-between">
@@ -180,20 +180,43 @@ export default function CheckoutClient({ userId }: { userId?: string }): React.J
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href="/account"
-              className="bg-[#641C2D] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#4E1422] transition shadow-md"
-            >
-              View Order in Account
-            </Link>
-            <Link
-              href="/sarees"
-              className="bg-white border border-[#EDE3D5] text-[#2B211D] px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#F8F5EF] transition"
-            >
-              Explore More Sarees
-            </Link>
-          </div>
+          {userId ? (
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/account"
+                className="bg-[#641C2D] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#4E1422] transition shadow-md"
+              >
+                View Order in Account
+              </Link>
+              <Link
+                href="/sarees"
+                className="bg-white border border-[#EDE3D5] text-[#2B211D] px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#F8F5EF] transition"
+              >
+                Explore More Sarees
+              </Link>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="p-3 bg-[#F8F5EF] rounded-lg border border-[#EDE3D5] text-[11px] text-[#6D625D]">
+                <p className="font-semibold text-[#2B211D] mb-0.5">Guest Order Reference:</p>
+                Please save your Order ID <strong className="font-mono text-[#641C2D]">#{placedOrder.orderNumber}</strong>. You can register anytime with <strong className="text-[#2B211D]">{placedOrder.customer.email}</strong> to automatically link and track your order history.
+              </div>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Link
+                  href="/sarees"
+                  className="bg-[#641C2D] text-white px-8 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#4E1422] transition shadow-md"
+                >
+                  Explore More Sarees
+                </Link>
+                <Link
+                  href={`/register?email=${encodeURIComponent(placedOrder.customer.email)}`}
+                  className="bg-white border border-[#EDE3D5] text-[#2B211D] px-6 py-3.5 rounded-full text-xs font-semibold tracking-wider uppercase hover:bg-[#F8F5EF] transition"
+                >
+                  Create Account to Track
+                </Link>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
