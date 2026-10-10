@@ -1,7 +1,7 @@
 import './globals.css';
 import React from 'react';
 import { Metadata, Viewport } from 'next';
-import { Plus_Jakarta_Sans, Cormorant_Garamond, Playfair_Display, Alex_Brush } from 'next/font/google';
+import { Plus_Jakarta_Sans, Cormorant_Garamond, Playfair_Display, Alex_Brush, Cinzel } from 'next/font/google';
 import { StoreProvider } from '@/context/StoreContext';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -37,6 +37,13 @@ const alexBrush = Alex_Brush({
   subsets: ['latin'],
   weight: ['400'],
   variable: '--font-script',
+  display: 'swap',
+});
+
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700', '800'],
+  variable: '--font-cinzel',
   display: 'swap',
 });
 
@@ -123,7 +130,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }): React.JSX.Element {
   return (
-    <html lang="en" className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} ${playfairDisplay.variable} ${alexBrush.variable}`}>
+    <html lang="en" className={`${plusJakartaSans.variable} ${cormorantGaramond.variable} ${playfairDisplay.variable} ${alexBrush.variable} ${cinzel.variable}`}>
       <head>
         <script
           type="application/ld+json"

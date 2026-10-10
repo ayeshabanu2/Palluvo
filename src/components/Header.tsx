@@ -245,32 +245,38 @@ export default function Header(): React.JSX.Element {
         <div className="max-w-7xl mx-auto px-1 xs:px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between min-h-[68px] sm:min-h-[76px] py-1.5 gap-1 xs:gap-1.5 sm:gap-4 header-main-row">
             
-            {/* Mobile menu trigger */}
-            <div className="flex items-center lg:hidden shrink-0">
-              <button 
-                ref={menuTriggerRef}
-                id="mobileMenuToggle"
-                onClick={() => setMobileMenuOpen(true)}
-                className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#641C2D] transition-colors rounded-full"
-                aria-label="Open navigation menu"
-                aria-expanded={mobileMenuOpen}
-                aria-controls="mobileMenuDrawer"
-              >
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
-              </button>
-            </div>
+            {/* Left Corner: Mobile Menu Trigger + Brand Logo & Name */}
+            <div className="flex items-center gap-1.5 xs:gap-2.5 sm:gap-3 shrink-0">
+              {/* Mobile menu trigger */}
+              <div className="flex items-center lg:hidden shrink-0">
+                <button 
+                  ref={menuTriggerRef}
+                  id="mobileMenuToggle"
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="w-11 h-11 min-w-[44px] min-h-[44px] flex items-center justify-center text-[#241F1D] hover:text-[#541920] transition-colors rounded-full"
+                  aria-label="Open navigation menu"
+                  aria-expanded={mobileMenuOpen}
+                  aria-controls="mobileMenuDrawer"
+                >
+                  <Menu className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
+              </div>
 
-            {/* Brand Logo */}
-            <div className="flex-1 min-w-0 lg:flex-none flex justify-center">
-              <Link href="/" className="flex items-center justify-center group max-w-full" aria-label="PALLUVO home">
-                {/* Crop the logo's built-in empty margin so the badge fills the box */}
-                <span className="block relative overflow-hidden h-14 w-10 sm:h-16 sm:w-12">
+              {/* Brand Logo & Name */}
+              <Link href="/" className="flex items-center gap-2 sm:gap-3 group max-w-full" aria-label="PALLUVO home">
+                {/* Logo emblem */}
+                <span className="block relative overflow-hidden h-9 w-6.5 sm:h-11 sm:w-8 rounded-xs shrink-0">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src="/images/palluvo-logo.png"
-                    alt="PALLUVO"
+                    alt="PALLUVO emblem"
                     className="absolute inset-0 h-full w-full object-cover scale-[1.35] mix-blend-multiply transition-transform group-hover:scale-[1.4]"
                   />
+                </span>
+
+                {/* Brand name in Cinzel font and #541920 */}
+                <span className="font-cinzel text-xl xs:text-2xl sm:text-3xl font-bold tracking-[0.14em] sm:tracking-[0.18em] text-[#541920] uppercase leading-none transition-transform group-hover:scale-[1.02]">
+                  PALLUVO
                 </span>
               </Link>
             </div>
@@ -421,7 +427,7 @@ export default function Header(): React.JSX.Element {
           >
             <div>
               <div className="flex items-center justify-between pb-6 border-b border-[#EDE3D5]">
-                <span id="mobileMenuTitle" className="font-serif text-2xl tracking-[0.2em] text-[#641C2D] font-bold">PALLUVO</span>
+                <span id="mobileMenuTitle" className="font-cinzel text-2xl tracking-[0.18em] text-[#541920] font-bold">PALLUVO</span>
                 <button 
                   ref={closeButtonRef}
                   onClick={() => setMobileMenuOpen(false)} 

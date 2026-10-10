@@ -56,6 +56,10 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif), 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
 }
 
+.font-cinzel {
+  font-family: var(--font-cinzel), 'Cinzel', 'Playfair Display', Georgia, serif;
+}
+
 .font-display {
   font-family: var(--font-display), 'Playfair Display', Georgia, serif;
 }
