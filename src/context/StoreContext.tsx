@@ -278,6 +278,19 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       const updated = [newOrder, ...prev];
       try {
         localStorage.setItem('palluvo_orders', JSON.stringify(updated));
+        if (orderInput.userId) {
+          // Also save to user's scoped storage to ensure AccountClient loads it
+          const scopedKey = `palluvo_orders_${orderInput.userId}`;
+          const existingScoped = localStorage.getItem(scopedKey);
+          let userScopedOrders = [];
+          if (existingScoped) {
+            try {
+              userScopedOrders = JSON.parse(existingScoped);
+            } catch {}
+          }
+          const updatedScoped = [newOrder, ...userScopedOrders];
+          localStorage.setItem(scopedKey, JSON.stringify(updatedScoped));
+        }
       } catch (e) {
         console.error('Failed to save order to localStorage', e);
       }

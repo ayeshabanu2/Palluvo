@@ -33,6 +33,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function CheckoutPage(): React.JSX.Element {
-  return <CheckoutClient />;
+import { createClient } from '@/utils/supabase/server';
+
+export default async function CheckoutPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  return <CheckoutClient userId={user?.id} />;
 }

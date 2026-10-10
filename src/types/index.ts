@@ -180,6 +180,7 @@ export interface CreateOrderInput {
   grandTotal: number;
   paymentMethod: 'upi' | 'card' | 'cod';
   customer: OrderCustomerDetails;
+  userId?: string;
 }
 
 export interface StoreContextType {

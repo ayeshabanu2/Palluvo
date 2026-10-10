@@ -20,7 +20,7 @@ interface CheckoutFormData {
 
 type PaymentMethod = 'upi' | 'card' | 'cod';
 
-export default function CheckoutClient(): React.JSX.Element {
+export default function CheckoutClient({ userId }: { userId?: string }): React.JSX.Element {
   const { cart, grandTotal, subtotal, shippingFee, discountAmount, clearCart, showToast, recordOrder } = useStore();
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('upi');
@@ -87,7 +87,8 @@ export default function CheckoutClient(): React.JSX.Element {
       shippingFee,
       grandTotal,
       paymentMethod,
-      customer: { ...formData }
+      customer: { ...formData },
+      userId
     });
 
     setIsSubmitted(true);
