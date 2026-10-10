@@ -48,14 +48,14 @@ export default async function AccountPage() {
 
   const normalizedUserEmail = normalizeEmail(user.email);
 
-  // Claim any unlinked guest orders placed with this authenticated user's email (case-insensitive)
+  // Claim any unlinked guest orders placed with this authenticated user's email (exact match)
   if (normalizedUserEmail) {
     try {
       await supabase
         .from('orders')
         .update({ user_id: user.id })
         .is('user_id', null)
-        .ilike('customer->>email', normalizedUserEmail);
+        .eq('customer->>email', normalizedUserEmail);
     } catch {
       // Ignore if RLS restricts guest batch update
     }
@@ -67,7 +67,7 @@ export default async function AccountPage() {
     const { data: serverOrders, error } = await supabase
       .from('orders')
       .select('*')
-      .or(`user_id.eq.${user.id},and(user_id.is.null,customer->>email.ilike.${normalizedUserEmail})`)
+      .or(`user_id.eq.${user.id},and(user_id.is.null,customer->>email.eq.${normalizedUserEmail})`)
       .order('created_at', { ascending: false });
 
     if (!error && serverOrders) {

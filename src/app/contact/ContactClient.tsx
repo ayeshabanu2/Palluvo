@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Mail, Phone, MapPin, CheckCircle2, ExternalLink, MessageSquare } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
+import { submitContactInquiry } from './actions';
 
 interface ContactFormData {
   name: string;
@@ -15,6 +16,7 @@ interface ContactFormData {
 export default function ContactClient(): React.JSX.Element {
   const { showToast } = useStore();
   const [submitted, setSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',
@@ -30,10 +32,24 @@ export default function ContactClient(): React.JSX.Element {
     }
   }, [submitted]);
 
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitted(true);
-    showToast('Your inquiry has been received. Our atelier stylist will reach out promptly.');
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      const res = await submitContactInquiry(formData);
+      if (res.success) {
+        setSubmitted(true);
+        showToast('Your inquiry has been received. Our atelier stylist will reach out promptly.');
+      } else {
+        showToast(res.error || 'Failed to record inquiry. Please reach out to our concierge directly.');
+      }
+    } catch {
+      showToast('A network error occurred. Please try again or reach out via WhatsApp/phone.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -264,9 +280,17 @@ export default function ContactClient(): React.JSX.Element {
 
               <button
                 type="submit"
-                className="bg-[#641C2D] hover:bg-[#4E1422] text-white px-8 py-3.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase transition shadow-md"
+                disabled={isSubmitting}
+                className="bg-[#641C2D] hover:bg-[#4E1422] disabled:opacity-60 disabled:cursor-not-allowed text-white px-8 py-3.5 rounded-full text-xs font-bold tracking-[0.2em] uppercase transition shadow-md inline-flex items-center justify-center gap-2"
               >
-                Send Message
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <span>Transmitting...</span>
+                  </>
+                ) : (
+                  'Send Message'
+                )}
               </button>
             </form>
           )}

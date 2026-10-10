@@ -1,12 +1,32 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 
-// Helper matching normalizeCustomerEmail in src/app/checkout/actions.ts
+// Helper matching normalizeEmail in src/utils/format.ts
 function normalizeCustomerEmail(email) {
   return (email || '').toLowerCase().trim();
 }
 
-describe('Guest Order Email Normalization & Claiming Regression Test', () => {
+/**
+ * Exact equality match helper simulating PostgREST `.eq('customer->>email', userEmail)`
+ */
+function isExactEmailMatch(storedGuestEmail, authenticatedUserEmail) {
+  return normalizeCustomerEmail(storedGuestEmail) === normalizeCustomerEmail(authenticatedUserEmail);
+}
+
+/**
+ * Vulnerable SQL ILIKE pattern simulator demonstrating the flaw of wildcard matching
+ */
+function vulnerableIlikeMatch(storedGuestEmail, userEmailPattern) {
+  // Convert SQL ILIKE pattern (_ -> ., % -> .*) to RegExp
+  const regexStr = '^' + userEmailPattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // escape regex chars except _ and %
+    .replace(/_/g, '.')
+    .replace(/%/g, '.*') + '$';
+  const regex = new RegExp(regexStr, 'i');
+  return regex.test(storedGuestEmail);
+}
+
+describe('Guest Order Email Normalization & Exact Claiming Regression Tests', () => {
   test('normalizes mixed-case and untrimmed email addresses during checkout', () => {
     const testCases = [
       { input: 'Maya@Example.com', expected: 'maya@example.com' },
@@ -32,7 +52,70 @@ describe('Guest Order Email Normalization & Claiming Regression Test', () => {
 
     // Verify exact equality after normalization
     assert.equal(normalizedGuestEmail, normalizedUserEmail);
-    assert.equal(normalizedGuestEmail, 'maya.sharma@gmail.com');
+    assert.equal(isExactEmailMatch(guestInputEmail, registeredUserEmail), true);
+  });
+
+  test('REGRESSION [P1]: prevents wildcard matches with "_" in email from claiming unauthorized guest orders', () => {
+    const guestOrderEmail = 'alice@example.com';
+    const maliciousUserEmail = 'al_ce@example.com';
+
+    // Vulnerable ILIKE would erroneously match al_ce -> alice
+    assert.equal(
+      vulnerableIlikeMatch(guestOrderEmail, maliciousUserEmail),
+      true,
+      'ILIKE is vulnerable to single-character wildcard matching'
+    );
+
+    // Exact equality (.eq) must NOT match
+    assert.equal(
+      isExactEmailMatch(guestOrderEmail, maliciousUserEmail),
+      false,
+      'Exact equality must reject al_ce matching alice'
+    );
+
+    // Legitimate account with actual underscore must only match its exact address
+    assert.equal(
+      isExactEmailMatch('al_ce@example.com', 'AL_CE@EXAMPLE.COM'),
+      true,
+      'Exact match on same address with underscore succeeds'
+    );
+  });
+
+  test('REGRESSION [P1]: prevents wildcard matches with "%" in email from claiming unauthorized guest orders', () => {
+    const guestOrderEmail1 = 'username@example.com';
+    const guestOrderEmail2 = 'user_extra_long_name@example.com';
+    const wildcardUserEmail = 'user%name@example.com';
+
+    // Vulnerable ILIKE would erroneously match user%name against any string between user and name
+    assert.equal(
+      vulnerableIlikeMatch(guestOrderEmail1, wildcardUserEmail),
+      true,
+      'ILIKE is vulnerable to multi-character wildcard matching'
+    );
+    assert.equal(
+      vulnerableIlikeMatch(guestOrderEmail2, wildcardUserEmail),
+      true,
+      'ILIKE is vulnerable to multi-character wildcard matching'
+    );
+
+    // Exact equality (.eq) must NOT match
+    assert.equal(
+      isExactEmailMatch(guestOrderEmail1, wildcardUserEmail),
+      false,
+      'Exact equality must reject user%name matching username'
+    );
+    assert.equal(
+      isExactEmailMatch(guestOrderEmail2, wildcardUserEmail),
+      false,
+      'Exact equality must reject user%name matching user_extra_long_name'
+    );
+
+    // Legitimate account with actual % must only match exact string
+    assert.equal(
+      isExactEmailMatch('user%name@example.com', 'USER%NAME@EXAMPLE.COM'),
+      true,
+      'Exact match on identical email succeeds'
+    );
   });
 
   test('rejects malformed email formats after normalization', () => {
