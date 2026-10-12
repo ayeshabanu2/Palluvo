@@ -26,12 +26,19 @@ export default function ContactClient(): React.JSX.Element {
     message: ''
   });
   const confirmationRef = useRef<HTMLHeadingElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (submitted && confirmationRef.current) {
       confirmationRef.current.focus();
     }
   }, [submitted]);
+
+  useEffect(() => {
+    if (formError && errorRef.current) {
+      errorRef.current.focus();
+    }
+  }, [formError]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -47,12 +54,10 @@ export default function ContactClient(): React.JSX.Element {
       } else {
         const errorMsg = res.error || 'Failed to record inquiry. Please reach out to our concierge directly.';
         setFormError(errorMsg);
-        showToast(errorMsg, 'error');
       }
     } catch {
       const networkErrorMsg = 'A network error occurred. Please try again or reach out via WhatsApp/phone.';
       setFormError(networkErrorMsg);
-      showToast(networkErrorMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -308,9 +313,11 @@ export default function ContactClient(): React.JSX.Element {
 
               {formError && (
                 <div
+                  ref={errorRef}
+                  tabIndex={-1}
                   role="alert"
                   aria-live="assertive"
-                  className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5 shadow-xs"
+                  className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5 shadow-xs focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded"
                 >
                   <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
                   <span className="font-medium">{formError}</span>

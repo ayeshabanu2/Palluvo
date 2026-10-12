@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { normalizeEmail } from '@/utils/format';
 import {
   CONTACT_FIELD_LIMITS,
+  RATE_LIMIT_CONFIG,
   checkContactRateLimit,
 } from './rateLimiter';
 
@@ -78,7 +79,7 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: `Message cannot exceed ${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters.` };
     }
 
-    // 2. Server-side Rate Limiting (by IP and by normalized email)
+    // 2. Local Bounded Server Rate Limiting (by IP and by normalized email)
     const clientIp = await getClientIp();
     if (clientIp && clientIp !== 'unknown') {
       const ipRateCheck = checkContactRateLimit(`ip:${clientIp}`);
@@ -92,12 +93,44 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: emailRateCheck.error };
     }
 
-    // 3. Database Persistence
+    // 3. Shared Cross-Worker Rate Limiting Check via Database Table
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
+    const windowStartIso = new Date(Date.now() - RATE_LIMIT_CONFIG.WINDOW_MS).toISOString();
+    try {
+      const { data: recentInquiries, error: queryError } = await supabase
+        .from('inquiries')
+        .select('created_at')
+        .eq('email', email)
+        .gte('created_at', windowStartIso)
+        .order('created_at', { ascending: false });
+
+      if (!queryError && recentInquiries) {
+        if (recentInquiries.length >= RATE_LIMIT_CONFIG.MAX_PER_WINDOW) {
+          return {
+            success: false,
+            error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
+          };
+        }
+
+        if (recentInquiries.length > 0) {
+          const latestTime = new Date(recentInquiries[0].created_at as string).getTime();
+          if (Date.now() - latestTime < RATE_LIMIT_CONFIG.COOLDOWN_MS) {
+            return {
+              success: false,
+              error: 'Please wait a moment before sending another message.',
+            };
+          }
+        }
+      }
+    } catch {
+      // If shared query fails (e.g. offline/mock environment), local bounded rate limiter remains active
+    }
+
+    // 4. Database Persistence
     const inquiryRecord = {
       user_id: user?.id || null,
       name,

@@ -12,6 +12,7 @@ export const RATE_LIMIT_CONFIG = {
   WINDOW_MS: 10 * 60 * 1000, // 10 minutes sliding window
   MAX_PER_WINDOW: 5,
   COOLDOWN_MS: 5 * 1000, // 5 seconds minimum between consecutive requests
+  MAX_STORE_SIZE: 1000, // Bounded capacity limit to prevent memory accumulation
 } as const;
 
 interface RateLimitEntry {
@@ -21,7 +22,28 @@ interface RateLimitEntry {
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
 /**
- * Server-side sliding window rate limiter with rapid spam cooldown.
+ * Sweeps the store and purges all entries whose timestamps are outside the active window.
+ */
+export function pruneExpiredEntries(now: number = Date.now()): void {
+  const windowStart = now - RATE_LIMIT_CONFIG.WINDOW_MS;
+  for (const [key, record] of rateLimitStore.entries()) {
+    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+    if (record.timestamps.length === 0) {
+      rateLimitStore.delete(key);
+    }
+  }
+}
+
+/**
+ * Returns the current number of tracked keys in the rate limit store.
+ */
+export function getRateLimitStoreSize(): number {
+  return rateLimitStore.size;
+}
+
+/**
+ * Server-side sliding window rate limiter with rapid spam cooldown,
+ * TTL-backed key eviction, and bounded capacity.
  */
 export function checkContactRateLimit(
   identifier: string,
@@ -32,13 +54,32 @@ export function checkContactRateLimit(
   const windowStart = now - RATE_LIMIT_CONFIG.WINDOW_MS;
   let record = rateLimitStore.get(identifier);
 
+  if (record) {
+    // Filter out expired timestamps
+    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+    if (record.timestamps.length === 0) {
+      // Key is completely expired - evict it immediately
+      rateLimitStore.delete(identifier);
+      record = undefined;
+    }
+  }
+
+  // If the store is reaching bounded capacity, prune expired keys first
+  if (rateLimitStore.size >= RATE_LIMIT_CONFIG.MAX_STORE_SIZE) {
+    pruneExpiredEntries(now);
+    // If still at or over capacity, evict the oldest inserted key
+    if (rateLimitStore.size >= RATE_LIMIT_CONFIG.MAX_STORE_SIZE) {
+      const oldestKey = rateLimitStore.keys().next().value;
+      if (oldestKey) {
+        rateLimitStore.delete(oldestKey);
+      }
+    }
+  }
+
   if (!record) {
     record = { timestamps: [] };
     rateLimitStore.set(identifier, record);
   }
-
-  // Filter out timestamps outside the active sliding window
-  record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
 
   // Check rapid burst cooldown
   const lastTs = record.timestamps[record.timestamps.length - 1];

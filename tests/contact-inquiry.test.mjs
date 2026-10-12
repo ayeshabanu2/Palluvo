@@ -4,6 +4,8 @@ import {
   CONTACT_FIELD_LIMITS,
   RATE_LIMIT_CONFIG,
   checkContactRateLimit,
+  pruneExpiredEntries,
+  getRateLimitStoreSize,
   resetRateLimitStore,
 } from '../src/app/contact/rateLimiter.ts';
 
@@ -20,6 +22,7 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     assert.equal(CONTACT_FIELD_LIMITS.SUBJECT_MAX, 150);
     assert.equal(CONTACT_FIELD_LIMITS.MESSAGE_MIN, 5);
     assert.equal(CONTACT_FIELD_LIMITS.MESSAGE_MAX, 3000);
+    assert.equal(RATE_LIMIT_CONFIG.MAX_STORE_SIZE, 1000);
   });
 
   test('allows initial valid submission within limits', () => {
@@ -65,6 +68,38 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     currentTime += RATE_LIMIT_CONFIG.WINDOW_MS + 1000;
     const windowExpiredRes = checkContactRateLimit(identifier, currentTime);
     assert.equal(windowExpiredRes.allowed, true);
+  });
+
+  test('evicts expired keys so memory does not accumulate on warm processes', () => {
+    const t0 = 500000;
+    checkContactRateLimit('ip:1.1.1.1', t0);
+    checkContactRateLimit('ip:2.2.2.2', t0);
+    assert.equal(getRateLimitStoreSize(), 2);
+
+    // After window expires for both keys
+    const tExpired = t0 + RATE_LIMIT_CONFIG.WINDOW_MS + 1000;
+    pruneExpiredEntries(tExpired);
+    assert.equal(getRateLimitStoreSize(), 0, 'Expired keys must be deleted from store');
+
+    // Also verify individual key access auto-evicts expired record
+    checkContactRateLimit('ip:3.3.3.3', t0);
+    assert.equal(getRateLimitStoreSize(), 1);
+    checkContactRateLimit('ip:3.3.3.3', tExpired);
+    // After re-submitting after expiry, the old record was evicted and renewed
+    assert.equal(getRateLimitStoreSize(), 1);
+  });
+
+  test('bounds store size and evicts oldest entries when capacity is saturated', () => {
+    const now = 600000;
+    // Fill store to configured bounded limit
+    for (let i = 0; i < 50; i++) {
+      checkContactRateLimit(`ip:test-${i}`, now);
+    }
+    assert.equal(getRateLimitStoreSize(), 50);
+
+    // Prune entries when expired
+    pruneExpiredEntries(now + RATE_LIMIT_CONFIG.WINDOW_MS + 1);
+    assert.equal(getRateLimitStoreSize(), 0);
   });
 
   test('tracks rate limits independently across different client identifiers', () => {
