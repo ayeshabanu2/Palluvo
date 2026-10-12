@@ -1,3 +1,4 @@
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
@@ -48,19 +49,74 @@ export interface RateLimitStore {
   clear?(): Promise<void> | void;
 }
 
-function checkSupabaseServiceRoleConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+/**
+ * Creates a non-reversible HMAC-SHA256 keyed digest of identifier keys (IP/email)
+ * to prevent storing raw personal identifiers in rate limit tables.
+ */
+export function hashRateLimitIdentifier(identifier: string): string {
+  if (typeof identifier !== 'string' || identifier.length === 0) {
+    return '';
+  }
+  if (identifier.startsWith('digest:sha256:')) {
+    return identifier;
+  }
+  const pepper =
+    process.env.RATE_LIMIT_PEPPER ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    'palluvo_default_rate_limit_pepper';
+  const hmac = crypto
+    .createHmac('sha256', pepper)
+    .update(identifier.trim().toLowerCase())
+    .digest('hex');
+  return `digest:sha256:${hmac}`;
+}
 
-  if (!url || !serviceKey) return false;
-  if (url.includes('placeholder') || serviceKey.includes('placeholder')) return false;
-  if (url.includes('your_supabase_project_url') || serviceKey.includes('your_supabase_service_role_key')) return false;
+export function checkSupabaseConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY;
+
+  if (!url || !key) return false;
+  if (url.includes('placeholder') || key.includes('placeholder')) return false;
+  if (url.includes('your_supabase_project_url') || key.includes('your_supabase_anon_key')) return false;
 
   return (
     url.startsWith('https://') ||
     url.startsWith('http://127.0.0.1') ||
     url.startsWith('http://localhost')
   );
+}
+
+export function checkSupabaseServiceRoleConfigured(): boolean {
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+  if (!serviceKey) return false;
+  if (serviceKey.includes('placeholder') || serviceKey.includes('your_supabase_service_role_key')) return false;
+  return serviceKey.trim().length > 10;
+}
+
+/**
+ * Fail-closed store used when production environment is misconfigured
+ * (e.g., Supabase is active but SUPABASE_SERVICE_ROLE_KEY is absent).
+ */
+export class MisconfiguredRateLimitStore implements RateLimitStore {
+  async consumeKeys(): Promise<RateLimitResult> {
+    console.error(
+      '[RateLimiter] Configuration error: Supabase is configured in production but SUPABASE_SERVICE_ROLE_KEY is absent. Failing closed to avoid per-instance storage leak.'
+    );
+    return {
+      allowed: false,
+      error: 'Inquiry service is temporarily unavailable due to a server configuration issue. Please connect with our concierge directly.',
+    };
+  }
+
+  getStoreSize(): number {
+    return 0;
+  }
+
+  pruneExpiredEntries(): number {
+    return 0;
+  }
+
+  clear(): void {}
 }
 
 /**
@@ -74,6 +130,15 @@ export class DatabaseRpcRateLimitStore implements RateLimitStore {
 
   constructor(clientFactory?: () => Promise<any> | any) {
     this.clientFactory = clientFactory;
+    // Guaranteed background cleanup interval in warm processes
+    if (typeof setInterval !== 'undefined') {
+      const timer = setInterval(() => {
+        this.pruneExpiredEntries().catch(() => {});
+      }, RATE_LIMIT_CONFIG.WINDOW_MS);
+      if (typeof timer.unref === 'function') {
+        timer.unref();
+      }
+    }
   }
 
   private async getClient(): Promise<any> {
@@ -89,7 +154,13 @@ export class DatabaseRpcRateLimitStore implements RateLimitStore {
   }
 
   async consumeKeys(keys: string[], now: number = Date.now()): Promise<RateLimitResult> {
-    const validKeys = [...new Set(keys.filter((k) => typeof k === 'string' && k.trim().length > 0))];
+    const validKeys = [
+      ...new Set(
+        keys
+          .filter((k) => typeof k === 'string' && k.trim().length > 0)
+          .map(hashRateLimitIdentifier)
+      ),
+    ];
     if (validKeys.length === 0) {
       return { allowed: true };
     }
@@ -134,6 +205,21 @@ export class DatabaseRpcRateLimitStore implements RateLimitStore {
         allowed: false,
         error: 'Unable to verify request rate at this moment. Please connect with our concierge directly.',
       };
+    }
+  }
+
+  async pruneExpiredEntries(): Promise<number> {
+    try {
+      const supabase = await this.getClient();
+      if (!supabase) return 0;
+      const { data, error } = await supabase.rpc('prune_expired_contact_rate_limits');
+      if (error) {
+        console.error('[DatabaseRpcRateLimitStore] prune error:', error);
+        return 0;
+      }
+      return typeof data === 'number' ? data : 0;
+    } catch {
+      return 0;
     }
   }
 }
@@ -493,9 +579,18 @@ export class SharedRateLimiter implements RateLimitStore {
  * Prefers Database RPC store if Supabase is active; otherwise uses cross-process atomic file store.
  */
 export function createProductionRateLimitStore(options: RateLimiterOptions = {}): RateLimitStore {
-  if (checkSupabaseServiceRoleConfigured()) {
+  const isSupabase = checkSupabaseConfigured();
+  const hasServiceRole = checkSupabaseServiceRoleConfigured();
+
+  if (isSupabase) {
+    if (!hasServiceRole) {
+      // Fail closed in production when the service-role key is missing instead of silently using per-instance storage
+      return new MisconfiguredRateLimitStore();
+    }
     return new DatabaseRpcRateLimitStore();
   }
+
+  // Local development fallback only (when Supabase is completely unconfigured)
   return new CrossProcessRateLimitStore(options);
 }
 
@@ -522,19 +617,21 @@ export async function checkContactRateLimit(
   identifier: string,
   now: number = Date.now()
 ): Promise<RateLimitResult> {
-  return getProductionStore().consumeKeys([identifier], now);
+  const hashed = hashRateLimitIdentifier(identifier);
+  return getProductionStore().consumeKeys([hashed], now);
 }
 
 /**
  * Multi-key atomic helper checking both IP and email together through the production store boundary.
+ * Identifiers are mapped to non-reversible keyed HMAC digests before consumption.
  */
 export async function checkContactRateLimitMulti(
   { ip, email }: { ip?: string; email?: string },
   now: number = Date.now()
 ): Promise<RateLimitResult> {
   const keys: string[] = [];
-  if (ip && ip !== 'unknown') keys.push(`ip:${ip}`);
-  if (email) keys.push(`email:${email}`);
+  if (ip && ip !== 'unknown') keys.push(hashRateLimitIdentifier(`ip:${ip}`));
+  if (email) keys.push(hashRateLimitIdentifier(`email:${email}`));
   return getProductionStore().consumeKeys(keys, now);
 }
 

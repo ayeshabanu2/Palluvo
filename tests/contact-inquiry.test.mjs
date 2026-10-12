@@ -9,6 +9,9 @@ import {
   SharedRateLimiter,
   DatabaseRpcRateLimitStore,
   CrossProcessRateLimitStore,
+  MisconfiguredRateLimitStore,
+  createProductionRateLimitStore,
+  hashRateLimitIdentifier,
   checkContactRateLimit,
   checkContactRateLimitMulti,
   pruneExpiredEntries,
@@ -258,11 +261,18 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     const dbStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
 
-    // 1. Successful consumption passes ONLY keys to RPC (server derives policy constants and timestamps)
+    // 1. Successful consumption passes ONLY keyed digests to RPC (server derives policy constants and timestamps)
     const successRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com']);
     assert.equal(successRes.allowed, true);
     assert.equal(capturedRpc.funcName, 'consume_contact_rate_limit');
-    assert.deepEqual(capturedRpc.params, { p_keys: ['ip:1.2.3.4', 'email:test@example.com'] });
+    assert.deepEqual(capturedRpc.params, {
+      p_keys: [
+        hashRateLimitIdentifier('ip:1.2.3.4'),
+        hashRateLimitIdentifier('email:test@example.com'),
+      ],
+    });
+    assert.ok(capturedRpc.params.p_keys[0].startsWith('digest:sha256:'));
+    assert.ok(capturedRpc.params.p_keys[1].startsWith('digest:sha256:'));
     assert.equal(capturedRpc.params.p_now, undefined, 'Caller must not pass p_now');
     assert.equal(capturedRpc.params.p_window_ms, undefined, 'Caller must not pass p_window_ms');
     assert.equal(capturedRpc.params.p_max_requests, undefined, 'Caller must not pass p_max_requests');
@@ -409,7 +419,91 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const trustedServerStore = new DatabaseRpcRateLimitStore(async () => createMockClientForRole('service_role'));
     const legitimateServerCheck = await trustedServerStore.consumeKeys([victimEmail]);
     assert.equal(legitimateServerCheck.allowed, true, 'Server service_role credential must be permitted');
-    assert.equal(dbQuotaTable.has(victimEmail), true, 'Quota table is mutated only by trusted server credential');
+    assert.equal(dbQuotaTable.has(hashRateLimitIdentifier(victimEmail)), true, 'Quota table is mutated only by trusted server credential');
+  });
+
+  test('[P2] fails closed in production when Supabase is configured but service-role credential is absent', async () => {
+    // Preserve original environment variables
+    const originalUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const originalAnon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    const originalService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalSecret = process.env.SUPABASE_SECRET_KEY;
+
+    try {
+      // Simulate production where Supabase URL is active, but service-role secret was not provisioned
+      process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-production.supabase.co';
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.anon';
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      delete process.env.SUPABASE_SECRET_KEY;
+
+      const store = createProductionRateLimitStore();
+      assert.ok(
+        store instanceof MisconfiguredRateLimitStore,
+        'Factory must return MisconfiguredRateLimitStore instead of silently falling back to per-instance storage'
+      );
+
+      const result = await store.consumeKeys(['digest:sha256:1234567890abcdef']);
+      assert.equal(result.allowed, false, 'Misconfigured production environment must fail closed');
+      assert.match(result.error, /temporarily unavailable/i);
+    } finally {
+      // Restore environment
+      if (originalUrl !== undefined) process.env.NEXT_PUBLIC_SUPABASE_URL = originalUrl;
+      else delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+
+      if (originalAnon !== undefined) process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = originalAnon;
+      else delete process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+      if (originalService !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = originalService;
+      else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (originalSecret !== undefined) process.env.SUPABASE_SECRET_KEY = originalSecret;
+      else delete process.env.SUPABASE_SECRET_KEY;
+    }
+  });
+
+  test('[P2] generates deterministic keyed digests for identifiers and avoids persisting raw IP or email', () => {
+    const rawIp = 'ip:203.0.113.195';
+    const rawEmail = 'email:Ayesha.Banu@Example.COM';
+
+    const ipDigest = hashRateLimitIdentifier(rawIp);
+    const emailDigest = hashRateLimitIdentifier(rawEmail);
+
+    // Verify format
+    assert.ok(ipDigest.startsWith('digest:sha256:'), 'Key must be formatted with digest prefix');
+    assert.ok(emailDigest.startsWith('digest:sha256:'), 'Key must be formatted with digest prefix');
+    assert.equal(ipDigest.length, 78, 'Digest must be 78 chars (prefix + 64 hex characters)');
+    assert.equal(emailDigest.length, 78, 'Digest must be 78 chars (prefix + 64 hex characters)');
+
+    // Verify raw values do not appear in the hash
+    assert.equal(ipDigest.includes('203.0.113.195'), false, 'Raw IP must not be present in key');
+    assert.equal(emailDigest.includes('Ayesha.Banu'), false, 'Raw email name must not be present in key');
+    assert.equal(emailDigest.includes('Example.COM'), false, 'Raw email domain must not be present in key');
+
+    // Verify case normalization & determinism
+    const lowerEmailDigest = hashRateLimitIdentifier('email:ayesha.banu@example.com');
+    assert.equal(emailDigest, lowerEmailDigest, 'Digest must be case-insensitive and deterministic');
+
+    // Verify distinct inputs produce distinct digests
+    const differentIpDigest = hashRateLimitIdentifier('ip:203.0.113.196');
+    assert.notEqual(ipDigest, differentIpDigest, 'Different identifiers must yield distinct digests');
+  });
+
+  test('[P2] enforces actual expiry cleanup via prune_expired_contact_rate_limits RPC', async () => {
+    let capturedPruneRpc = null;
+
+    const mockSupabase = {
+      rpc: async (funcName) => {
+        capturedPruneRpc = funcName;
+        // Simulate database reporting 12 expired keys removed
+        return { data: 12, error: null };
+      },
+    };
+
+    const dbStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
+    const deletedCount = await dbStore.pruneExpiredEntries();
+
+    assert.equal(capturedPruneRpc, 'prune_expired_contact_rate_limits');
+    assert.equal(deletedCount, 12, 'Prune must return count of deleted expired records');
   });
 
   test('validates payload length boundary checks correctly', () => {
