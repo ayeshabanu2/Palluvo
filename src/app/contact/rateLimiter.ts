@@ -1,3 +1,7 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import os from 'node:os';
+
 export const CONTACT_FIELD_LIMITS = {
   NAME_MIN: 2,
   NAME_MAX: 100,
@@ -12,7 +16,7 @@ export const RATE_LIMIT_CONFIG = {
   WINDOW_MS: 10 * 60 * 1000, // 10 minutes sliding window
   MAX_PER_WINDOW: 5,
   COOLDOWN_MS: 5 * 1000, // 5 seconds minimum between consecutive requests
-  MAX_STORE_SIZE: 1000, // Bounded capacity limit to prevent memory exhaustion
+  MAX_STORE_SIZE: 1000, // Bounded capacity limit to prevent memory/storage exhaustion
 } as const;
 
 export interface RateLimitRecord {
@@ -37,12 +41,309 @@ export interface RateLimiterOptions {
   MAX_STORE_SIZE?: number;
 }
 
+export interface RateLimitStore {
+  consumeKeys(keys: string[], now?: number): Promise<RateLimitResult>;
+  getStoreSize?(): Promise<number> | number;
+  pruneExpiredEntries?(now?: number): Promise<number> | number;
+  clear?(): Promise<void> | void;
+}
+
+function checkSupabaseConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!url || !key) return false;
+  if (url.includes('placeholder') || key.includes('placeholder')) return false;
+  if (url.includes('your_supabase_project_url') || key.includes('your_supabase_anon_key')) return false;
+
+  return (
+    url.startsWith('https://') ||
+    url.startsWith('http://127.0.0.1') ||
+    url.startsWith('http://localhost')
+  );
+}
+
 /**
- * Atomic, shared TTL-backed rate limiter supporting multi-key evaluation
- * (IP and email), concurrency locking, and bounded store capacity without
- * quota reset on eviction.
+ * Production Database RPC Rate Limit Store.
+ * Calls PostgreSQL function `consume_contact_rate_limit` via Supabase client.
+ * Enforces atomic multi-key row locking, sliding window, burst cooldown,
+ * TTL pruning, capacity protection, and fails closed on query failure.
  */
-export class SharedRateLimiter {
+export class DatabaseRpcRateLimitStore implements RateLimitStore {
+  private clientFactory?: () => Promise<any> | any;
+
+  constructor(clientFactory?: () => Promise<any> | any) {
+    this.clientFactory = clientFactory;
+  }
+
+  private async getClient(): Promise<any> {
+    if (this.clientFactory) {
+      return await this.clientFactory();
+    }
+    try {
+      const { createClient } = await import('@/utils/supabase/server');
+      return await createClient();
+    } catch {
+      return null;
+    }
+  }
+
+  async consumeKeys(keys: string[], now: number = Date.now()): Promise<RateLimitResult> {
+    const validKeys = [...new Set(keys.filter((k) => typeof k === 'string' && k.trim().length > 0))];
+    if (validKeys.length === 0) {
+      return { allowed: true };
+    }
+
+    try {
+      const supabase = await this.getClient();
+      if (!supabase) {
+        return {
+          allowed: false,
+          error: 'Rate limiter unavailable. Please connect with our concierge directly.',
+        };
+      }
+
+      const { data, error } = await supabase.rpc('consume_contact_rate_limit', {
+        p_keys: validKeys,
+        p_now: now,
+        p_window_ms: RATE_LIMIT_CONFIG.WINDOW_MS,
+        p_max_requests: RATE_LIMIT_CONFIG.MAX_PER_WINDOW,
+        p_cooldown_ms: RATE_LIMIT_CONFIG.COOLDOWN_MS,
+        p_max_store_size: RATE_LIMIT_CONFIG.MAX_STORE_SIZE,
+      });
+
+      if (error) {
+        console.error('[DatabaseRpcRateLimitStore] RPC error:', error);
+        // Fail closed on query errors - do not permit unverified submissions
+        return {
+          allowed: false,
+          error: 'Unable to verify request rate at this moment. Please connect with our concierge directly.',
+        };
+      }
+
+      if (data && typeof data === 'object') {
+        return {
+          allowed: Boolean(data.allowed),
+          retryAfterSeconds: data.retryAfterSeconds,
+          error: data.error,
+        };
+      }
+
+      return {
+        allowed: false,
+        error: 'Unable to process inquiry rate check. Please try again shortly.',
+      };
+    } catch (err) {
+      console.error('[DatabaseRpcRateLimitStore] Unexpected exception:', err);
+      return {
+        allowed: false,
+        error: 'Unable to verify request rate at this moment. Please connect with our concierge directly.',
+      };
+    }
+  }
+}
+
+/**
+ * Cross-Process File-Backed Atomic Rate Limit Store.
+ * Backs production rate limits across independent Node worker processes/threads
+ * without relying on process-local memory. Uses atomic file locking and updates.
+ */
+export class CrossProcessRateLimitStore implements RateLimitStore {
+  readonly windowMs: number;
+  readonly maxPerWindow: number;
+  readonly cooldownMs: number;
+  readonly maxStoreSize: number;
+  readonly storeFilePath: string;
+  readonly lockFilePath: string;
+
+  constructor(options: RateLimiterOptions = {}) {
+    this.windowMs = options.windowMs ?? options.WINDOW_MS ?? RATE_LIMIT_CONFIG.WINDOW_MS;
+    this.maxPerWindow = options.maxPerWindow ?? options.MAX_PER_WINDOW ?? RATE_LIMIT_CONFIG.MAX_PER_WINDOW;
+    this.cooldownMs = options.cooldownMs ?? options.COOLDOWN_MS ?? RATE_LIMIT_CONFIG.COOLDOWN_MS;
+    this.maxStoreSize = options.maxStoreSize ?? options.MAX_STORE_SIZE ?? RATE_LIMIT_CONFIG.MAX_STORE_SIZE;
+
+    const baseDir = path.join(os.tmpdir(), 'palluvo_rate_limits');
+    if (!fs.existsSync(baseDir)) {
+      try {
+        fs.mkdirSync(baseDir, { recursive: true });
+      } catch {}
+    }
+    this.storeFilePath = path.join(baseDir, 'contact_limits.json');
+    this.lockFilePath = path.join(baseDir, 'contact_limits.lock');
+  }
+
+  private withLock<T>(fn: () => T): T {
+    const maxWaitMs = 5000;
+    const start = Date.now();
+    let fd: number | null = null;
+
+    while (fd === null) {
+      try {
+        fd = fs.openSync(this.lockFilePath, 'wx');
+      } catch (err: any) {
+        if (err && err.code === 'EEXIST') {
+          try {
+            const stat = fs.statSync(this.lockFilePath);
+            if (Date.now() - stat.mtimeMs > 10000) {
+              try { fs.unlinkSync(this.lockFilePath); } catch {}
+            }
+          } catch {}
+
+          if (Date.now() - start > maxWaitMs) {
+            try { fs.unlinkSync(this.lockFilePath); } catch {}
+          }
+          const pauseUntil = Date.now() + 15;
+          while (Date.now() < pauseUntil) {}
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    try {
+      return fn();
+    } finally {
+      try { fs.closeSync(fd); } catch {}
+      try { fs.unlinkSync(this.lockFilePath); } catch {}
+    }
+  }
+
+  async consumeKeys(keys: string[], now: number = Date.now()): Promise<RateLimitResult> {
+    const validKeys = [...new Set(keys.filter((k) => typeof k === 'string' && k.trim().length > 0))];
+    if (validKeys.length === 0) {
+      return { allowed: true };
+    }
+
+    return this.withLock(() => {
+      let data: Record<string, RateLimitRecord> = {};
+      if (fs.existsSync(this.storeFilePath)) {
+        try {
+          const content = fs.readFileSync(this.storeFilePath, 'utf8');
+          data = JSON.parse(content) || {};
+        } catch {
+          data = {};
+        }
+      }
+
+      const windowStart = now - this.windowMs;
+
+      // 1. Prune expired timestamps across all keys
+      for (const [key, record] of Object.entries(data)) {
+        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+        if (record.timestamps.length === 0) {
+          delete data[key];
+        }
+      }
+
+      // 2. Capacity saturation check for new keys
+      const currentKeys = Object.keys(data);
+      const newKeys = validKeys.filter((k) => !data[k]);
+      if (currentKeys.length + newKeys.length > this.maxStoreSize) {
+        return {
+          allowed: false,
+          error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
+        };
+      }
+
+      // 3. Multi-key evaluation for burst cooldown and window quota
+      for (const key of validKeys) {
+        const record = data[key];
+        if (record && record.timestamps.length > 0) {
+          const lastTs = record.timestamps[record.timestamps.length - 1];
+          if (now - lastTs < this.cooldownMs) {
+            const retryAfter = Math.ceil((this.cooldownMs - (now - lastTs)) / 1000);
+            return {
+              allowed: false,
+              retryAfterSeconds: retryAfter,
+              error: 'Please wait a moment before sending another message.',
+            };
+          }
+
+          if (record.timestamps.length >= this.maxPerWindow) {
+            const oldest = record.timestamps[0];
+            const retryAfter = Math.ceil((oldest + this.windowMs - now) / 1000);
+            return {
+              allowed: false,
+              retryAfterSeconds: retryAfter,
+              error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
+            };
+          }
+        }
+      }
+
+      // 4. Commit timestamps atomically for all keys
+      for (const key of validKeys) {
+        let record = data[key];
+        if (!record) {
+          record = { timestamps: [], lastUpdated: now };
+          data[key] = record;
+        }
+        record.timestamps.push(now);
+        record.lastUpdated = now;
+      }
+
+      // 5. Atomic write to disk
+      const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.tmp`;
+      fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
+      fs.renameSync(tempPath, this.storeFilePath);
+
+      return { allowed: true };
+    });
+  }
+
+  getStoreSize(): number {
+    return this.withLock(() => {
+      if (!fs.existsSync(this.storeFilePath)) return 0;
+      try {
+        const content = fs.readFileSync(this.storeFilePath, 'utf8');
+        const data = JSON.parse(content) || {};
+        return Object.keys(data).length;
+      } catch {
+        return 0;
+      }
+    });
+  }
+
+  pruneExpiredEntries(now: number = Date.now()): number {
+    return this.withLock(() => {
+      if (!fs.existsSync(this.storeFilePath)) return 0;
+      try {
+        const content = fs.readFileSync(this.storeFilePath, 'utf8');
+        const data: Record<string, RateLimitRecord> = JSON.parse(content) || {};
+        const windowStart = now - this.windowMs;
+        let pruned = 0;
+        for (const [key, record] of Object.entries(data)) {
+          record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+          if (record.timestamps.length === 0) {
+            delete data[key];
+            pruned++;
+          }
+        }
+        const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.tmp`;
+        fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
+        fs.renameSync(tempPath, this.storeFilePath);
+        return pruned;
+      } catch {
+        return 0;
+      }
+    });
+  }
+
+  clear(): void {
+    this.withLock(() => {
+      try {
+        if (fs.existsSync(this.storeFilePath)) {
+          fs.unlinkSync(this.storeFilePath);
+        }
+      } catch {}
+    });
+  }
+}
+
+/**
+ * In-memory atomic rate limiter with sorted multi-key locking.
+ */
+export class SharedRateLimiter implements RateLimitStore {
   private store: Map<string, RateLimitRecord>;
   private locks: Map<string, Promise<void>>;
   readonly windowMs: number;
@@ -72,9 +373,6 @@ export class SharedRateLimiter {
     this.locks.clear();
   }
 
-  /**
-   * Sweeps the store and purges all entries whose timestamps are outside the active window.
-   */
   pruneExpiredEntries(now: number = Date.now()): number {
     const windowStart = now - this.windowMs;
     let prunedCount = 0;
@@ -88,25 +386,19 @@ export class SharedRateLimiter {
     return prunedCount;
   }
 
-  /**
-   * Acquires a sorted multi-key lock to serialize concurrent requests atomically
-   * and avoid deadlocks across multiple keys.
-   */
   private async withMultiLock<T>(keys: string[], fn: () => T | Promise<T>): Promise<T> {
     const sortedKeys = [...new Set(keys)].sort();
 
-    // Wait for any existing locks on the keys
     for (const key of sortedKeys) {
       while (this.locks.has(key)) {
         try {
           await this.locks.get(key);
         } catch {
-          // ignore lock resolution error
+          // ignore
         }
       }
     }
 
-    // Set lock promise
     let resolveLocks!: () => void;
     const lockPromise = new Promise<void>((res) => {
       resolveLocks = res;
@@ -126,9 +418,6 @@ export class SharedRateLimiter {
     }
   }
 
-  /**
-   * Atomically checks and records quota for multiple keys (e.g. IP and email).
-   */
   async consumeKeys(keys: string[], now: number = Date.now()): Promise<RateLimitResult> {
     const validKeys = [...new Set(keys.filter((k) => typeof k === 'string' && k.trim().length > 0))];
     if (validKeys.length === 0) {
@@ -140,13 +429,9 @@ export class SharedRateLimiter {
     });
   }
 
-  /**
-   * Synchronous atomic evaluation inside lock critical section.
-   */
   atomicEvaluateSync(keys: string[], now: number = Date.now()): RateLimitResult {
     const windowStart = now - this.windowMs;
 
-    // 1. Evict expired timestamps on the requested keys
     for (const key of keys) {
       const record = this.store.get(key);
       if (record) {
@@ -157,13 +442,9 @@ export class SharedRateLimiter {
       }
     }
 
-    // 2. Capacity check for new keys
     const newKeys = keys.filter((k) => !this.store.has(k));
     if (newKeys.length > 0 && this.store.size + newKeys.length > this.maxStoreSize) {
       this.pruneExpiredEntries(now);
-      // If still exceeding maxStoreSize, all keys in store are active.
-      // To prevent attacker flooding from evicting active keys and resetting their quotas,
-      // fail closed for new keys.
       if (this.store.size + newKeys.length > this.maxStoreSize) {
         return {
           allowed: false,
@@ -172,11 +453,9 @@ export class SharedRateLimiter {
       }
     }
 
-    // 3. Evaluate cooldown and quota for ALL keys before committing
     for (const key of keys) {
       const record = this.store.get(key);
       if (record && record.timestamps.length > 0) {
-        // Cooldown check (burst protection)
         const lastTs = record.timestamps[record.timestamps.length - 1];
         if (now - lastTs < this.cooldownMs) {
           const retryAfter = Math.ceil((this.cooldownMs - (now - lastTs)) / 1000);
@@ -187,7 +466,6 @@ export class SharedRateLimiter {
           };
         }
 
-        // Window threshold check
         if (record.timestamps.length >= this.maxPerWindow) {
           const oldest = record.timestamps[0];
           const retryAfter = Math.ceil((oldest + this.windowMs - now) / 1000);
@@ -200,7 +478,6 @@ export class SharedRateLimiter {
       }
     }
 
-    // 4. Commit timestamps atomically for all keys
     for (const key of keys) {
       let record = this.store.get(key);
       if (!record) {
@@ -215,31 +492,45 @@ export class SharedRateLimiter {
   }
 }
 
-// Shared global store across workers / modules within runtime
-const GLOBAL_STORE_KEY = Symbol.for('palluvo.contact.rateLimitStore');
-const globalScope = globalThis as unknown as { [GLOBAL_STORE_KEY]?: Map<string, RateLimitRecord> };
-
-if (!globalScope[GLOBAL_STORE_KEY]) {
-  globalScope[GLOBAL_STORE_KEY] = new Map<string, RateLimitRecord>();
+/**
+ * Factory creating the production rate limit store.
+ * Prefers Database RPC store if Supabase is active; otherwise uses cross-process atomic file store.
+ */
+export function createProductionRateLimitStore(options: RateLimiterOptions = {}): RateLimitStore {
+  if (checkSupabaseConfigured()) {
+    return new DatabaseRpcRateLimitStore();
+  }
+  return new CrossProcessRateLimitStore(options);
 }
 
-export const defaultContactRateLimiter = new SharedRateLimiter(
-  RATE_LIMIT_CONFIG,
-  globalScope[GLOBAL_STORE_KEY]
-);
+// Active singleton production store
+let activeProductionStore: RateLimitStore | null = null;
+
+export function getProductionStore(): RateLimitStore {
+  if (!activeProductionStore) {
+    activeProductionStore = createProductionRateLimitStore();
+  }
+  return activeProductionStore;
+}
+
+export function setProductionStore(store: RateLimitStore): void {
+  activeProductionStore = store;
+}
+
+export const defaultContactRateLimiter = new SharedRateLimiter();
 
 /**
- * Convenient helper for single identifier checks
+ * Convenient helper for single identifier checks through the production store boundary.
  */
 export async function checkContactRateLimit(
   identifier: string,
   now: number = Date.now()
 ): Promise<RateLimitResult> {
-  return defaultContactRateLimiter.consumeKeys([identifier], now);
+  return getProductionStore().consumeKeys([identifier], now);
 }
 
 /**
- * Multi-key atomic helper checking both IP and email together
+ * Multi-key atomic helper checking both IP and email together through the production store boundary.
  */
 export async function checkContactRateLimitMulti(
   { ip, email }: { ip?: string; email?: string },
@@ -248,17 +539,28 @@ export async function checkContactRateLimitMulti(
   const keys: string[] = [];
   if (ip && ip !== 'unknown') keys.push(`ip:${ip}`);
   if (email) keys.push(`email:${email}`);
-  return defaultContactRateLimiter.consumeKeys(keys, now);
+  return getProductionStore().consumeKeys(keys, now);
 }
 
-export function resetRateLimitStore(): void {
-  defaultContactRateLimiter.clear();
+export async function resetRateLimitStore(): Promise<void> {
+  const store = getProductionStore();
+  if (store.clear) {
+    await store.clear();
+  }
 }
 
-export function pruneExpiredEntries(now: number = Date.now()): number {
-  return defaultContactRateLimiter.pruneExpiredEntries(now);
+export async function pruneExpiredEntries(now: number = Date.now()): Promise<number> {
+  const store = getProductionStore();
+  if (store.pruneExpiredEntries) {
+    return await store.pruneExpiredEntries(now);
+  }
+  return 0;
 }
 
-export function getRateLimitStoreSize(): number {
-  return defaultContactRateLimiter.getStoreSize();
+export async function getRateLimitStoreSize(): Promise<number> {
+  const store = getProductionStore();
+  if (store.getStoreSize) {
+    return await store.getStoreSize();
+  }
+  return 0;
 }

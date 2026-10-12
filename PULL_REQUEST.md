@@ -258,6 +258,7 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 - [x] **[P2] Header Logo Emblem Payload Optimization:** Optimized the header logo emblem by cropping the 2000×2000 canvas to the exact badge bounds (reducing source asset size from 533,701 bytes to 47,240 bytes — a 91.2% reduction) and serving it via Next.js `<Image>` component with `priority`, responsive `sizes`, and WebP/AVIF compression.
 - [x] **[P1] ESLint 9 Compatibility & Next 16 Lint Resolution:** Verified `npm run lint` successfully runs with `eslint .` without errors using `eslint^9.0.0` and flat `eslint.config.mjs`, resolving the incompatibility with Next 16.
 - [x] **[P2] High-Severity Dependency Vulnerability (GHSA-vfj7-8cjw) Mitigation & Risk Assessment:** Verified and documented that the GHSA-vfj7-8cjw vulnerability in the `braces` dependency has no patched upstream release in `braces@3` / `micromatch@4` and poses zero residual risk to production, as it only exists in the `devDependencies` pipeline and is stripped from production builds.
+- [x] **[P2] Cross-Instance Atomic Rate Limiter & Multi-Worker Boundary:** Backed the production contact rate limiter with a genuine cross-instance atomic store. Added PostgreSQL database RPC `consume_contact_rate_limit` with row-level locking (`FOR UPDATE`), sliding window, rapid burst cooldown, capacity protection without active quota reset, and TTL cleanup in [`supabase/migrations/20261012_contact_rate_limiter.sql`](supabase/migrations/20261012_contact_rate_limiter.sql). Implemented [`DatabaseRpcRateLimitStore`](src/app/contact/rateLimiter.ts) failing closed on database / query errors, and [`CrossProcessRateLimitStore`](src/app/contact/rateLimiter.ts) providing cross-worker atomic file locking for Node environments. Rewrote tests to exercise the production store boundary (`checkContactRateLimitMulti`), added cross-worker isolation testing via Node `worker_threads`, and added RPC parameter & error handling tests.
 
 ---
 
@@ -265,6 +266,9 @@ The migration preserves strict **100% saree-only merchandising**, all authentica
 
 | File | Status | Summary |
 | :--- | :--- | :--- |
+| [`supabase/migrations/20261012_contact_rate_limiter.sql`](supabase/migrations/20261012_contact_rate_limiter.sql) | ✅ **Added** | [P2] Supabase PostgreSQL migration for `contact_rate_limits` table and `consume_contact_rate_limit` RPC with atomic multi-key row locking, TTL, and burst cooldown |
+| [`src/app/contact/rateLimiter.ts`](src/app/contact/rateLimiter.ts) | ✅ **Modified** | [P2] Production rate limiter backed by `DatabaseRpcRateLimitStore` (PostgreSQL RPC) and `CrossProcessRateLimitStore` (file lock) with fail-closed behavior on query failure |
+| [`tests/contact-inquiry.test.mjs`](tests/contact-inquiry.test.mjs) | ✅ **Modified** | [P2] Integration tests exercising production store boundary, cross-worker isolation with `worker_threads`, full capacity saturation (1000 entries), and RPC error handling |
 | [`tests/guest-order-casing.test.mjs`](tests/guest-order-casing.test.mjs) | ✅ **Added** | [P2] Regression unit tests for mixed-case email normalization and guest order account linking |
 | [`src/utils/format.ts`](src/utils/format.ts) | ✅ **Modified** | [P2] Added `normalizeEmail` helper for canonical lower-cased trimmed email processing |
 | [`src/app/account/page.tsx`](src/app/account/page.tsx) | ✅ **Modified** | [P2] Automatic guest order reconciliation and case-insensitive `ilike` linking for verified authenticated account emails |

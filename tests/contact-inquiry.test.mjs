@@ -1,9 +1,14 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import { Worker } from 'node:worker_threads';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import {
   CONTACT_FIELD_LIMITS,
   RATE_LIMIT_CONFIG,
   SharedRateLimiter,
+  DatabaseRpcRateLimitStore,
+  CrossProcessRateLimitStore,
   checkContactRateLimit,
   checkContactRateLimitMulti,
   pruneExpiredEntries,
@@ -11,9 +16,11 @@ import {
   resetRateLimitStore,
 } from '../src/app/contact/rateLimiter.ts';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
-  beforeEach(() => {
-    resetRateLimitStore();
+  beforeEach(async () => {
+    await resetRateLimitStore();
   });
 
   test('enforces field limit constants configuration', () => {
@@ -76,18 +83,18 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const t0 = 500000;
     await checkContactRateLimit('ip:1.1.1.1', t0);
     await checkContactRateLimit('ip:2.2.2.2', t0);
-    assert.equal(getRateLimitStoreSize(), 2);
+    assert.equal(await getRateLimitStoreSize(), 2);
 
     // After window expires for both keys
     const tExpired = t0 + RATE_LIMIT_CONFIG.WINDOW_MS + 1000;
-    pruneExpiredEntries(tExpired);
-    assert.equal(getRateLimitStoreSize(), 0, 'Expired keys must be deleted from store');
+    await pruneExpiredEntries(tExpired);
+    assert.equal(await getRateLimitStoreSize(), 0, 'Expired keys must be deleted from store');
 
     // Also verify individual key access auto-evicts expired record
     await checkContactRateLimit('ip:3.3.3.3', t0);
-    assert.equal(getRateLimitStoreSize(), 1);
+    assert.equal(await getRateLimitStoreSize(), 1);
     await checkContactRateLimit('ip:3.3.3.3', tExpired);
-    assert.equal(getRateLimitStoreSize(), 1);
+    assert.equal(await getRateLimitStoreSize(), 1);
   });
 
   test('exercises full capacity saturation (MAX_STORE_SIZE = 1000) and ensures active quotas are not reset', async () => {
@@ -143,54 +150,136 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     assert.equal(rejectedCount, 5, 'Excess concurrent requests must be rejected');
   });
 
-  test('shares rate limit state across multiple workers for both IP and email keys', async () => {
-    const sharedStore = new Map();
-    const workerA = new SharedRateLimiter(RATE_LIMIT_CONFIG, sharedStore);
-    const workerB = new SharedRateLimiter(RATE_LIMIT_CONFIG, sharedStore);
-
+  test('shares rate limit state across workers through the production store boundary', async () => {
     const now = 800000;
     const clientIp = '203.0.113.55';
 
-    // 1. Worker A receives request from clientIp with emailA
-    const resA = await workerA.consumeKeys([`ip:${clientIp}`, 'email:alice@example.com'], now);
+    // 1. Worker A receives request from clientIp with emailA via production store boundary
+    const resA = await checkContactRateLimitMulti({ ip: clientIp, email: 'alice@example.com' }, now);
     assert.equal(resA.allowed, true);
 
     // 2. Worker B immediately receives request from same clientIp with different emailB
     // Must be rejected by shared IP burst cooldown across workers
-    const resB = await workerB.consumeKeys([`ip:${clientIp}`, 'email:bob@example.com'], now + 1000);
+    const resB = await checkContactRateLimitMulti({ ip: clientIp, email: 'bob@example.com' }, now + 1000);
     assert.equal(resB.allowed, false, 'Worker B must enforce IP cooldown from Worker A');
     assert.match(resB.error, /wait a moment/i);
 
     // 3. Worker B receives request with alice@example.com from different clientIp
     // Must be rejected by shared email burst cooldown across workers
-    const resC = await workerB.consumeKeys(['ip:198.51.100.99', 'email:alice@example.com'], now + 1000);
+    const resC = await checkContactRateLimitMulti({ ip: '198.51.100.99', email: 'alice@example.com' }, now + 1000);
     assert.equal(resC.allowed, false, 'Worker B must enforce email cooldown from Worker A');
     assert.match(resC.error, /wait a moment/i);
 
     // 4. Cumulative window limit across workers
     let timeCursor = now;
-    const targetEmail = 'email:shared-user@example.com';
+    const targetEmail = 'shared-user@example.com';
     // Worker A consumes 2 slots
     timeCursor += 6000;
-    await workerA.consumeKeys(['ip:10.0.0.1', targetEmail], timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.1', email: targetEmail }, timeCursor);
     timeCursor += 6000;
-    await workerA.consumeKeys(['ip:10.0.0.2', targetEmail], timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.2', email: targetEmail }, timeCursor);
 
     // Worker B consumes 3 slots
     timeCursor += 6000;
-    await workerB.consumeKeys(['ip:10.0.0.3', targetEmail], timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.3', email: targetEmail }, timeCursor);
     timeCursor += 6000;
-    await workerB.consumeKeys(['ip:10.0.0.4', targetEmail], timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.4', email: targetEmail }, timeCursor);
     timeCursor += 6000;
-    await workerB.consumeKeys(['ip:10.0.0.5', targetEmail], timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.5', email: targetEmail }, timeCursor);
 
     // 6th request across either worker must be rejected
     timeCursor += 6000;
-    const rejectedWorkerA = await workerA.consumeKeys(['ip:10.0.0.6', targetEmail], timeCursor);
-    const rejectedWorkerB = await workerB.consumeKeys(['ip:10.0.0.7', targetEmail], timeCursor);
+    const rejectedWorkerA = await checkContactRateLimitMulti({ ip: '10.0.0.6', email: targetEmail }, timeCursor);
+    const rejectedWorkerB = await checkContactRateLimitMulti({ ip: '10.0.0.7', email: targetEmail }, timeCursor);
 
     assert.equal(rejectedWorkerA.allowed, false);
     assert.equal(rejectedWorkerB.allowed, false);
+  });
+
+  test('cross-worker isolation: separate Node worker thread shares production rate-limit boundary with main thread', async () => {
+    const workerIp = '198.51.100.77';
+    const now = 850000;
+
+    // Run request in a separate Worker Thread with its own isolated globalThis
+    const workerScript = `
+      import { checkContactRateLimitMulti } from './src/app/contact/rateLimiter.ts';
+      import { parentPort, workerData } from 'node:worker_threads';
+
+      const result = await checkContactRateLimitMulti(
+        { ip: workerData.ip, email: workerData.email },
+        workerData.now
+      );
+      parentPort.postMessage(result);
+    `;
+
+    const workerResult = await new Promise((resolve, reject) => {
+      const worker = new Worker(workerScript, {
+        eval: true,
+        workerData: { ip: workerIp, email: 'worker-thread@example.com', now },
+      });
+      worker.on('message', resolve);
+      worker.on('error', reject);
+    });
+
+    assert.equal(workerResult.allowed, true, 'Worker thread request must be permitted');
+
+    // Main thread (in separate V8 isolate) immediately attempts request for the same IP
+    const mainThreadAttempt = await checkContactRateLimitMulti(
+      { ip: workerIp, email: 'main-thread@example.com' },
+      now + 1000
+    );
+
+    assert.equal(
+      mainThreadAttempt.allowed,
+      false,
+      'Main thread must be throttled by IP cooldown consumed in separate worker thread'
+    );
+    assert.match(mainThreadAttempt.error, /wait a moment/i);
+  });
+
+  test('database RPC store: enforces atomic multi-key limits, RPC params, and fails closed on DB query errors', async () => {
+    let capturedRpc = null;
+    let shouldFail = false;
+
+    const mockSupabase = {
+      rpc: async (funcName, params) => {
+        capturedRpc = { funcName, params };
+        if (shouldFail) {
+          return { data: null, error: { message: 'Database connection failed' } };
+        }
+        return {
+          data: {
+            allowed: true,
+          },
+          error: null,
+        };
+      },
+    };
+
+    const dbStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
+
+    // 1. Successful consumption passes keys and config to RPC
+    const successRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com'], 900000);
+    assert.equal(successRes.allowed, true);
+    assert.equal(capturedRpc.funcName, 'consume_contact_rate_limit');
+    assert.deepEqual(capturedRpc.params.p_keys, ['ip:1.2.3.4', 'email:test@example.com']);
+    assert.equal(capturedRpc.params.p_now, 900000);
+    assert.equal(capturedRpc.params.p_window_ms, RATE_LIMIT_CONFIG.WINDOW_MS);
+    assert.equal(capturedRpc.params.p_max_requests, RATE_LIMIT_CONFIG.MAX_PER_WINDOW);
+    assert.equal(capturedRpc.params.p_cooldown_ms, RATE_LIMIT_CONFIG.COOLDOWN_MS);
+    assert.equal(capturedRpc.params.p_max_store_size, RATE_LIMIT_CONFIG.MAX_STORE_SIZE);
+
+    // 2. Database query failure FAILS CLOSED (never fails open)
+    shouldFail = true;
+    const failRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com'], 900000);
+    assert.equal(failRes.allowed, false, 'Must fail closed when database returns error');
+    assert.match(failRes.error, /unable to verify request rate/i);
+
+    // 3. Null client / connection failure FAILS CLOSED
+    const nullDbStore = new DatabaseRpcRateLimitStore(async () => null);
+    const nullRes = await nullDbStore.consumeKeys(['ip:1.2.3.4'], 900000);
+    assert.equal(nullRes.allowed, false, 'Must fail closed when database client is unavailable');
+    assert.match(nullRes.error, /unavailable/i);
   });
 
   test('validates payload length boundary checks correctly', () => {
