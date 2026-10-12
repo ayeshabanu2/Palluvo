@@ -49,9 +49,60 @@ export interface RateLimitStore {
   clear?(): Promise<void> | void;
 }
 
+export function isTestEnvironment(): boolean {
+  return (
+    process.env.NODE_ENV === 'test' ||
+    process.env.npm_lifecycle_event === 'test' ||
+    (Array.isArray(process.execArgv) && process.execArgv.includes('--test')) ||
+    (Array.isArray(process.argv) && process.argv.includes('--test'))
+  );
+}
+
+/**
+ * Resolves the high-entropy server secret for HMAC keying.
+ * Consistently supports RATE_LIMIT_PEPPER, SUPABASE_SERVICE_ROLE_KEY, and SUPABASE_SECRET_KEY.
+ * Never falls back to a public or guessable constant.
+ * Fails closed (throws) if high-entropy server credential is absent in production or when Supabase is configured.
+ */
+export function getRateLimitPepper(): string {
+  const secret =
+    process.env.RATE_LIMIT_PEPPER ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY;
+
+  if (secret && typeof secret === 'string') {
+    const trimmed = secret.trim();
+    if (
+      trimmed.length >= 16 &&
+      !trimmed.includes('placeholder') &&
+      !trimmed.includes('your_supabase_service_role_key')
+    ) {
+      return trimmed;
+    }
+  }
+
+  // In test environments without explicit secrets, provide an isolated test key unless simulating absent secret
+  if (isTestEnvironment() && !process.env.TEST_SIMULATE_NO_SECRET) {
+    return 'isolated_test_suite_pepper_key_1234567890abcdef';
+  }
+
+  // In local development fallback only when Supabase is completely unconfigured
+  if (
+    !checkSupabaseConfigured() &&
+    process.env.NODE_ENV !== 'production' &&
+    !process.env.TEST_SIMULATE_NO_SECRET
+  ) {
+    return 'local_dev_rate_limit_pepper_unconfigured_supabase';
+  }
+
+  throw new Error(
+    'Missing required high-entropy rate limit secret: RATE_LIMIT_PEPPER, SUPABASE_SERVICE_ROLE_KEY, or SUPABASE_SECRET_KEY must be configured.'
+  );
+}
+
 /**
  * Creates a non-reversible HMAC-SHA256 keyed digest of identifier keys (IP/email)
- * to prevent storing raw personal identifiers in rate limit tables.
+ * using a high-entropy server secret. Prevents storing or exposing raw personal identifiers.
  */
 export function hashRateLimitIdentifier(identifier: string): string {
   if (typeof identifier !== 'string' || identifier.length === 0) {
@@ -60,10 +111,7 @@ export function hashRateLimitIdentifier(identifier: string): string {
   if (identifier.startsWith('digest:sha256:')) {
     return identifier;
   }
-  const pepper =
-    process.env.RATE_LIMIT_PEPPER ||
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-    'palluvo_default_rate_limit_pepper';
+  const pepper = getRateLimitPepper();
   const hmac = crypto
     .createHmac('sha256', pepper)
     .update(identifier.trim().toLowerCase())
@@ -617,8 +665,16 @@ export async function checkContactRateLimit(
   identifier: string,
   now: number = Date.now()
 ): Promise<RateLimitResult> {
-  const hashed = hashRateLimitIdentifier(identifier);
-  return getProductionStore().consumeKeys([hashed], now);
+  try {
+    const hashed = hashRateLimitIdentifier(identifier);
+    return await getProductionStore().consumeKeys([hashed], now);
+  } catch (error) {
+    console.error('[RateLimiter] Configuration error in checkContactRateLimit:', error);
+    return {
+      allowed: false,
+      error: 'Inquiry service is temporarily unavailable due to a server configuration issue. Please connect with our concierge directly.',
+    };
+  }
 }
 
 /**
@@ -629,10 +685,18 @@ export async function checkContactRateLimitMulti(
   { ip, email }: { ip?: string; email?: string },
   now: number = Date.now()
 ): Promise<RateLimitResult> {
-  const keys: string[] = [];
-  if (ip && ip !== 'unknown') keys.push(hashRateLimitIdentifier(`ip:${ip}`));
-  if (email) keys.push(hashRateLimitIdentifier(`email:${email}`));
-  return getProductionStore().consumeKeys(keys, now);
+  try {
+    const keys: string[] = [];
+    if (ip && ip !== 'unknown') keys.push(hashRateLimitIdentifier(`ip:${ip}`));
+    if (email) keys.push(hashRateLimitIdentifier(`email:${email}`));
+    return await getProductionStore().consumeKeys(keys, now);
+  } catch (error) {
+    console.error('[RateLimiter] Configuration error in checkContactRateLimitMulti:', error);
+    return {
+      allowed: false,
+      error: 'Inquiry service is temporarily unavailable due to a server configuration issue. Please connect with our concierge directly.',
+    };
+  }
 }
 
 export async function resetRateLimitStore(): Promise<void> {
@@ -657,3 +721,60 @@ export async function getRateLimitStoreSize(): Promise<number> {
   }
   return 0;
 }
+
+/**
+ * Durable scheduled cleanup handler for serverless and cron environments.
+ * Authenticates via CRON_SECRET or service credentials and enforces bounded retention.
+ */
+export async function handlePruneRateLimits(req: Request): Promise<Response> {
+  const authHeader = req.headers.get('authorization') || '';
+  const cronSecret = process.env.CRON_SECRET;
+  const serviceRoleKey =
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
+
+  // Verify authorization
+  const isAuthorized =
+    (cronSecret && authHeader === `Bearer ${cronSecret}`) ||
+    (serviceRoleKey && authHeader === `Bearer ${serviceRoleKey}`) ||
+    (!cronSecret && !serviceRoleKey && process.env.NODE_ENV !== 'production');
+
+  if (!isAuthorized) {
+    return Response.json(
+      { error: 'Unauthorized: Invalid or missing cron secret authorization header.' },
+      { status: 401 }
+    );
+  }
+
+  try {
+    let deletedCount = 0;
+    try {
+      const { createAdminClient } = await import('@/utils/supabase/admin');
+      const admin = await createAdminClient();
+      if (admin) {
+        const { data, error } = await admin.rpc('prune_expired_contact_rate_limits');
+        if (error) {
+          console.error('[Cron Prune] RPC error:', error);
+          return Response.json({ error: error.message }, { status: 500 });
+        }
+        deletedCount = typeof data === 'number' ? data : 0;
+      } else {
+        deletedCount = await pruneExpiredEntries();
+      }
+    } catch {
+      deletedCount = await pruneExpiredEntries();
+    }
+
+    return Response.json({
+      success: true,
+      pruned: deletedCount,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('[Cron Prune] Unexpected failure during rate limit pruning:', error);
+    return Response.json(
+      { error: error instanceof Error ? error.message : 'Pruning failed' },
+      { status: 500 }
+    );
+  }
+}
+

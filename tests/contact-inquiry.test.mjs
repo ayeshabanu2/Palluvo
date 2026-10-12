@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import {
   CONTACT_FIELD_LIMITS,
   RATE_LIMIT_CONFIG,
@@ -11,12 +12,14 @@ import {
   CrossProcessRateLimitStore,
   MisconfiguredRateLimitStore,
   createProductionRateLimitStore,
+  getRateLimitPepper,
   hashRateLimitIdentifier,
   checkContactRateLimit,
   checkContactRateLimitMulti,
   pruneExpiredEntries,
   getRateLimitStoreSize,
   resetRateLimitStore,
+  handlePruneRateLimits,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -504,6 +507,122 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     assert.equal(capturedPruneRpc, 'prune_expired_contact_rate_limits');
     assert.equal(deletedCount, 12, 'Prune must return count of deleted expired records');
+  });
+
+  test('[P2] SUPABASE_SECRET_KEY-only configuration derives strong HMAC and never uses public fallback', () => {
+    const originalPepper = process.env.RATE_LIMIT_PEPPER;
+    const originalService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalSecret = process.env.SUPABASE_SECRET_KEY;
+
+    try {
+      delete process.env.RATE_LIMIT_PEPPER;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      const testSecret = 'supabase-secret-high-entropy-key-9876543210';
+      process.env.SUPABASE_SECRET_KEY = testSecret;
+
+      const testId = 'email:customer@example.com';
+      const computedDigest = hashRateLimitIdentifier(testId);
+
+      const expectedHmac = crypto
+        .createHmac('sha256', testSecret)
+        .update(testId)
+        .digest('hex');
+      const expectedDigest = `digest:sha256:${expectedHmac}`;
+
+      assert.equal(
+        computedDigest,
+        expectedDigest,
+        'When only SUPABASE_SECRET_KEY is configured, it must be used as HMAC key'
+      );
+
+      // Verify it NEVER matches the guessable string 'palluvo_default_rate_limit_pepper'
+      const guessableHmac = crypto
+        .createHmac('sha256', 'palluvo_default_rate_limit_pepper')
+        .update(testId)
+        .digest('hex');
+      assert.notEqual(
+        computedDigest,
+        `digest:sha256:${guessableHmac}`,
+        'Must never fall back to public/guessable constant'
+      );
+    } finally {
+      if (originalPepper !== undefined) process.env.RATE_LIMIT_PEPPER = originalPepper;
+      else delete process.env.RATE_LIMIT_PEPPER;
+      if (originalService !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = originalService;
+      else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (originalSecret !== undefined) process.env.SUPABASE_SECRET_KEY = originalSecret;
+      else delete process.env.SUPABASE_SECRET_KEY;
+    }
+  });
+
+  test('[P2] fails closed when all pepper/secret variables are absent in non-test simulation', async () => {
+    const originalPepper = process.env.RATE_LIMIT_PEPPER;
+    const originalService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalSecret = process.env.SUPABASE_SECRET_KEY;
+    const originalSimulate = process.env.TEST_SIMULATE_NO_SECRET;
+
+    try {
+      delete process.env.RATE_LIMIT_PEPPER;
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      delete process.env.SUPABASE_SECRET_KEY;
+      process.env.TEST_SIMULATE_NO_SECRET = 'true';
+
+      assert.throws(() => {
+        getRateLimitPepper();
+      }, /Missing required high-entropy rate limit secret/);
+
+      // Multi-key check must fail closed gracefully
+      const res = await checkContactRateLimitMulti({ email: 'test@example.com', ip: '1.2.3.4' });
+      assert.equal(res.allowed, false);
+      assert.match(res.error, /temporarily unavailable/i);
+    } finally {
+      if (originalPepper !== undefined) process.env.RATE_LIMIT_PEPPER = originalPepper;
+      else delete process.env.RATE_LIMIT_PEPPER;
+      if (originalService !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = originalService;
+      else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (originalSecret !== undefined) process.env.SUPABASE_SECRET_KEY = originalSecret;
+      else delete process.env.SUPABASE_SECRET_KEY;
+      if (originalSimulate !== undefined) process.env.TEST_SIMULATE_NO_SECRET = originalSimulate;
+      else delete process.env.TEST_SIMULATE_NO_SECRET;
+    }
+  });
+
+  test('[P2] scheduled serverless cron endpoint enforces authentication and calls rate limit pruning', async () => {
+    const originalCronSecret = process.env.CRON_SECRET;
+    const originalService = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const originalSecret = process.env.SUPABASE_SECRET_KEY;
+
+    try {
+      process.env.CRON_SECRET = 'super-secret-cron-token-12345';
+      delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      delete process.env.SUPABASE_SECRET_KEY;
+
+      // 1. Unauthenticated request must return 401
+      const unauthReq = new Request('http://localhost:3000/api/cron/prune-rate-limits', {
+        headers: { authorization: 'Bearer invalid-token' },
+      });
+      const unauthRes = await handlePruneRateLimits(unauthReq);
+      assert.equal(unauthRes.status, 401);
+      const unauthBody = await unauthRes.json();
+      assert.match(unauthBody.error, /Unauthorized/i);
+
+      // 2. Authenticated request with valid CRON_SECRET must succeed
+      const authReq = new Request('http://localhost:3000/api/cron/prune-rate-limits', {
+        headers: { authorization: 'Bearer super-secret-cron-token-12345' },
+      });
+      const authRes = await handlePruneRateLimits(authReq);
+      assert.equal(authRes.status, 200);
+      const authBody = await authRes.json();
+      assert.equal(authBody.success, true);
+      assert.equal(typeof authBody.pruned, 'number');
+    } finally {
+      if (originalCronSecret !== undefined) process.env.CRON_SECRET = originalCronSecret;
+      else delete process.env.CRON_SECRET;
+      if (originalService !== undefined) process.env.SUPABASE_SERVICE_ROLE_KEY = originalService;
+      else delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+      if (originalSecret !== undefined) process.env.SUPABASE_SECRET_KEY = originalSecret;
+      else delete process.env.SUPABASE_SECRET_KEY;
+    }
   });
 
   test('validates payload length boundary checks correctly', () => {

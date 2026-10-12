@@ -238,17 +238,30 @@ REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM authentica
 -- Grant execution EXCLUSIVELY to service_role (server-only credential)
 GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(TEXT[]) TO service_role;
 
--- Optional pg_cron scheduling for guaranteed periodic cleanup on Supabase instances
+-- Provision pg_cron extension for durable scheduled database-level cleanup
+CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+
+-- Schedule durable automated pruning every 10 minutes
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
-    PERFORM cron.schedule(
-      'prune-expired-contact-rate-limits',
-      '*/10 * * * *',
-      'SELECT public.prune_expired_contact_rate_limits()'
-    );
+  -- Unschedule existing job if already registered to ensure idempotency across migration runs
+  IF EXISTS (
+    SELECT 1 FROM cron.job WHERE jobname = 'prune-expired-contact-rate-limits'
+  ) THEN
+    PERFORM cron.unschedule('prune-expired-contact-rate-limits');
   END IF;
-EXCEPTION WHEN OTHERS THEN
-  -- Ignore if pg_cron is not configured on the instance
+
+  PERFORM cron.schedule(
+    'prune-expired-contact-rate-limits',
+    '*/10 * * * *',
+    'SELECT public.prune_expired_contact_rate_limits()'
+  );
 END;
 $$;
+
+-- Bounded retention view: guarantees expired identifier digests are never exposed
+CREATE OR REPLACE VIEW public.active_contact_rate_limits AS
+  SELECT key, timestamps, last_updated, expires_at
+  FROM public.contact_rate_limits
+  WHERE expires_at >= clock_timestamp();
+
