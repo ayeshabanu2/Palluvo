@@ -239,7 +239,7 @@ REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM authentica
 GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(TEXT[]) TO service_role;
 
 -- Provision pg_cron extension for durable scheduled database-level cleanup
-CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- Schedule durable automated pruning every 10 minutes
 DO $$

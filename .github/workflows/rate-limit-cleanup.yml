@@ -9,11 +9,20 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger Cleanup Endpoint
-        if: env.APP_URL != ''
+      - name: Validate Configuration
         env:
           APP_URL: ${{ secrets.APP_URL }}
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
         run: |
-          curl -s -X POST "${APP_URL}/api/cron/prune-rate-limits" \
+          if [ -z "${APP_URL}" ] || [ -z "${CRON_SECRET}" ]; then
+            echo "::error::Missing required secrets: APP_URL and CRON_SECRET must be configured in repository secrets."
+            exit 1
+          fi
+
+      - name: Trigger Cleanup Endpoint
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          curl --fail-with-body --show-error -s -X POST "${APP_URL}/api/cron/prune-rate-limits" \
             -H "Authorization: Bearer ${CRON_SECRET}"
