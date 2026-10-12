@@ -1,7 +1,12 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { createClient } from '@/utils/supabase/server';
 import { normalizeEmail } from '@/utils/format';
+import {
+  CONTACT_FIELD_LIMITS,
+  checkContactRateLimit,
+} from './rateLimiter';
 
 export interface ContactInquiryInput {
   name: string;
@@ -18,6 +23,23 @@ export interface ContactInquiryResult {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+async function getClientIp(): Promise<string> {
+  try {
+    const headerList = await headers();
+    const forwardedFor = headerList.get('x-forwarded-for');
+    if (forwardedFor) {
+      return forwardedFor.split(',')[0].trim();
+    }
+    const realIp = headerList.get('x-real-ip') || headerList.get('cf-connecting-ip');
+    if (realIp) {
+      return realIp.trim();
+    }
+  } catch {
+    // headers() might not be available in non-request contexts or mock tests
+  }
+  return 'unknown';
+}
+
 export async function submitContactInquiry(input: ContactInquiryInput): Promise<ContactInquiryResult> {
   try {
     const name = (input.name || '').trim();
@@ -26,18 +48,51 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
     const subject = (input.subject || 'Styling Assistance').trim();
     const message = (input.message || '').trim();
 
-    if (!name || name.length < 2) {
+    // 1. Enforce Server-Side Minimum & Maximum Field Lengths
+    if (!name || name.length < CONTACT_FIELD_LIMITS.NAME_MIN) {
       return { success: false, error: 'Please provide your name (at least 2 characters).' };
+    }
+    if (name.length > CONTACT_FIELD_LIMITS.NAME_MAX) {
+      return { success: false, error: `Name cannot exceed ${CONTACT_FIELD_LIMITS.NAME_MAX} characters.` };
     }
 
     if (!email || !EMAIL_REGEX.test(email)) {
       return { success: false, error: 'Please provide a valid email address.' };
     }
-
-    if (!message || message.length < 5) {
-      return { success: false, error: 'Please provide inquiry details (at least 5 characters).' };
+    if (email.length > CONTACT_FIELD_LIMITS.EMAIL_MAX) {
+      return { success: false, error: `Email address cannot exceed ${CONTACT_FIELD_LIMITS.EMAIL_MAX} characters.` };
     }
 
+    if (phone && phone.length > CONTACT_FIELD_LIMITS.PHONE_MAX) {
+      return { success: false, error: `Phone number cannot exceed ${CONTACT_FIELD_LIMITS.PHONE_MAX} characters.` };
+    }
+
+    if (subject && subject.length > CONTACT_FIELD_LIMITS.SUBJECT_MAX) {
+      return { success: false, error: `Inquiry topic cannot exceed ${CONTACT_FIELD_LIMITS.SUBJECT_MAX} characters.` };
+    }
+
+    if (!message || message.length < CONTACT_FIELD_LIMITS.MESSAGE_MIN) {
+      return { success: false, error: 'Please provide inquiry details (at least 5 characters).' };
+    }
+    if (message.length > CONTACT_FIELD_LIMITS.MESSAGE_MAX) {
+      return { success: false, error: `Message cannot exceed ${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters.` };
+    }
+
+    // 2. Server-side Rate Limiting (by IP and by normalized email)
+    const clientIp = await getClientIp();
+    if (clientIp && clientIp !== 'unknown') {
+      const ipRateCheck = checkContactRateLimit(`ip:${clientIp}`);
+      if (!ipRateCheck.allowed) {
+        return { success: false, error: ipRateCheck.error };
+      }
+    }
+
+    const emailRateCheck = checkContactRateLimit(`email:${email}`);
+    if (!emailRateCheck.allowed) {
+      return { success: false, error: emailRateCheck.error };
+    }
+
+    // 3. Database Persistence
     const supabase = await createClient();
     const {
       data: { user },

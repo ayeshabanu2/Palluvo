@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Mail, Phone, MapPin, CheckCircle2, ExternalLink, MessageSquare } from 'lucide-react';
+import { Mail, Phone, MapPin, CheckCircle2, ExternalLink, MessageSquare, AlertTriangle } from 'lucide-react';
 import { useStore } from '@/context/StoreContext';
 import { submitContactInquiry } from './actions';
 
@@ -17,6 +17,7 @@ export default function ContactClient(): React.JSX.Element {
   const { showToast } = useStore();
   const [submitted, setSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',
@@ -36,6 +37,7 @@ export default function ContactClient(): React.JSX.Element {
     e.preventDefault();
     if (isSubmitting) return;
 
+    setFormError(null);
     setIsSubmitting(true);
     try {
       const res = await submitContactInquiry(formData);
@@ -43,10 +45,14 @@ export default function ContactClient(): React.JSX.Element {
         setSubmitted(true);
         showToast('Your inquiry has been received. Our atelier stylist will reach out promptly.');
       } else {
-        showToast(res.error || 'Failed to record inquiry. Please reach out to our concierge directly.');
+        const errorMsg = res.error || 'Failed to record inquiry. Please reach out to our concierge directly.';
+        setFormError(errorMsg);
+        showToast(errorMsg, 'error');
       }
     } catch {
-      showToast('A network error occurred. Please try again or reach out via WhatsApp/phone.');
+      const networkErrorMsg = 'A network error occurred. Please try again or reach out via WhatsApp/phone.';
+      setFormError(networkErrorMsg);
+      showToast(networkErrorMsg, 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +190,10 @@ export default function ContactClient(): React.JSX.Element {
                 Thank you for contacting PALLUVO. Our dedicated saree stylist will review your request and get back to you within 4 business hours.
               </p>
               <button
-                onClick={() => setSubmitted(false)}
+                onClick={() => {
+                  setSubmitted(false);
+                  setFormError(null);
+                }}
                 className="bg-[#641C2D] text-white px-6 py-2.5 rounded-full text-xs font-semibold uppercase tracking-wider"
               >
                 Send Another Note
@@ -202,9 +211,13 @@ export default function ContactClient(): React.JSX.Element {
                     name="name"
                     type="text"
                     required
+                    maxLength={100}
                     autoComplete="name"
                     value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    onChange={(e) => {
+                      if (formError) setFormError(null);
+                      setFormData({ ...formData, name: e.target.value });
+                    }}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
@@ -217,9 +230,13 @@ export default function ContactClient(): React.JSX.Element {
                     name="email"
                     type="email"
                     required
+                    maxLength={254}
                     autoComplete="email"
                     value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    onChange={(e) => {
+                      if (formError) setFormError(null);
+                      setFormData({ ...formData, email: e.target.value });
+                    }}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
                 </div>
@@ -235,9 +252,13 @@ export default function ContactClient(): React.JSX.Element {
                     name="phone"
                     type="tel"
                     inputMode="tel"
+                    maxLength={25}
                     autoComplete="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                    onChange={(e) => {
+                      if (formError) setFormError(null);
+                      setFormData({ ...formData, phone: e.target.value });
+                    }}
                     placeholder="+91"
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   />
@@ -250,7 +271,10 @@ export default function ContactClient(): React.JSX.Element {
                     id="contact-subject"
                     name="subject"
                     value={formData.subject}
-                    onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
+                    onChange={(e) => {
+                      if (formError) setFormError(null);
+                      setFormData({ ...formData, subject: e.target.value });
+                    }}
                     className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-2.5 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                   >
                     <option value="Styling Assistance">Styling & Draping Advice</option>
@@ -271,12 +295,27 @@ export default function ContactClient(): React.JSX.Element {
                   name="message"
                   required
                   rows={5}
+                  maxLength={3000}
                   value={formData.message}
-                  onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                  onChange={(e) => {
+                    if (formError) setFormError(null);
+                    setFormData({ ...formData, message: e.target.value });
+                  }}
                   placeholder="Share your wedding theme, date, preference of weave or any specific questions"
                   className="w-full bg-[#F8F5EF] border border-[#EDE3D5] rounded-lg p-3 text-xs text-[#2B211D] focus:border-[#641C2D] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#641C2D]"
                 />
               </div>
+
+              {formError && (
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="p-3.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5 shadow-xs"
+                >
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <span className="font-medium">{formError}</span>
+                </div>
+              )}
 
               <button
                 type="submit"
