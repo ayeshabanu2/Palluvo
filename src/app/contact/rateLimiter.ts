@@ -105,11 +105,6 @@ export class DatabaseRpcRateLimitStore implements RateLimitStore {
 
       const { data, error } = await supabase.rpc('consume_contact_rate_limit', {
         p_keys: validKeys,
-        p_now: now,
-        p_window_ms: RATE_LIMIT_CONFIG.WINDOW_MS,
-        p_max_requests: RATE_LIMIT_CONFIG.MAX_PER_WINDOW,
-        p_cooldown_ms: RATE_LIMIT_CONFIG.COOLDOWN_MS,
-        p_max_store_size: RATE_LIMIT_CONFIG.MAX_STORE_SIZE,
       });
 
       if (error) {
@@ -388,6 +383,7 @@ export class SharedRateLimiter implements RateLimitStore {
 
   private async withMultiLock<T>(keys: string[], fn: () => T | Promise<T>): Promise<T> {
     const sortedKeys = [...new Set(keys)].sort();
+    sortedKeys.unshift('__global_capacity_reservation_lock__');
 
     for (const key of sortedKeys) {
       while (this.locks.has(key)) {

@@ -237,7 +237,7 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     assert.match(mainThreadAttempt.error, /wait a moment/i);
   });
 
-  test('database RPC store: enforces atomic multi-key limits, RPC params, and fails closed on DB query errors', async () => {
+  test('database RPC store: enforces atomic multi-key limits, server-derived policy, and fails closed on DB query errors', async () => {
     let capturedRpc = null;
     let shouldFail = false;
 
@@ -258,28 +258,103 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     const dbStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
 
-    // 1. Successful consumption passes keys and config to RPC
-    const successRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com'], 900000);
+    // 1. Successful consumption passes ONLY keys to RPC (server derives policy constants and timestamps)
+    const successRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com']);
     assert.equal(successRes.allowed, true);
     assert.equal(capturedRpc.funcName, 'consume_contact_rate_limit');
-    assert.deepEqual(capturedRpc.params.p_keys, ['ip:1.2.3.4', 'email:test@example.com']);
-    assert.equal(capturedRpc.params.p_now, 900000);
-    assert.equal(capturedRpc.params.p_window_ms, RATE_LIMIT_CONFIG.WINDOW_MS);
-    assert.equal(capturedRpc.params.p_max_requests, RATE_LIMIT_CONFIG.MAX_PER_WINDOW);
-    assert.equal(capturedRpc.params.p_cooldown_ms, RATE_LIMIT_CONFIG.COOLDOWN_MS);
-    assert.equal(capturedRpc.params.p_max_store_size, RATE_LIMIT_CONFIG.MAX_STORE_SIZE);
+    assert.deepEqual(capturedRpc.params, { p_keys: ['ip:1.2.3.4', 'email:test@example.com'] });
+    assert.equal(capturedRpc.params.p_now, undefined, 'Caller must not pass p_now');
+    assert.equal(capturedRpc.params.p_window_ms, undefined, 'Caller must not pass p_window_ms');
+    assert.equal(capturedRpc.params.p_max_requests, undefined, 'Caller must not pass p_max_requests');
+    assert.equal(capturedRpc.params.p_cooldown_ms, undefined, 'Caller must not pass p_cooldown_ms');
+    assert.equal(capturedRpc.params.p_max_store_size, undefined, 'Caller must not pass p_max_store_size');
 
     // 2. Database query failure FAILS CLOSED (never fails open)
     shouldFail = true;
-    const failRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com'], 900000);
+    const failRes = await dbStore.consumeKeys(['ip:1.2.3.4', 'email:test@example.com']);
     assert.equal(failRes.allowed, false, 'Must fail closed when database returns error');
     assert.match(failRes.error, /unable to verify request rate/i);
 
     // 3. Null client / connection failure FAILS CLOSED
     const nullDbStore = new DatabaseRpcRateLimitStore(async () => null);
-    const nullRes = await nullDbStore.consumeKeys(['ip:1.2.3.4'], 900000);
+    const nullRes = await nullDbStore.consumeKeys(['ip:1.2.3.4']);
     assert.equal(nullRes.allowed, false, 'Must fail closed when database client is unavailable');
     assert.match(nullRes.error, /unavailable/i);
+  });
+
+  test('database RPC store: serializes capacity reservations for concurrent distinct-key inserts at capacity boundary', async () => {
+    // Simulated database engine implementing the RPC with advisory capacity locking
+    const dbStore = new Map();
+    const capacityLimit = 5;
+    let advisoryLock = Promise.resolve();
+
+    // Pre-populate 4 keys so exactly 1 slot remains
+    for (let i = 0; i < 4; i++) {
+      dbStore.set(`ip:prepopulated-${i}`, { timestamps: [Date.now()] });
+    }
+    assert.equal(dbStore.size, 4);
+
+    const mockSupabase = {
+      rpc: async (funcName, params) => {
+        assert.equal(funcName, 'consume_contact_rate_limit');
+        const keys = params.p_keys;
+
+        // Simulate transactional advisory lock: serialize concurrent capacity checks and inserts
+        const previousLock = advisoryLock;
+        let releaseLock;
+        advisoryLock = new Promise((resolve) => {
+          releaseLock = resolve;
+        });
+
+        await previousLock;
+
+        try {
+          // Inside the advisory capacity lock section:
+          const totalKeys = dbStore.size;
+          const newKeys = keys.filter((k) => !dbStore.has(k));
+
+          // Capacity check
+          if (totalKeys + newKeys.length > capacityLimit) {
+            return {
+              data: {
+                allowed: false,
+                error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
+              },
+              error: null,
+            };
+          }
+
+          // Commit new keys to database table
+          for (const key of newKeys) {
+            dbStore.set(key, { timestamps: [Date.now()] });
+          }
+
+          return {
+            data: { allowed: true },
+            error: null,
+          };
+        } finally {
+          releaseLock();
+        }
+      },
+    };
+
+    const clientStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
+
+    // Launch 5 concurrent calls with distinct new keys at the exact same time
+    const concurrentRequests = Array.from({ length: 5 }, (_, i) =>
+      clientStore.consumeKeys([`ip:distinct-new-${i}`])
+    );
+
+    const results = await Promise.all(concurrentRequests);
+    const allowedResults = results.filter((r) => r.allowed);
+    const rejectedResults = results.filter((r) => !r.allowed);
+
+    // Under serialized advisory locking, exactly 1 succeeds and 4 are rejected
+    assert.equal(allowedResults.length, 1, 'Exactly 1 concurrent new key must take the final capacity slot');
+    assert.equal(rejectedResults.length, 4, 'All remaining concurrent requests must be rejected');
+    assert.match(rejectedResults[0].error, /high volume/i);
+    assert.equal(dbStore.size, 5, 'Database table must strictly not exceed capacity limit');
   });
 
   test('validates payload length boundary checks correctly', () => {

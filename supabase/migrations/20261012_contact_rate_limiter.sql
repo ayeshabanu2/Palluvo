@@ -1,6 +1,7 @@
 -- Migration: 20261012_contact_rate_limiter.sql
 -- Description: Creates the shared contact rate limit table and atomic RPC function
--- with multi-key locking, sliding window, burst cooldown, capacity protection, and TTL cleanup.
+-- with server-derived policy constants, input validation, advisory capacity locking,
+-- row-level locking, sliding window, burst cooldown, capacity protection, and TTL cleanup.
 
 CREATE TABLE IF NOT EXISTS public.contact_rate_limits (
   key TEXT PRIMARY KEY,
@@ -24,21 +25,33 @@ CREATE POLICY "Deny direct public access to contact_rate_limits"
   TO public
   USING (false);
 
+-- Drop previous overloaded or parameter-heavy versions of the function if present
+DROP FUNCTION IF EXISTS public.consume_contact_rate_limit(TEXT[], BIGINT, BIGINT, INT, BIGINT, INT);
+DROP FUNCTION IF EXISTS public.consume_contact_rate_limit(TEXT[]);
+
 -- Atomic multi-key rate limit consumer function
+-- Takes ONLY p_keys: all policy constants and timestamps are strictly derived in SQL
 CREATE OR REPLACE FUNCTION public.consume_contact_rate_limit(
-  p_keys TEXT[],
-  p_now BIGINT,
-  p_window_ms BIGINT DEFAULT 600000,
-  p_max_requests INT DEFAULT 5,
-  p_cooldown_ms BIGINT DEFAULT 5000,
-  p_max_store_size INT DEFAULT 1000
+  p_keys TEXT[]
 )
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
-  v_window_start BIGINT := p_now - p_window_ms;
+  -- Policy constants derived strictly inside SQL (cannot be altered by callers)
+  c_window_ms CONSTANT BIGINT := 600000;       -- 10 minutes sliding window
+  c_max_requests CONSTANT INT := 5;            -- 5 inquiries max per window
+  c_cooldown_ms CONSTANT BIGINT := 5000;       -- 5 seconds burst cooldown
+  c_max_store_size CONSTANT INT := 1000;       -- 1000 active keys max
+  c_max_keys CONSTANT INT := 2;                -- max 2 keys per check (IP and email)
+  c_max_key_length CONSTANT INT := 260;        -- max characters per key
+
+  -- Server-side timestamp derivation (prevents caller timestamp manipulation)
+  v_now BIGINT := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
+  v_window_start BIGINT := v_now - c_window_ms;
+
   v_key TEXT;
   v_rec RECORD;
   v_filtered_ts BIGINT[];
@@ -49,22 +62,50 @@ DECLARE
   v_retry_after INT;
   v_sorted_keys TEXT[];
 BEGIN
-  -- 1. TTL cleanup: Purge records whose expires_at is in the past
-  DELETE FROM public.contact_rate_limits
-  WHERE expires_at < to_timestamp(p_now / 1000.0);
-
-  -- 2. Count current active entries in the store
-  SELECT COUNT(*) INTO v_total_keys FROM public.contact_rate_limits;
-
-  -- 3. Sort keys to ensure deterministic lock acquisition order (prevents deadlocks)
-  SELECT array_agg(k ORDER BY k) INTO v_sorted_keys
-  FROM (SELECT DISTINCT unnest(p_keys) AS k) sub;
-
-  IF v_sorted_keys IS NULL OR array_length(v_sorted_keys, 1) = 0 THEN
+  -- 1. Input Validation: strictly bound array size and element formats
+  IF p_keys IS NULL OR array_length(p_keys, 1) IS NULL OR array_length(p_keys, 1) = 0 THEN
     RETURN jsonb_build_object('allowed', true);
   END IF;
 
-  -- 4. Check all keys under row-level locks
+  IF array_length(p_keys, 1) > c_max_keys THEN
+    RETURN jsonb_build_object(
+      'allowed', false,
+      'error', 'Too many rate limit keys specified.'
+    );
+  END IF;
+
+  FOREACH v_key IN ARRAY p_keys LOOP
+    IF v_key IS NULL OR length(v_key) < 5 OR length(v_key) > c_max_key_length THEN
+      RETURN jsonb_build_object(
+        'allowed', false,
+        'error', 'Invalid rate limiter key identifier.'
+      );
+    END IF;
+
+    -- Enforce canonical format: either ip:<valid-ip> or email:<valid-email>
+    IF NOT (v_key ~ '^ip:[0-9a-fA-F.:]{1,64}$' OR v_key ~ '^email:[^\s@]+@[^\s@]+\.[^\s@]+$') THEN
+      RETURN jsonb_build_object(
+        'allowed', false,
+        'error', 'Invalid rate limiter key format.'
+      );
+    END IF;
+  END LOOP;
+
+  -- 2. Sort keys to ensure deterministic lock acquisition order (prevents deadlocks)
+  SELECT array_agg(k ORDER BY k) INTO v_sorted_keys
+  FROM (SELECT DISTINCT unnest(p_keys) AS k) sub;
+
+  -- 3. Acquire transactional advisory lock to serialize capacity check and reservations for concurrent new keys
+  PERFORM pg_advisory_xact_lock(hashtext('contact_rate_limit_capacity_lock'));
+
+  -- 4. TTL cleanup: Purge records whose expires_at is in the past
+  DELETE FROM public.contact_rate_limits
+  WHERE expires_at < to_timestamp(v_now / 1000.0);
+
+  -- 5. Count current active entries in the store
+  SELECT COUNT(*) INTO v_total_keys FROM public.contact_rate_limits;
+
+  -- 6. Check all keys under row-level locks
   FOREACH v_key IN ARRAY v_sorted_keys LOOP
     SELECT * INTO v_rec
     FROM public.contact_rate_limits
@@ -84,8 +125,8 @@ BEGIN
       IF v_active_count IS NOT NULL AND v_active_count > 0 THEN
         -- Rapid burst cooldown check
         v_last_ts := v_filtered_ts[v_active_count];
-        IF p_now - v_last_ts < p_cooldown_ms THEN
-          v_retry_after := CEIL((p_cooldown_ms - (p_now - v_last_ts)) / 1000.0);
+        IF v_now - v_last_ts < c_cooldown_ms THEN
+          v_retry_after := CEIL((c_cooldown_ms - (v_now - v_last_ts)) / 1000.0);
           RETURN jsonb_build_object(
             'allowed', false,
             'retryAfterSeconds', v_retry_after,
@@ -94,8 +135,8 @@ BEGIN
         END IF;
 
         -- Sliding window max requests threshold check
-        IF v_active_count >= p_max_requests THEN
-          v_retry_after := CEIL((v_filtered_ts[1] + p_window_ms - p_now) / 1000.0);
+        IF v_active_count >= c_max_requests THEN
+          v_retry_after := CEIL((v_filtered_ts[1] + c_window_ms - v_now) / 1000.0);
           RETURN jsonb_build_object(
             'allowed', false,
             'retryAfterSeconds', v_retry_after,
@@ -106,15 +147,15 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 5. Store capacity check for new keys (fail closed if capacity reached with active keys)
-  IF v_total_keys + v_new_key_count > p_max_store_size THEN
+  -- 7. Store capacity check for new keys (serialized via pg_advisory_xact_lock)
+  IF v_total_keys + v_new_key_count > c_max_store_size THEN
     RETURN jsonb_build_object(
       'allowed', false,
       'error', 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.'
     );
   END IF;
 
-  -- 6. All checks passed: commit updated timestamps atomically for all keys
+  -- 8. All checks passed: commit updated timestamps atomically for all keys
   FOREACH v_key IN ARRAY v_sorted_keys LOOP
     SELECT * INTO v_rec
     FROM public.contact_rate_limits
@@ -129,20 +170,20 @@ BEGIN
       IF v_filtered_ts IS NULL THEN
         v_filtered_ts := '{}'::BIGINT[];
       END IF;
-      v_filtered_ts := array_append(v_filtered_ts, p_now);
+      v_filtered_ts := array_append(v_filtered_ts, v_now);
 
       UPDATE public.contact_rate_limits
       SET timestamps = v_filtered_ts,
-          last_updated = p_now,
-          expires_at = to_timestamp((p_now + p_window_ms) / 1000.0)
+          last_updated = v_now,
+          expires_at = to_timestamp((v_now + c_window_ms) / 1000.0)
       WHERE key = v_key;
     ELSE
       INSERT INTO public.contact_rate_limits (key, timestamps, last_updated, expires_at)
       VALUES (
         v_key,
-        ARRAY[p_now],
-        p_now,
-        to_timestamp((p_now + p_window_ms) / 1000.0)
+        ARRAY[v_now],
+        v_now,
+        to_timestamp((v_now + c_window_ms) / 1000.0)
       );
     END IF;
   END LOOP;
@@ -151,7 +192,8 @@ BEGIN
 END;
 $$;
 
--- Grant execution permission to authenticated and anon users
-GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(
-  TEXT[], BIGINT, BIGINT, INT, BIGINT, INT
-) TO anon, authenticated, service_role;
+-- Revoke default public execution rights
+REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM PUBLIC;
+
+-- Grant execution permissions
+GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(TEXT[]) TO anon, authenticated, service_role;
