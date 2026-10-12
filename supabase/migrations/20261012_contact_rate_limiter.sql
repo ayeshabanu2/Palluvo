@@ -62,7 +62,13 @@ DECLARE
   v_retry_after INT;
   v_sorted_keys TEXT[];
 BEGIN
-  -- 1. Input Validation: strictly bound array size and element formats
+  -- 1. Authorization: Ensure execution is strictly performed by the server service_role credential
+  IF current_user NOT IN ('service_role', 'postgres', 'supabase_admin') AND
+     COALESCE(current_setting('request.jwt.claim.role', true), '') != 'service_role' THEN
+    RAISE EXCEPTION 'Permission denied: rate limit function is restricted to server service_role credential';
+  END IF;
+
+  -- 2. Input Validation: strictly bound array size and element formats
   IF p_keys IS NULL OR array_length(p_keys, 1) IS NULL OR array_length(p_keys, 1) = 0 THEN
     RETURN jsonb_build_object('allowed', true);
   END IF;
@@ -192,8 +198,10 @@ BEGIN
 END;
 $$;
 
--- Revoke default public execution rights
+-- Revoke all execution rights from public, anon, and authenticated roles
 REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM anon;
+REVOKE ALL ON FUNCTION public.consume_contact_rate_limit(TEXT[]) FROM authenticated;
 
--- Grant execution permissions
-GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(TEXT[]) TO anon, authenticated, service_role;
+-- Grant execution EXCLUSIVELY to service_role (server-only credential)
+GRANT EXECUTE ON FUNCTION public.consume_contact_rate_limit(TEXT[]) TO service_role;

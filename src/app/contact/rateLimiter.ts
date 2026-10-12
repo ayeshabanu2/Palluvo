@@ -48,13 +48,13 @@ export interface RateLimitStore {
   clear?(): Promise<void> | void;
 }
 
-function checkSupabaseConfigured(): boolean {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function checkSupabaseServiceRoleConfigured(): boolean {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
 
-  if (!url || !key) return false;
-  if (url.includes('placeholder') || key.includes('placeholder')) return false;
-  if (url.includes('your_supabase_project_url') || key.includes('your_supabase_anon_key')) return false;
+  if (!url || !serviceKey) return false;
+  if (url.includes('placeholder') || serviceKey.includes('placeholder')) return false;
+  if (url.includes('your_supabase_project_url') || serviceKey.includes('your_supabase_service_role_key')) return false;
 
   return (
     url.startsWith('https://') ||
@@ -65,7 +65,7 @@ function checkSupabaseConfigured(): boolean {
 
 /**
  * Production Database RPC Rate Limit Store.
- * Calls PostgreSQL function `consume_contact_rate_limit` via Supabase client.
+ * Calls PostgreSQL function `consume_contact_rate_limit` via trusted server service_role credential.
  * Enforces atomic multi-key row locking, sliding window, burst cooldown,
  * TTL pruning, capacity protection, and fails closed on query failure.
  */
@@ -81,8 +81,8 @@ export class DatabaseRpcRateLimitStore implements RateLimitStore {
       return await this.clientFactory();
     }
     try {
-      const { createClient } = await import('@/utils/supabase/server');
-      return await createClient();
+      const { createAdminClient } = await import('@/utils/supabase/server');
+      return await createAdminClient();
     } catch {
       return null;
     }
@@ -493,7 +493,7 @@ export class SharedRateLimiter implements RateLimitStore {
  * Prefers Database RPC store if Supabase is active; otherwise uses cross-process atomic file store.
  */
 export function createProductionRateLimitStore(options: RateLimiterOptions = {}): RateLimitStore {
-  if (checkSupabaseConfigured()) {
+  if (checkSupabaseServiceRoleConfigured()) {
     return new DatabaseRpcRateLimitStore();
   }
   return new CrossProcessRateLimitStore(options);

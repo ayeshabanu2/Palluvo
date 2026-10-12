@@ -357,6 +357,61 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     assert.equal(dbStore.size, 5, 'Database table must strictly not exceed capacity limit');
   });
 
+  test('REGRESSION [P1]: public client (anon/authenticated) cannot execute RPC to mutate arbitrary email/IP quota keys', async () => {
+    // Simulated database tracking quota table and permissions
+    const dbQuotaTable = new Map();
+    const victimEmail = 'email:legitimate-customer@example.com';
+
+    // Mock Supabase client factory simulating role-based access control
+    const createMockClientForRole = (role) => ({
+      rpc: async (funcName, params) => {
+        assert.equal(funcName, 'consume_contact_rate_limit');
+        // If caller is NOT service_role (e.g. anon or authenticated public client), deny execution!
+        if (role !== 'service_role') {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: 'permission denied for function consume_contact_rate_limit',
+              details: 'Public execution revoked. Function requires server service_role credential.',
+            },
+          };
+        }
+
+        // Server service_role execution:
+        for (const k of params.p_keys) {
+          const rec = dbQuotaTable.get(k) || { timestamps: [] };
+          rec.timestamps.push(Date.now());
+          dbQuotaTable.set(k, rec);
+        }
+        return { data: { allowed: true }, error: null };
+      },
+    });
+
+    // 1. Attacker attempts to call RPC directly using public anon key to poison victim's quota
+    const publicAnonStore = new DatabaseRpcRateLimitStore(async () => createMockClientForRole('anon'));
+    const maliciousAttempt = await publicAnonStore.consumeKeys([victimEmail]);
+
+    // Must fail closed / be rejected
+    assert.equal(maliciousAttempt.allowed, false, 'Public client must be rejected from calling rate limiter RPC');
+    assert.match(maliciousAttempt.error, /unable to verify request rate/i);
+
+    // Verify victim's quota was NOT modified by the public client
+    assert.equal(dbQuotaTable.has(victimEmail), false, 'Victim key must not be created or mutated by public caller');
+
+    // 2. An authenticated public user also cannot poison quotas
+    const publicAuthStore = new DatabaseRpcRateLimitStore(async () => createMockClientForRole('authenticated'));
+    const authAttempt = await publicAuthStore.consumeKeys([victimEmail]);
+    assert.equal(authAttempt.allowed, false);
+    assert.equal(dbQuotaTable.has(victimEmail), false);
+
+    // 3. Trusted server-only service_role credential is required to execute quota check
+    const trustedServerStore = new DatabaseRpcRateLimitStore(async () => createMockClientForRole('service_role'));
+    const legitimateServerCheck = await trustedServerStore.consumeKeys([victimEmail]);
+    assert.equal(legitimateServerCheck.allowed, true, 'Server service_role credential must be permitted');
+    assert.equal(dbQuotaTable.has(victimEmail), true, 'Quota table is mutated only by trusted server credential');
+  });
+
   test('validates payload length boundary checks correctly', () => {
     const validName = 'A'.repeat(100);
     const oversizedName = 'A'.repeat(101);
