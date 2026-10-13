@@ -22,6 +22,8 @@ import {
   handlePruneRateLimits,
   ADMISSION_LIMIT_CONFIG,
   checkAdmissionLimit,
+  pruneExpiredAdmissions,
+  getAdmissionTrackerSize,
   resetAdmissionTracker,
 } from '../src/app/contact/rateLimiter.ts';
 
@@ -793,5 +795,130 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     // After admission window expires (60 seconds), connection recovers
     const recoveredRes = checkAdmissionLimit({ ip: testIp }, now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 1000);
     assert.equal(recoveredRes.allowed, true, 'Connection must recover after window expires');
+  });
+
+  test('[P2] admission map bounds capacity and sweeps stale expired entries', () => {
+    resetAdmissionTracker();
+    const now = 200000;
+
+    // 1. Populate multiple distinct IPs
+    for (let i = 0; i < 50; i++) {
+      checkAdmissionLimit({ ip: `198.51.100.${i}` }, now);
+    }
+    assert.equal(getAdmissionTrackerSize(), 50);
+
+    // 2. Advance time past the admission window and sweep expired entries
+    const swept = pruneExpiredAdmissions(now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 500);
+    assert.equal(swept, 50, 'All 50 expired IPs must be swept and deleted');
+    assert.equal(getAdmissionTrackerSize(), 0, 'Admission map size must be 0 after sweep');
+
+    // 3. Verify on-access cleanup: query an expired key, it must be cleaned up
+    checkAdmissionLimit({ ip: '203.0.113.88' }, now);
+    assert.equal(getAdmissionTrackerSize(), 1);
+    // After window, calling checkAdmissionLimit with fresh time starts new record and cleans old
+    const nextRes = checkAdmissionLimit({ ip: '203.0.113.88' }, now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 500);
+    assert.equal(nextRes.allowed, true);
+    assert.equal(getAdmissionTrackerSize(), 1);
+
+    // 4. Verify capacity bounding: inserting past MAX_MAP_SIZE enforces upper bound
+    resetAdmissionTracker();
+    for (let i = 0; i < ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE + 25; i++) {
+      checkAdmissionLimit({ ip: `10.10.${Math.floor(i / 255)}.${i % 255}` }, now);
+    }
+    assert.ok(
+      getAdmissionTrackerSize() <= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE,
+      `Map size (${getAdmissionTrackerSize()}) must not exceed MAX_MAP_SIZE (${ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE})`
+    );
+  });
+
+  test('REGRESSION [P2]: preserves active quota records during all-throttled store saturation without resetting penalties', async () => {
+    // SharedRateLimiter with a bounded size of 5 keys
+    const limiter = new SharedRateLimiter({ maxStoreSize: 5 });
+    const now = 300000;
+
+    // 1. Saturate all 5 slots with actively throttled keys (each making 5 requests)
+    for (let keyIdx = 0; keyIdx < 5; keyIdx++) {
+      const key = `ip:throttled-client-${keyIdx}`;
+      for (let req = 0; req < 5; req++) {
+        await limiter.consumeKeys([key], now + req * 6000);
+      }
+      const check = await limiter.consumeKeys([key], now + 35000);
+      assert.equal(check.allowed, false, `Key ${key} must be actively throttled`);
+    }
+    assert.equal(limiter.getStoreSize(), 5, 'Store is at full capacity (5)');
+
+    // 2. An attacker or new visitor arrives with a 6th distinct key while all 5 slots are actively throttled.
+    // Under no circumstances should any of the 5 actively throttled rows be evicted!
+    const overflowAttempt = await limiter.consumeKeys(['ip:attacker-churn-key'], now + 40000);
+    assert.equal(overflowAttempt.allowed, false, 'Must fail closed when store is 100% full of actively throttled abusers');
+    assert.match(overflowAttempt.error, /high volume/i);
+    assert.equal(limiter.getStoreSize(), 5, 'Store size must strictly remain 5');
+
+    // 3. Verify ALL 5 original throttled keys were PRESERVED and their quotas were NOT reset
+    for (let keyIdx = 0; keyIdx < 5; keyIdx++) {
+      const key = `ip:throttled-client-${keyIdx}`;
+      const recheck = await limiter.consumeKeys([key], now + 45000);
+      assert.equal(recheck.allowed, false, `Quota for ${key} must NOT have been reset by key churn`);
+      assert.match(recheck.error, /too many inquiries/i);
+      const record = limiter.getRecord(key);
+      assert.ok(record, `Record for ${key} must still exist`);
+      assert.equal(record.timestamps.length, 5, `Timestamps for ${key} must remain intact`);
+    }
+
+    // 4. Test database RPC store under all-throttled saturation condition
+    const dbStore = new Map();
+    const capacityLimit = 3;
+
+    // Prepopulate 3 throttled keys (all slots full of throttled entries)
+    for (let i = 0; i < 3; i++) {
+      dbStore.set(`ip:db-throttled-${i}`, {
+        timestamps: [now, now + 1000, now + 2000, now + 3000, now + 4000],
+        lastUpdated: now + 4000,
+      });
+    }
+
+    const mockSupabase = {
+      rpc: async (funcName, params) => {
+        assert.equal(funcName, 'consume_contact_rate_limit');
+        const keys = params.p_keys;
+        const totalKeys = dbStore.size;
+        const newKeys = keys.filter((k) => !dbStore.has(k));
+
+        if (newKeys.length > 0 && totalKeys + newKeys.length > capacityLimit) {
+          // SQL logic: only unthrottled keys (< 5 requests and not in cooldown) can be evicted
+          const needed = (totalKeys + newKeys.length) - capacityLimit;
+          const unthrottled = Array.from(dbStore.entries())
+            .filter(([k, rec]) => !keys.includes(k) && rec.timestamps.length < 5)
+            .map(([k]) => k);
+
+          const evicted = unthrottled.slice(0, needed);
+          for (const k of evicted) {
+            dbStore.delete(k);
+          }
+
+          // If store is still over capacity because all remaining keys are actively throttled, fail closed!
+          if (dbStore.size + newKeys.length > capacityLimit) {
+            return {
+              data: {
+                allowed: false,
+                error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
+              },
+              error: null,
+            };
+          }
+        }
+
+        return { data: { allowed: true }, error: null };
+      },
+    };
+
+    const clientStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
+    const dbOverflowResult = await clientStore.consumeKeys(['ip:churn-new-key']);
+    assert.equal(dbOverflowResult.allowed, false);
+    assert.match(dbOverflowResult.error, /high volume/i);
+    assert.equal(dbStore.size, 3, 'No throttled keys in database table must be evicted');
+    assert.ok(dbStore.has('ip:db-throttled-0'));
+    assert.ok(dbStore.has('ip:db-throttled-1'));
+    assert.ok(dbStore.has('ip:db-throttled-2'));
   });
 });

@@ -209,16 +209,13 @@ BEGIN
 
     GET DIAGNOSTICS v_evicted_count = ROW_COUNT;
 
-    -- Phase 2: If additional slots are still required under extreme saturation, evict oldest entries
-    -- closest to expiry, guaranteeing public callers can never globally exhaust capacity or lock out new users
-    IF v_evicted_count < v_needed_slots THEN
-      DELETE FROM public.contact_rate_limits
-      WHERE key IN (
-        SELECT key
-        FROM public.contact_rate_limits
-        WHERE key != ALL(v_sorted_keys)
-        ORDER BY expires_at ASC, last_updated ASC
-        LIMIT (v_needed_slots - v_evicted_count)
+    -- If available un-throttled entries were exhausted and store is still over capacity,
+    -- actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
+    -- Fail closed under an all-throttled saturation condition.
+    IF (v_total_keys - v_evicted_count + v_new_key_count) > c_max_store_size THEN
+      RETURN jsonb_build_object(
+        'allowed', false,
+        'error', 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.'
       );
     END IF;
   END IF;

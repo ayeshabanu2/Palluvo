@@ -23,13 +23,47 @@ export const RATE_LIMIT_CONFIG = {
 export const ADMISSION_LIMIT_CONFIG = {
   WINDOW_MS: 60 * 1000, // 1 minute sliding window
   MAX_ADMISSIONS_PER_IP: 15, // Max 15 submissions per minute per IP admission limit
+  MAX_MAP_SIZE: 1000, // Strict bound to prevent unbound memory growth from rotating IPs
 } as const;
 
-const admissionMap = new Map<string, number[]>();
+interface AdmissionRecord {
+  timestamps: number[];
+  lastUpdated: number;
+}
+
+const admissionMap = new Map<string, AdmissionRecord>();
+
+/**
+ * Periodically or on-demand sweeps and deletes stale IP entries older than the sliding window.
+ * Ensures the per-process admission map does not accumulate stale client addresses indefinitely.
+ */
+export function pruneExpiredAdmissions(now: number = Date.now()): number {
+  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+  let pruned = 0;
+  for (const [ip, record] of admissionMap.entries()) {
+    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+    if (record.timestamps.length === 0) {
+      admissionMap.delete(ip);
+      pruned++;
+    }
+  }
+  return pruned;
+}
+
+// Background sweep in warm Node process environments
+if (typeof setInterval !== 'undefined') {
+  const sweepTimer = setInterval(() => {
+    pruneExpiredAdmissions();
+  }, ADMISSION_LIMIT_CONFIG.WINDOW_MS);
+  if (typeof sweepTimer.unref === 'function') {
+    sweepTimer.unref();
+  }
+}
 
 /**
  * Independent abuse/WAF admission limit at the application boundary.
- * Throttles rapid bursts from a single source connection before inquiry persistence.
+ * Throttles rapid bursts from a single source connection before inquiry persistence,
+ * with bounded memory and expiration cleanup.
  */
 export function checkAdmissionLimit(
   { ip }: { ip?: string },
@@ -38,20 +72,57 @@ export function checkAdmissionLimit(
   if (!ip || ip === 'unknown') {
     return { allowed: true };
   }
+
   const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
-  const rawTimestamps = admissionMap.get(ip) || [];
-  const filtered = rawTimestamps.filter((ts) => ts > windowStart);
-  if (filtered.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
-    const retryAfter = Math.ceil((filtered[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+  let record = admissionMap.get(ip);
+  if (record) {
+    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+    if (record.timestamps.length === 0) {
+      admissionMap.delete(ip);
+      record = undefined;
+    }
+  }
+
+  // Enforce memory bound: if map size reaches limit before inserting a new IP,
+  // sweep expired entries, and evict least recently active entries if still full.
+  if (!record && admissionMap.size >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+    pruneExpiredAdmissions(now);
+    if (admissionMap.size >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+      const needed = admissionMap.size + 1 - ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE;
+      const oldestKeys = Array.from(admissionMap.entries())
+        .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated)
+        .slice(0, needed)
+        .map(([k]) => k);
+      for (const k of oldestKeys) {
+        admissionMap.delete(k);
+      }
+    }
+  }
+
+  if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
+    const retryAfter = Math.ceil(
+      (record.timestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
+    );
     return {
       allowed: false,
       retryAfterSeconds: retryAfter,
       error: 'Too many inquiries received from your connection. Please wait a moment before trying again.',
     };
   }
-  filtered.push(now);
-  admissionMap.set(ip, filtered);
+
+  if (!record) {
+    record = { timestamps: [now], lastUpdated: now };
+    admissionMap.set(ip, record);
+  } else {
+    record.timestamps.push(now);
+    record.lastUpdated = now;
+  }
+
   return { allowed: true };
+}
+
+export function getAdmissionTrackerSize(): number {
+  return admissionMap.size;
 }
 
 export function resetAdmissionTracker(): void {
@@ -459,20 +530,18 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           keysToEvict.push(k);
         }
 
-        // Phase 2: If additional slots needed under extreme saturation, evict oldest entries
-        if (keysToEvict.length < needed) {
-          const remainingEntries = eligibleEntries
-            .filter(([k]) => !keysToEvict.includes(k))
-            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated);
-
-          for (const [k] of remainingEntries) {
-            if (keysToEvict.length >= needed) break;
-            keysToEvict.push(k);
-          }
-        }
-
         for (const k of keysToEvict) {
           delete data[k];
+        }
+
+        // If available un-throttled entries were exhausted and store is still over capacity,
+        // actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
+        // Fail closed under an all-throttled saturation condition.
+        if (Object.keys(data).length + newKeys.length > this.maxStoreSize) {
+          return {
+            allowed: false,
+            error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
+          };
         }
       }
 
@@ -706,20 +775,18 @@ export class SharedRateLimiter implements RateLimitStore {
           keysToEvict.push(k);
         }
 
-        // Phase 2: If additional slots needed under extreme saturation, evict oldest entries
-        if (keysToEvict.length < needed) {
-          const remainingEntries = eligibleEntries
-            .filter(([k]) => !keysToEvict.includes(k))
-            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated);
-
-          for (const [k] of remainingEntries) {
-            if (keysToEvict.length >= needed) break;
-            keysToEvict.push(k);
-          }
-        }
-
         for (const k of keysToEvict) {
           this.store.delete(k);
+        }
+
+        // If available un-throttled entries were exhausted and store is still over capacity,
+        // actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
+        // Fail closed under an all-throttled saturation condition.
+        if (this.store.size + newKeys.length > this.maxStoreSize) {
+          return {
+            allowed: false,
+            error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
+          };
         }
       }
     }
