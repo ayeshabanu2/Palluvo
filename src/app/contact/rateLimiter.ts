@@ -275,6 +275,55 @@ export function checkSupabaseServiceRoleConfigured(): boolean {
 }
 
 /**
+ * Checks whether the deployment requires and enforces confirmed email verification in Supabase Auth.
+ * Supabase allows projects to have "Confirm email" disabled, where any caller can register an address
+ * and immediately receive a session without proving mailbox access.
+ * To prevent quota poisoning on public forms, shared email rate limits are strictly gated behind this deployment requirement.
+ */
+export function isEmailConfirmationEnforced(): boolean {
+  const env =
+    process.env.REQUIRE_EMAIL_CONFIRMATION ||
+    process.env.SUPABASE_AUTH_CONFIRM_EMAIL;
+  if (!env) return false;
+  const val = env.trim().toLowerCase();
+  return val === 'true' || val === '1';
+}
+
+/**
+ * Verifies whether the submitted email address has proven mailbox access.
+ * If the deployment does not enforce email confirmation (e.g. Supabase project with "Confirm Email" disabled,
+ * where signups are immediately issued sessions without email delivery), authenticated sessions do NOT
+ * prove mailbox access and must not be used to apply shared email quotas (which would allow an attacker
+ * to register an unused victim address and poison their quota).
+ *
+ * Strict mailbox verification requires:
+ * 1. Confirmed-email configuration is enforced as a deployment requirement (`isEmailConfirmationEnforced() === true`).
+ * 2. Authenticated user object exists with a valid email.
+ * 3. The user's `email_confirmed_at` timestamp is present and verified.
+ * 4. The user's email matches the submitted email.
+ */
+export function isMailboxVerified(
+  user: { email?: string; email_confirmed_at?: string | null } | null | undefined,
+  submittedEmail: string
+): boolean {
+  if (!isEmailConfirmationEnforced()) {
+    return false;
+  }
+  if (!user || !user.email) {
+    return false;
+  }
+  if (
+    !user.email_confirmed_at ||
+    typeof user.email_confirmed_at !== 'string' ||
+    user.email_confirmed_at.trim().length === 0
+  ) {
+    return false;
+  }
+  return (user.email || '').toLowerCase().trim() === (submittedEmail || '').toLowerCase().trim();
+}
+
+
+/**
  * Fail-closed store used when production environment is misconfigured
  * (e.g., Supabase is active but SUPABASE_SERVICE_ROLE_KEY is absent).
  */

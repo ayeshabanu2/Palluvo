@@ -15,3 +15,19 @@ export function isSupabaseConfigured(): boolean {
     url.startsWith('http://localhost')
   );
 }
+
+/**
+ * Checks whether the deployment requires and enforces confirmed email verification in Supabase Auth.
+ * Supabase allows projects to have "Confirm email" disabled, where any caller can register an address
+ * and immediately receive a session without proving mailbox access.
+ * To prevent quota poisoning on public forms, shared email rate limits are strictly gated behind this deployment requirement.
+ */
+export function isEmailConfirmationEnforced(): boolean {
+  const env =
+    process.env.REQUIRE_EMAIL_CONFIRMATION ||
+    process.env.SUPABASE_AUTH_CONFIRM_EMAIL;
+  if (!env) return false;
+  const val = env.trim().toLowerCase();
+  return val === 'true' || val === '1';
+}
+

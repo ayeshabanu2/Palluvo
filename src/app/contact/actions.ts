@@ -7,6 +7,7 @@ import {
   CONTACT_FIELD_LIMITS,
   checkAdmissionLimit,
   checkContactRateLimitMulti,
+  isMailboxVerified,
 } from './rateLimiter';
 
 export interface ContactInquiryInput {
@@ -86,18 +87,17 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: admissionCheck.error };
     }
 
-    // Check mailbox ownership verification via authenticated session.
-    // If the caller is authenticated and matches the form email, the email is verified.
-    // Unverified caller-chosen form emails must NOT be hard rate-limited as a shared identity,
-    // preventing an attacker from poisoning a victim's email quota.
+    // Check mailbox ownership verification via authenticated session and enforced confirmation state.
+    // In projects with "Confirm Email" disabled, Supabase returns immediate sessions without verifying mailbox access.
+    // To prevent an attacker from registering an unused victim address and consuming their shared email quota,
+    // we require confirmed-email deployment configuration and trusted email_confirmed_at state.
+    // If not verified, the shared email quota is omitted, relying on IP and admission risk controls.
     const supabase = await createClient();
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
-    const isEmailVerified = Boolean(
-      user?.email && normalizeEmail(user.email) === email
-    );
+    const isEmailVerified = isMailboxVerified(user, email);
 
     const rateCheck = await checkContactRateLimitMulti({
       ip: clientIp,

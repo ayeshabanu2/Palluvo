@@ -26,6 +26,8 @@ import {
   getAdmissionTrackerSize,
   getGlobalAdmissionCount,
   resetAdmissionTracker,
+  isEmailConfirmationEnforced,
+  isMailboxVerified,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -986,5 +988,125 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     );
     assert.equal(verifiedThrottled.allowed, false, 'Verified email must enforce quota across IPs');
     assert.match(verifiedThrottled.error, /too many inquiries/i);
+  });
+
+  test('[P2] verifies confirmed-email deployment configuration and mailbox ownership states', () => {
+    const originalEnv = { ...process.env };
+
+    try {
+      // 1. When REQUIRE_EMAIL_CONFIRMATION is unset, isEmailConfirmationEnforced is false
+      delete process.env.REQUIRE_EMAIL_CONFIRMATION;
+      delete process.env.SUPABASE_AUTH_CONFIRM_EMAIL;
+      assert.equal(isEmailConfirmationEnforced(), false);
+
+      // Even if user object has email and confirmed timestamp, isMailboxVerified must be false
+      const mockUser = {
+        email: 'test@example.com',
+        email_confirmed_at: '2026-10-13T07:00:00Z',
+      };
+      assert.equal(
+        isMailboxVerified(mockUser, 'test@example.com'),
+        false,
+        'Cannot trust mailbox access without enforced confirmed-email deployment requirement'
+      );
+
+      // 2. When REQUIRE_EMAIL_CONFIRMATION is 'true', confirmed-email is enforced
+      process.env.REQUIRE_EMAIL_CONFIRMATION = 'true';
+      assert.equal(isEmailConfirmationEnforced(), true);
+
+      // Null user -> false
+      assert.equal(isMailboxVerified(null, 'test@example.com'), false);
+
+      // User without email -> false
+      assert.equal(isMailboxVerified({}, 'test@example.com'), false);
+
+      // User with unconfirmed email (email_confirmed_at: null or undefined) -> false
+      assert.equal(
+        isMailboxVerified({ email: 'test@example.com', email_confirmed_at: null }, 'test@example.com'),
+        false
+      );
+      assert.equal(
+        isMailboxVerified({ email: 'test@example.com', email_confirmed_at: '' }, 'test@example.com'),
+        false
+      );
+
+      // User with mismatched email -> false
+      assert.equal(
+        isMailboxVerified(mockUser, 'other@example.com'),
+        false
+      );
+
+      // User with confirmed email matching submitted email -> true
+      assert.equal(
+        isMailboxVerified(mockUser, 'test@example.com'),
+        true
+      );
+      assert.equal(
+        isMailboxVerified(mockUser, '  TEST@example.com '),
+        true,
+        'Casing and whitespace normalization must be respected'
+      );
+    } finally {
+      process.env = originalEnv;
+    }
+  });
+
+  test('REGRESSION [P2]: no-confirmation signup path does not trust unverified authenticated emails to poison quota', async () => {
+    const originalEnv = { ...process.env };
+    delete process.env.REQUIRE_EMAIL_CONFIRMATION;
+    delete process.env.SUPABASE_AUTH_CONFIRM_EMAIL;
+
+    const now = 700000;
+    const attackerIp = '198.51.100.1';
+    const victimIp = '203.0.113.88';
+    const victimEmail = 'victim@example.com';
+
+    try {
+      // In a Supabase project with "Confirm Email" disabled, Supabase issues immediate sessions
+      // upon signup without verifying mailbox access (auto-populating email_confirmed_at).
+      const unverifiedSignupUser = {
+        id: 'attacker-victim-account-id',
+        email: victimEmail,
+        email_confirmed_at: '2026-10-13T07:00:00Z',
+      };
+
+      // In this no-confirmation configuration, isMailboxVerified MUST evaluate to false!
+      const isVerified = isMailboxVerified(unverifiedSignupUser, victimEmail);
+      assert.equal(
+        isVerified,
+        false,
+        'Unconfirmed/no-confirmation signup accounts must not be treated as verified mailboxes'
+      );
+
+      // Attacker submits 5 inquiries with victim@example.com from attackerIp
+      for (let i = 0; i < 5; i++) {
+        const res = await checkContactRateLimitMulti(
+          { ip: attackerIp, email: victimEmail, isEmailVerified: isVerified },
+          now + i * 6000
+        );
+        assert.equal(res.allowed, true, `Attacker submission ${i + 1} permitted until IP limit reached`);
+      }
+
+      // Attacker's 6th request from attackerIp is throttled by their own IP
+      const attackerThrottled = await checkContactRateLimitMulti(
+        { ip: attackerIp, email: victimEmail, isEmailVerified: isVerified },
+        now + 35000
+      );
+      assert.equal(attackerThrottled.allowed, false, 'Attacker connection must be throttled');
+
+      // Now genuine victim arrives on their own IP (victimIp) with victim@example.com
+      // Because confirmed-email was not enforced, the shared email quota was NOT applied to victim@example.com
+      const victimSubmission = await checkContactRateLimitMulti(
+        { ip: victimIp, email: victimEmail, isEmailVerified: false },
+        now + 40000
+      );
+      assert.equal(
+        victimSubmission.allowed,
+        true,
+        'Genuine victim must NOT be blocked by an attacker registering their email under no-confirmation signup'
+      );
+    } finally {
+      process.env = originalEnv;
+    }
   });
 });
