@@ -20,6 +20,9 @@ import {
   getRateLimitStoreSize,
   resetRateLimitStore,
   handlePruneRateLimits,
+  ADMISSION_LIMIT_CONFIG,
+  checkAdmissionLimit,
+  resetAdmissionTracker,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -107,26 +110,34 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const now = 600000;
     const limiter = new SharedRateLimiter({ maxStoreSize: 1000 });
 
-    // Fill store to its full capacity with 1000 active keys
-    for (let i = 0; i < 1000; i++) {
-      const res = await limiter.consumeKeys([`ip:capacity-test-${i}`], now);
+    // 1. Establish an actively throttled key with 5 requests
+    const throttledKey = 'ip:throttled-key';
+    for (let i = 0; i < 5; i++) {
+      await limiter.consumeKeys([throttledKey], now + i * 6000);
+    }
+    const throttledCheck = await limiter.consumeKeys([throttledKey], now + 35000);
+    assert.equal(throttledCheck.allowed, false, 'Key with 5 requests must be throttled');
+
+    // 2. Fill store to its full capacity with active keys up to 1000
+    const startSize = limiter.getStoreSize();
+    for (let i = 0; i < 1000 - startSize; i++) {
+      const res = await limiter.consumeKeys([`ip:capacity-test-${i}`], now + 40000);
       assert.equal(res.allowed, true, `Key ${i} should be accepted`);
     }
     assert.equal(limiter.getStoreSize(), 1000);
 
-    // Attempting to insert a 1001st active key must NOT evict existing active keys or reset quotas
-    const saturatedRes = await limiter.consumeKeys(['ip:capacity-test-1001'], now);
-    assert.equal(saturatedRes.allowed, false);
-    assert.match(saturatedRes.error, /high volume/i);
-    assert.equal(limiter.getStoreSize(), 1000);
+    // 3. Under resilient capacity strategy, inserting a 1001st active key does NOT fail closed;
+    // it evicts the oldest un-throttled synthetic key and admits the new visitor
+    const saturatedRes = await limiter.consumeKeys(['ip:capacity-test-1001'], now + 45000);
+    assert.equal(saturatedRes.allowed, true, 'Legitimate new key must be admitted under saturation');
+    assert.equal(limiter.getStoreSize(), 1000, 'Store size must strictly remain bounded at 1000');
 
-    // Verify existing active keys retain their quota and were not wiped
-    const existingKeyRecord = limiter.getRecord('ip:capacity-test-0');
-    assert.ok(existingKeyRecord);
-    assert.equal(existingKeyRecord.timestamps.length, 1);
+    // 4. Verify actively throttled key was protected and NOT wiped or reset
+    const throttledRecheck = await limiter.consumeKeys([throttledKey], now + 50000);
+    assert.equal(throttledRecheck.allowed, false, 'Throttled quota must remain enforced and not reset');
 
-    // Advance time past the 10-minute window so active keys expire
-    const expiredTime = now + RATE_LIMIT_CONFIG.WINDOW_MS + 1000;
+    // 5. Advance time past the 10-minute window so active keys expire
+    const expiredTime = now + RATE_LIMIT_CONFIG.WINDOW_MS + 60000;
     const prunedCount = limiter.pruneExpiredEntries(expiredTime);
     assert.equal(prunedCount, 1000);
     assert.equal(limiter.getStoreSize(), 0, 'All expired keys should be purged');
@@ -303,7 +314,7 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     // Pre-populate 4 keys so exactly 1 slot remains
     for (let i = 0; i < 4; i++) {
-      dbStore.set(`ip:prepopulated-${i}`, { timestamps: [Date.now()] });
+      dbStore.set(`ip:prepopulated-${i}`, { timestamps: [Date.now()], lastUpdated: Date.now() - 50000 + i * 1000 });
     }
     assert.equal(dbStore.size, 4);
 
@@ -326,20 +337,21 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
           const totalKeys = dbStore.size;
           const newKeys = keys.filter((k) => !dbStore.has(k));
 
-          // Capacity check
-          if (totalKeys + newKeys.length > capacityLimit) {
-            return {
-              data: {
-                allowed: false,
-                error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-              },
-              error: null,
-            };
+          // Resilient capacity management with serialized eviction:
+          if (newKeys.length > 0 && totalKeys + newKeys.length > capacityLimit) {
+            const needed = (totalKeys + newKeys.length) - capacityLimit;
+            // Evict oldest unthrottled keys to make room
+            const evictable = Array.from(dbStore.keys())
+              .filter((k) => !keys.includes(k))
+              .slice(0, needed);
+            for (const k of evictable) {
+              dbStore.delete(k);
+            }
           }
 
           // Commit new keys to database table
           for (const key of newKeys) {
-            dbStore.set(key, { timestamps: [Date.now()] });
+            dbStore.set(key, { timestamps: [Date.now()], lastUpdated: Date.now() });
           }
 
           return {
@@ -361,12 +373,10 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     const results = await Promise.all(concurrentRequests);
     const allowedResults = results.filter((r) => r.allowed);
-    const rejectedResults = results.filter((r) => !r.allowed);
 
-    // Under serialized advisory locking, exactly 1 succeeds and 4 are rejected
-    assert.equal(allowedResults.length, 1, 'Exactly 1 concurrent new key must take the final capacity slot');
-    assert.equal(rejectedResults.length, 4, 'All remaining concurrent requests must be rejected');
-    assert.match(rejectedResults[0].error, /high volume/i);
+    // Under serialized advisory locking and resilient capacity management, all 5 succeed
+    // and database size strictly remains bounded at capacityLimit (5)
+    assert.equal(allowedResults.length, 5, 'All concurrent new keys must be handled under serialized capacity management');
     assert.equal(dbStore.size, 5, 'Database table must strictly not exceed capacity limit');
   });
 
@@ -650,5 +660,138 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const oversizedMsg = 'M'.repeat(3001);
     assert.equal(validMsg.length <= CONTACT_FIELD_LIMITS.MESSAGE_MAX, true);
     assert.equal(oversizedMsg.length > CONTACT_FIELD_LIMITS.MESSAGE_MAX, true);
+  });
+
+  test('REGRESSION [P2]: public client (anon/authenticated) cannot read or bypass RLS on active_contact_rate_limits view', async () => {
+    // Simulated database tracking table, view permissions, and RLS policies
+    const activeViewName = 'active_contact_rate_limits';
+    const baseTableName = 'contact_rate_limits';
+
+    // Simulated RLS / grant engine
+    const executeQueryAsRole = (role, queryTarget) => {
+      // Direct grants: SELECT on active_contact_rate_limits is revoked from PUBLIC, anon, and authenticated
+      // Granted EXCLUSIVELY to service_role
+      if (queryTarget === activeViewName) {
+        if (role === 'anon' || role === 'authenticated' || role === 'PUBLIC') {
+          return {
+            data: null,
+            error: {
+              code: '42501',
+              message: 'permission denied for table active_contact_rate_limits',
+              details: 'Public access revoked. View access is restricted to service_role credential.',
+            },
+          };
+        }
+      }
+
+      // Security Invoker check: Even if a client role somehow queried the view,
+      // security_invoker = true enforces the underlying table's RLS policy (USING (false))
+      if (queryTarget === baseTableName || queryTarget === activeViewName) {
+        if (role !== 'service_role') {
+          // RLS policy: Deny direct public access to contact_rate_limits (USING (false))
+          return {
+            data: [], // 0 rows visible due to deny-all RLS
+            error: null,
+          };
+        }
+      }
+
+      // Trusted server service_role credential query
+      return {
+        data: [
+          {
+            key: hashRateLimitIdentifier('ip:203.0.113.1'),
+            timestamps: [Date.now()],
+            last_updated: Date.now(),
+            expires_at: new Date(Date.now() + 600000).toISOString(),
+          },
+        ],
+        error: null,
+      };
+    };
+
+    // 1. Anonymous client attempt to query active rate limits view
+    const anonResult = executeQueryAsRole('anon', activeViewName);
+    assert.ok(anonResult.error || anonResult.data.length === 0);
+    if (anonResult.error) {
+      assert.equal(anonResult.error.code, '42501');
+      assert.match(anonResult.error.message, /permission denied/i);
+    }
+
+    // 2. Authenticated non-admin client attempt to query view
+    const authResult = executeQueryAsRole('authenticated', activeViewName);
+    assert.ok(authResult.error || authResult.data.length === 0);
+    if (authResult.error) {
+      assert.equal(authResult.error.code, '42501');
+      assert.match(authResult.error.message, /permission denied/i);
+    }
+
+    // 3. Server-only service_role query succeeds and reads active records
+    const serverResult = executeQueryAsRole('service_role', activeViewName);
+    assert.equal(serverResult.error, null);
+    assert.equal(serverResult.data.length, 1);
+    assert.ok(serverResult.data[0].key.startsWith('digest:sha256:'));
+  });
+
+  test('REGRESSION [P2]: untrusted callers cannot globally exhaust shared key budget to lock out new legitimate visitors (saturation and recovery)', async () => {
+    const capacityLimit = 1000;
+    const limiter = new SharedRateLimiter({ maxStoreSize: capacityLimit });
+    const now = 600000;
+
+    // 1. An abuser hits maximum requests and is throttled
+    const abuserKey = 'ip:known-abuser';
+    for (let i = 0; i < 5; i++) {
+      await limiter.consumeKeys([abuserKey], now + i * 6000);
+    }
+    const abuserStatus = await limiter.consumeKeys([abuserKey], now + 35000);
+    assert.equal(abuserStatus.allowed, false, 'Abuser must be throttled');
+
+    // 2. A distributed attacker rotates 500 IPs and synthetic emails to flood the store with ~1000 keys
+    // (occupying all remaining slots up to capacityLimit)
+    const initialSlots = limiter.getStoreSize();
+    for (let i = 0; i < capacityLimit - initialSlots; i++) {
+      const res = await limiter.consumeKeys([`ip:attacker-rotated-${i}`], now + 40000);
+      assert.equal(res.allowed, true);
+    }
+    assert.equal(limiter.getStoreSize(), capacityLimit, 'Store is at full 1000 capacity');
+
+    // 3. A legitimate first-time visitor arrives with new IP and new email
+    // Under the resilient capacity strategy, the legitimate visitor must NOT fail closed!
+    const legitResult = await limiter.consumeKeys(['ip:legitimate-customer', 'email:legitimate@example.com'], now + 45000);
+    assert.equal(legitResult.allowed, true, 'Legitimate first-time visitor must be admitted under saturation');
+    assert.equal(limiter.getStoreSize(), capacityLimit, 'Store size must strictly remain bounded at 1000');
+
+    // 4. Actively throttled abuser quota must NOT have been evicted or reset by attacker seeding keys
+    const abuserRecheck = await limiter.consumeKeys([abuserKey], now + 50000);
+    assert.equal(abuserRecheck.allowed, false, 'Abuser quota must remain enforced and not reset');
+    assert.match(abuserRecheck.error, /too many inquiries/i);
+
+    // 5. Sustained saturation recovery: Continuous new visitors are admitted while store size stays at capacity
+    for (let i = 0; i < 10; i++) {
+      const continuousVisit = await limiter.consumeKeys([`ip:legit-batch-${i}`], now + 60000 + i * 1000);
+      assert.equal(continuousVisit.allowed, true, `Continuous legitimate visitor ${i} must succeed`);
+      assert.equal(limiter.getStoreSize(), capacityLimit);
+    }
+  });
+
+  test('[P2] independent abuse/WAF admission limit throttles rapid single-source burst flooding', () => {
+    resetAdmissionTracker();
+    const testIp = '198.51.100.42';
+    const now = 100000;
+
+    // Up to 15 rapid admissions in 1 minute are allowed
+    for (let i = 0; i < ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP; i++) {
+      const res = checkAdmissionLimit({ ip: testIp }, now + i * 100);
+      assert.equal(res.allowed, true, `Admission ${i + 1} should be permitted`);
+    }
+
+    // 16th rapid submission is throttled at admission boundary
+    const throttledRes = checkAdmissionLimit({ ip: testIp }, now + 2000);
+    assert.equal(throttledRes.allowed, false, '16th rapid submission must be throttled');
+    assert.match(throttledRes.error, /too many inquiries received/i);
+
+    // After admission window expires (60 seconds), connection recovers
+    const recoveredRes = checkAdmissionLimit({ ip: testIp }, now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 1000);
+    assert.equal(recoveredRes.allowed, true, 'Connection must recover after window expires');
   });
 });

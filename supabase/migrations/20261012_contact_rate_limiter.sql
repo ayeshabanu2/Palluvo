@@ -2,6 +2,7 @@
 -- Description: Creates the shared contact rate limit table, atomic consumer RPC,
 -- and guaranteed cleanup function with HMAC-SHA256 digest identifiers,
 -- server-derived policy constants, advisory capacity locking, row-level locks,
+-- resilient two-phase capacity eviction against DoS, security_invoker bounded view,
 -- and service_role-only execution.
 
 CREATE TABLE IF NOT EXISTS public.contact_rate_limits (
@@ -93,6 +94,8 @@ DECLARE
   v_new_key_count INT := 0;
   v_retry_after INT;
   v_sorted_keys TEXT[];
+  v_needed_slots INT := 0;
+  v_evicted_count INT := 0;
 BEGIN
   -- 1. Authorization: Ensure execution is strictly performed by the server service_role credential
   IF current_user NOT IN ('service_role', 'postgres', 'supabase_admin') AND
@@ -185,12 +188,39 @@ BEGIN
     END IF;
   END LOOP;
 
-  -- 8. Store capacity check for new keys (serialized via pg_advisory_xact_lock)
-  IF v_total_keys + v_new_key_count > c_max_store_size THEN
-    RETURN jsonb_build_object(
-      'allowed', false,
-      'error', 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.'
+  -- 8. Resilient capacity strategy: prevent untrusted public submissions from globally exhausting the shared key budget
+  -- If inserting new keys exceeds max store capacity, evict entries to make room for legitimate traffic
+  -- rather than globally failing closed (which would allow an attacker rotating IPs/emails to DoS the service)
+  IF v_new_key_count > 0 AND (v_total_keys + v_new_key_count > c_max_store_size) THEN
+    v_needed_slots := (v_total_keys + v_new_key_count) - c_max_store_size;
+
+    -- Phase 1: Evict un-throttled entries (single-use or low-frequency synthetic keys from rotated submissions)
+    -- This strictly protects actively throttled quotas (keys with >= c_max_requests or in active burst cooldown)
+    DELETE FROM public.contact_rate_limits
+    WHERE key IN (
+      SELECT key
+      FROM public.contact_rate_limits
+      WHERE key != ALL(v_sorted_keys)
+        AND array_length(timestamps, 1) < c_max_requests
+        AND (v_now - last_updated) >= c_cooldown_ms
+      ORDER BY array_length(timestamps, 1) ASC, last_updated ASC
+      LIMIT v_needed_slots
     );
+
+    GET DIAGNOSTICS v_evicted_count = ROW_COUNT;
+
+    -- Phase 2: If additional slots are still required under extreme saturation, evict oldest entries
+    -- closest to expiry, guaranteeing public callers can never globally exhaust capacity or lock out new users
+    IF v_evicted_count < v_needed_slots THEN
+      DELETE FROM public.contact_rate_limits
+      WHERE key IN (
+        SELECT key
+        FROM public.contact_rate_limits
+        WHERE key != ALL(v_sorted_keys)
+        ORDER BY expires_at ASC, last_updated ASC
+        LIMIT (v_needed_slots - v_evicted_count)
+      );
+    END IF;
   END IF;
 
   -- 9. All checks passed: commit updated timestamps atomically for all keys
@@ -259,9 +289,21 @@ BEGIN
 END;
 $$;
 
--- Bounded retention view: guarantees expired identifier digests are never exposed
-CREATE OR REPLACE VIEW public.active_contact_rate_limits AS
+-- Bounded retention view: guarantees expired identifier digests are never exposed.
+-- Configured with security_invoker = true so view queries enforce underlying table RLS policies,
+-- and explicitly restricted from public/anon/authenticated roles (granted only to service_role).
+CREATE OR REPLACE VIEW public.active_contact_rate_limits
+WITH (security_invoker = true) AS
   SELECT key, timestamps, last_updated, expires_at
   FROM public.contact_rate_limits
   WHERE expires_at >= clock_timestamp();
+
+-- Revoke all view permissions from public roles
+REVOKE ALL ON public.active_contact_rate_limits FROM PUBLIC;
+REVOKE ALL ON public.active_contact_rate_limits FROM anon;
+REVOKE ALL ON public.active_contact_rate_limits FROM authenticated;
+
+-- Grant SELECT exclusively to service_role (server-only credential)
+GRANT SELECT ON public.active_contact_rate_limits TO service_role;
+
 

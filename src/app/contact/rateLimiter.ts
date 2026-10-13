@@ -20,6 +20,44 @@ export const RATE_LIMIT_CONFIG = {
   MAX_STORE_SIZE: 1000, // Bounded capacity limit to prevent memory/storage exhaustion
 } as const;
 
+export const ADMISSION_LIMIT_CONFIG = {
+  WINDOW_MS: 60 * 1000, // 1 minute sliding window
+  MAX_ADMISSIONS_PER_IP: 15, // Max 15 submissions per minute per IP admission limit
+} as const;
+
+const admissionMap = new Map<string, number[]>();
+
+/**
+ * Independent abuse/WAF admission limit at the application boundary.
+ * Throttles rapid bursts from a single source connection before inquiry persistence.
+ */
+export function checkAdmissionLimit(
+  { ip }: { ip?: string },
+  now: number = Date.now()
+): RateLimitResult {
+  if (!ip || ip === 'unknown') {
+    return { allowed: true };
+  }
+  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+  const rawTimestamps = admissionMap.get(ip) || [];
+  const filtered = rawTimestamps.filter((ts) => ts > windowStart);
+  if (filtered.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
+    const retryAfter = Math.ceil((filtered[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+    return {
+      allowed: false,
+      retryAfterSeconds: retryAfter,
+      error: 'Too many inquiries received from your connection. Please wait a moment before trying again.',
+    };
+  }
+  filtered.push(now);
+  admissionMap.set(ip, filtered);
+  return { allowed: true };
+}
+
+export function resetAdmissionTracker(): void {
+  admissionMap.clear();
+}
+
 export interface RateLimitRecord {
   timestamps: number[];
   lastUpdated: number;
@@ -364,17 +402,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
         }
       }
 
-      // 2. Capacity saturation check for new keys
-      const currentKeys = Object.keys(data);
-      const newKeys = validKeys.filter((k) => !data[k]);
-      if (currentKeys.length + newKeys.length > this.maxStoreSize) {
-        return {
-          allowed: false,
-          error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-        };
-      }
-
-      // 3. Multi-key evaluation for burst cooldown and window quota
+      // 2. Multi-key evaluation for burst cooldown and window quota
       for (const key of validKeys) {
         const record = data[key];
         if (record && record.timestamps.length > 0) {
@@ -397,6 +425,54 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
               error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
             };
           }
+        }
+      }
+
+      // 3. Resilient capacity strategy for new keys:
+      // Prevent untrusted public submissions from globally exhausting the shared key budget
+      const currentKeys = Object.keys(data);
+      const newKeys = validKeys.filter((k) => !data[k]);
+      if (currentKeys.length + newKeys.length > this.maxStoreSize) {
+        const needed = currentKeys.length + newKeys.length - this.maxStoreSize;
+        const keysToEvict: string[] = [];
+        const eligibleEntries = Object.entries(data).filter(([k]) => !validKeys.includes(k));
+
+        // Phase 1: Evict un-throttled entries (single-use or low-frequency synthetic keys from rotated submissions)
+        // Strictly protects active throttled quotas (keys with >= maxPerWindow or within burst cooldown)
+        const unthrottledEntries = eligibleEntries
+          .filter(([, rec]) => {
+            const isThrottled = rec.timestamps.length >= this.maxPerWindow;
+            const inCooldown =
+              rec.timestamps.length > 0 &&
+              now - rec.timestamps[rec.timestamps.length - 1] < this.cooldownMs;
+            return !isThrottled && !inCooldown;
+          })
+          .sort((a, b) => {
+            if (a[1].timestamps.length !== b[1].timestamps.length) {
+              return a[1].timestamps.length - b[1].timestamps.length;
+            }
+            return a[1].lastUpdated - b[1].lastUpdated;
+          });
+
+        for (const [k] of unthrottledEntries) {
+          if (keysToEvict.length >= needed) break;
+          keysToEvict.push(k);
+        }
+
+        // Phase 2: If additional slots needed under extreme saturation, evict oldest entries
+        if (keysToEvict.length < needed) {
+          const remainingEntries = eligibleEntries
+            .filter(([k]) => !keysToEvict.includes(k))
+            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated);
+
+          for (const [k] of remainingEntries) {
+            if (keysToEvict.length >= needed) break;
+            keysToEvict.push(k);
+          }
+        }
+
+        for (const k of keysToEvict) {
+          delete data[k];
         }
       }
 
@@ -572,17 +648,7 @@ export class SharedRateLimiter implements RateLimitStore {
       }
     }
 
-    const newKeys = keys.filter((k) => !this.store.has(k));
-    if (newKeys.length > 0 && this.store.size + newKeys.length > this.maxStoreSize) {
-      this.pruneExpiredEntries(now);
-      if (this.store.size + newKeys.length > this.maxStoreSize) {
-        return {
-          allowed: false,
-          error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-        };
-      }
-    }
-
+    // 2. Multi-key quota and cooldown evaluation
     for (const key of keys) {
       const record = this.store.get(key);
       if (record && record.timestamps.length > 0) {
@@ -604,6 +670,56 @@ export class SharedRateLimiter implements RateLimitStore {
             retryAfterSeconds: retryAfter,
             error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
           };
+        }
+      }
+    }
+
+    // 3. Resilient capacity strategy for new keys:
+    // Prevent untrusted public submissions from globally exhausting the shared key budget
+    const newKeys = keys.filter((k) => !this.store.has(k));
+    if (newKeys.length > 0 && this.store.size + newKeys.length > this.maxStoreSize) {
+      this.pruneExpiredEntries(now);
+      if (this.store.size + newKeys.length > this.maxStoreSize) {
+        const needed = this.store.size + newKeys.length - this.maxStoreSize;
+        const keysToEvict: string[] = [];
+        const eligibleEntries = Array.from(this.store.entries()).filter(([k]) => !keys.includes(k));
+
+        // Phase 1: Evict un-throttled entries (single-use or low-frequency synthetic keys from rotated submissions)
+        // Strictly protects actively throttled quotas (keys with >= maxPerWindow or within burst cooldown)
+        const unthrottledEntries = eligibleEntries
+          .filter(([, rec]) => {
+            const isThrottled = rec.timestamps.length >= this.maxPerWindow;
+            const inCooldown =
+              rec.timestamps.length > 0 &&
+              now - rec.timestamps[rec.timestamps.length - 1] < this.cooldownMs;
+            return !isThrottled && !inCooldown;
+          })
+          .sort((a, b) => {
+            if (a[1].timestamps.length !== b[1].timestamps.length) {
+              return a[1].timestamps.length - b[1].timestamps.length;
+            }
+            return a[1].lastUpdated - b[1].lastUpdated;
+          });
+
+        for (const [k] of unthrottledEntries) {
+          if (keysToEvict.length >= needed) break;
+          keysToEvict.push(k);
+        }
+
+        // Phase 2: If additional slots needed under extreme saturation, evict oldest entries
+        if (keysToEvict.length < needed) {
+          const remainingEntries = eligibleEntries
+            .filter(([k]) => !keysToEvict.includes(k))
+            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated);
+
+          for (const [k] of remainingEntries) {
+            if (keysToEvict.length >= needed) break;
+            keysToEvict.push(k);
+          }
+        }
+
+        for (const k of keysToEvict) {
+          this.store.delete(k);
         }
       }
     }

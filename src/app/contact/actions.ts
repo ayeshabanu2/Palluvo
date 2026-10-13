@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/server';
 import { normalizeEmail } from '@/utils/format';
 import {
   CONTACT_FIELD_LIMITS,
+  checkAdmissionLimit,
   checkContactRateLimitMulti,
 } from './rateLimiter';
 
@@ -78,8 +79,13 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: `Message cannot exceed ${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters.` };
     }
 
-    // 2. Atomic Multi-Key Rate Limiting (enforcing both IP and email together atomically)
+    // 2. Independent Abuse/WAF Admission Limit & Atomic Multi-Key Rate Limiting
     const clientIp = await getClientIp();
+    const admissionCheck = checkAdmissionLimit({ ip: clientIp });
+    if (!admissionCheck.allowed) {
+      return { success: false, error: admissionCheck.error };
+    }
+
     const rateCheck = await checkContactRateLimitMulti({
       ip: clientIp,
       email,
