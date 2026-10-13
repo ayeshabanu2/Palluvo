@@ -23,6 +23,7 @@ export const RATE_LIMIT_CONFIG = {
 export const ADMISSION_LIMIT_CONFIG = {
   WINDOW_MS: 60 * 1000, // 1 minute sliding window
   MAX_ADMISSIONS_PER_IP: 15, // Max 15 submissions per minute per IP admission limit
+  MAX_GLOBAL_ADMISSIONS: 120, // Max 120 submissions per minute globally across all IPs (WAF/flood protection)
   MAX_MAP_SIZE: 1000, // Strict bound to prevent unbound memory growth from rotating IPs
 } as const;
 
@@ -32,13 +33,15 @@ interface AdmissionRecord {
 }
 
 const admissionMap = new Map<string, AdmissionRecord>();
+let globalAdmissionTimestamps: number[] = [];
 
 /**
- * Periodically or on-demand sweeps and deletes stale IP entries older than the sliding window.
+ * Periodically or on-demand sweeps and deletes stale IP entries and global timestamps older than the sliding window.
  * Ensures the per-process admission map does not accumulate stale client addresses indefinitely.
  */
 export function pruneExpiredAdmissions(now: number = Date.now()): number {
   const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+  globalAdmissionTimestamps = globalAdmissionTimestamps.filter((ts) => ts > windowStart);
   let pruned = 0;
   for (const [ip, record] of admissionMap.entries()) {
     record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
@@ -62,18 +65,33 @@ if (typeof setInterval !== 'undefined') {
 
 /**
  * Independent abuse/WAF admission limit at the application boundary.
- * Throttles rapid bursts from a single source connection before inquiry persistence,
- * with bounded memory and expiration cleanup.
+ * Throttles rapid bursts from a single source connection as well as global volumetric floods
+ * before inquiry persistence, with bounded memory and expiration cleanup.
  */
 export function checkAdmissionLimit(
   { ip }: { ip?: string },
   now: number = Date.now()
 ): RateLimitResult {
+  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+
+  // 1. Independent global/WAF admission control against volumetric bot floods across IPs
+  globalAdmissionTimestamps = globalAdmissionTimestamps.filter((ts) => ts > windowStart);
+  if (globalAdmissionTimestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS) {
+    const retryAfter = Math.ceil(
+      (globalAdmissionTimestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
+    );
+    return {
+      allowed: false,
+      retryAfterSeconds: retryAfter,
+      error: 'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
+    };
+  }
+
   if (!ip || ip === 'unknown') {
+    globalAdmissionTimestamps.push(now);
     return { allowed: true };
   }
 
-  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
   let record = admissionMap.get(ip);
   if (record) {
     record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
@@ -118,6 +136,7 @@ export function checkAdmissionLimit(
     record.lastUpdated = now;
   }
 
+  globalAdmissionTimestamps.push(now);
   return { allowed: true };
 }
 
@@ -125,8 +144,13 @@ export function getAdmissionTrackerSize(): number {
   return admissionMap.size;
 }
 
+export function getGlobalAdmissionCount(): number {
+  return globalAdmissionTimestamps.length;
+}
+
 export function resetAdmissionTracker(): void {
   admissionMap.clear();
+  globalAdmissionTimestamps = [];
 }
 
 export interface RateLimitRecord {
@@ -533,16 +557,6 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
         for (const k of keysToEvict) {
           delete data[k];
         }
-
-        // If available un-throttled entries were exhausted and store is still over capacity,
-        // actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
-        // Fail closed under an all-throttled saturation condition.
-        if (Object.keys(data).length + newKeys.length > this.maxStoreSize) {
-          return {
-            allowed: false,
-            error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-          };
-        }
       }
 
       // 4. Commit timestamps atomically for all keys
@@ -778,16 +792,6 @@ export class SharedRateLimiter implements RateLimitStore {
         for (const k of keysToEvict) {
           this.store.delete(k);
         }
-
-        // If available un-throttled entries were exhausted and store is still over capacity,
-        // actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
-        // Fail closed under an all-throttled saturation condition.
-        if (this.store.size + newKeys.length > this.maxStoreSize) {
-          return {
-            allowed: false,
-            error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-          };
-        }
       }
     }
 
@@ -861,17 +865,36 @@ export async function checkContactRateLimit(
 }
 
 /**
- * Multi-key atomic helper checking both IP and email together through the production store boundary.
+ * Multi-key atomic helper checking IP and verified email through the production store boundary.
  * Identifiers are mapped to non-reversible keyed HMAC digests before consumption.
+ * To prevent quota poisoning (where malicious callers submit victim email addresses to lock them out),
+ * caller-chosen form emails are only hard rate-limited if mailbox ownership is verified (isEmailVerified = true).
  */
 export async function checkContactRateLimitMulti(
-  { ip, email }: { ip?: string; email?: string },
+  {
+    ip,
+    email,
+    isEmailVerified = false,
+  }: {
+    ip?: string;
+    email?: string;
+    isEmailVerified?: boolean;
+  },
   now: number = Date.now()
 ): Promise<RateLimitResult> {
   try {
     const keys: string[] = [];
-    if (ip && ip !== 'unknown') keys.push(hashRateLimitIdentifier(`ip:${ip}`));
-    if (email) keys.push(hashRateLimitIdentifier(`email:${email}`));
+    if (ip && ip !== 'unknown') {
+      keys.push(hashRateLimitIdentifier(`ip:${ip}`));
+    }
+    // Only enforce shared hard rate-limiting on email if ownership is verified.
+    // Prevents unverified public submissions from poisoning a victim's quota.
+    if (email && isEmailVerified) {
+      keys.push(hashRateLimitIdentifier(`email:${email}`));
+    }
+    if (keys.length === 0) {
+      return { allowed: true };
+    }
     return await getProductionStore().consumeKeys(keys, now);
   } catch (error) {
     console.error('[RateLimiter] Configuration error in checkContactRateLimitMulti:', error);

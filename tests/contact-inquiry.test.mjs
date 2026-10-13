@@ -24,6 +24,7 @@ import {
   checkAdmissionLimit,
   pruneExpiredAdmissions,
   getAdmissionTrackerSize,
+  getGlobalAdmissionCount,
   resetAdmissionTracker,
 } from '../src/app/contact/rateLimiter.ts';
 
@@ -173,19 +174,19 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const now = 800000;
     const clientIp = '203.0.113.55';
 
-    // 1. Worker A receives request from clientIp with emailA via production store boundary
-    const resA = await checkContactRateLimitMulti({ ip: clientIp, email: 'alice@example.com' }, now);
+    // 1. Worker A receives request from clientIp with verified emailA via production store boundary
+    const resA = await checkContactRateLimitMulti({ ip: clientIp, email: 'alice@example.com', isEmailVerified: true }, now);
     assert.equal(resA.allowed, true);
 
     // 2. Worker B immediately receives request from same clientIp with different emailB
     // Must be rejected by shared IP burst cooldown across workers
-    const resB = await checkContactRateLimitMulti({ ip: clientIp, email: 'bob@example.com' }, now + 1000);
+    const resB = await checkContactRateLimitMulti({ ip: clientIp, email: 'bob@example.com', isEmailVerified: true }, now + 1000);
     assert.equal(resB.allowed, false, 'Worker B must enforce IP cooldown from Worker A');
     assert.match(resB.error, /wait a moment/i);
 
-    // 3. Worker B receives request with alice@example.com from different clientIp
+    // 3. Worker B receives request with verified alice@example.com from different clientIp
     // Must be rejected by shared email burst cooldown across workers
-    const resC = await checkContactRateLimitMulti({ ip: '198.51.100.99', email: 'alice@example.com' }, now + 1000);
+    const resC = await checkContactRateLimitMulti({ ip: '198.51.100.99', email: 'alice@example.com', isEmailVerified: true }, now + 1000);
     assert.equal(resC.allowed, false, 'Worker B must enforce email cooldown from Worker A');
     assert.match(resC.error, /wait a moment/i);
 
@@ -194,22 +195,22 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const targetEmail = 'shared-user@example.com';
     // Worker A consumes 2 slots
     timeCursor += 6000;
-    await checkContactRateLimitMulti({ ip: '10.0.0.1', email: targetEmail }, timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.1', email: targetEmail, isEmailVerified: true }, timeCursor);
     timeCursor += 6000;
-    await checkContactRateLimitMulti({ ip: '10.0.0.2', email: targetEmail }, timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.2', email: targetEmail, isEmailVerified: true }, timeCursor);
 
     // Worker B consumes 3 slots
     timeCursor += 6000;
-    await checkContactRateLimitMulti({ ip: '10.0.0.3', email: targetEmail }, timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.3', email: targetEmail, isEmailVerified: true }, timeCursor);
     timeCursor += 6000;
-    await checkContactRateLimitMulti({ ip: '10.0.0.4', email: targetEmail }, timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.4', email: targetEmail, isEmailVerified: true }, timeCursor);
     timeCursor += 6000;
-    await checkContactRateLimitMulti({ ip: '10.0.0.5', email: targetEmail }, timeCursor);
+    await checkContactRateLimitMulti({ ip: '10.0.0.5', email: targetEmail, isEmailVerified: true }, timeCursor);
 
     // 6th request across either worker must be rejected
     timeCursor += 6000;
-    const rejectedWorkerA = await checkContactRateLimitMulti({ ip: '10.0.0.6', email: targetEmail }, timeCursor);
-    const rejectedWorkerB = await checkContactRateLimitMulti({ ip: '10.0.0.7', email: targetEmail }, timeCursor);
+    const rejectedWorkerA = await checkContactRateLimitMulti({ ip: '10.0.0.6', email: targetEmail, isEmailVerified: true }, timeCursor);
+    const rejectedWorkerB = await checkContactRateLimitMulti({ ip: '10.0.0.7', email: targetEmail, isEmailVerified: true }, timeCursor);
 
     assert.equal(rejectedWorkerA.allowed, false);
     assert.equal(rejectedWorkerB.allowed, false);
@@ -831,8 +832,8 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     );
   });
 
-  test('REGRESSION [P2]: preserves active quota records during all-throttled store saturation without resetting penalties', async () => {
-    // SharedRateLimiter with a bounded size of 5 keys
+  test('REGRESSION [P2]: preserves active quota records during all-throttled store saturation while legitimate new visitors remain available', async () => {
+    // SharedRateLimiter with a bounded target size of 5 keys
     const limiter = new SharedRateLimiter({ maxStoreSize: 5 });
     const now = 300000;
 
@@ -847,12 +848,11 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     }
     assert.equal(limiter.getStoreSize(), 5, 'Store is at full capacity (5)');
 
-    // 2. An attacker or new visitor arrives with a 6th distinct key while all 5 slots are actively throttled.
-    // Under no circumstances should any of the 5 actively throttled rows be evicted!
-    const overflowAttempt = await limiter.consumeKeys(['ip:attacker-churn-key'], now + 40000);
-    assert.equal(overflowAttempt.allowed, false, 'Must fail closed when store is 100% full of actively throttled abusers');
-    assert.match(overflowAttempt.error, /high volume/i);
-    assert.equal(limiter.getStoreSize(), 5, 'Store size must strictly remain 5');
+    // 2. A new legitimate visitor arrives with a 6th distinct key while all 5 slots are actively throttled.
+    // Under no circumstances should any of the 5 actively throttled rows be evicted (resets penalty),
+    // and the legitimate visitor must REMAIN AVAILABLE rather than suffering service-wide lockout!
+    const legitVisitorAttempt = await limiter.consumeKeys(['ip:legit-new-visitor'], now + 40000);
+    assert.equal(legitVisitorAttempt.allowed, true, 'Legitimate new visitor must be admitted under all-throttled saturation');
 
     // 3. Verify ALL 5 original throttled keys were PRESERVED and their quotas were NOT reset
     for (let keyIdx = 0; keyIdx < 5; keyIdx++) {
@@ -871,7 +871,7 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     // Prepopulate 3 throttled keys (all slots full of throttled entries)
     for (let i = 0; i < 3; i++) {
-      dbStore.set(`ip:db-throttled-${i}`, {
+      dbStore.set(hashRateLimitIdentifier(`ip:db-throttled-${i}`), {
         timestamps: [now, now + 1000, now + 2000, now + 3000, now + 4000],
         lastUpdated: now + 4000,
       });
@@ -895,16 +895,16 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
           for (const k of evicted) {
             dbStore.delete(k);
           }
+          // Throttled keys are never evicted. Store admits new keys so public submissions cannot lock out users.
+        }
 
-          // If store is still over capacity because all remaining keys are actively throttled, fail closed!
-          if (dbStore.size + newKeys.length > capacityLimit) {
-            return {
-              data: {
-                allowed: false,
-                error: 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.',
-              },
-              error: null,
-            };
+        for (const k of keys) {
+          let rec = dbStore.get(k);
+          if (!rec) {
+            rec = { timestamps: [now + 40000], lastUpdated: now + 40000 };
+            dbStore.set(k, rec);
+          } else {
+            rec.timestamps.push(now + 40000);
           }
         }
 
@@ -913,12 +913,78 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     };
 
     const clientStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
-    const dbOverflowResult = await clientStore.consumeKeys(['ip:churn-new-key']);
-    assert.equal(dbOverflowResult.allowed, false);
-    assert.match(dbOverflowResult.error, /high volume/i);
-    assert.equal(dbStore.size, 3, 'No throttled keys in database table must be evicted');
-    assert.ok(dbStore.has('ip:db-throttled-0'));
-    assert.ok(dbStore.has('ip:db-throttled-1'));
-    assert.ok(dbStore.has('ip:db-throttled-2'));
+    const dbResult = await clientStore.consumeKeys(['ip:legit-db-visitor']);
+    assert.equal(dbResult.allowed, true, 'Legitimate new visitor admitted in database store');
+    assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-0')), 'Throttled entry 0 preserved');
+    assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-1')), 'Throttled entry 1 preserved');
+    assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-2')), 'Throttled entry 2 preserved');
+    assert.ok(dbStore.has(hashRateLimitIdentifier('ip:legit-db-visitor')), 'New visitor key recorded in database store');
+  });
+
+  test('[P2] independent global/WAF admission control throttles distributed flood across IPs', () => {
+    resetAdmissionTracker();
+    const now = 500000;
+
+    // Up to MAX_GLOBAL_ADMISSIONS (120) submissions per minute across multiple distinct IPs are permitted
+    for (let i = 0; i < ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS; i++) {
+      const res = checkAdmissionLimit({ ip: `198.51.100.${i % 250}` }, now + i * 10);
+      assert.equal(res.allowed, true, `Global admission ${i + 1} must be permitted`);
+    }
+    assert.equal(getGlobalAdmissionCount(), ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS);
+
+    // 121st submission from a brand-new IP is throttled at admission boundary due to global flood threshold
+    const floodRes = checkAdmissionLimit({ ip: '203.0.113.99' }, now + 2000);
+    assert.equal(floodRes.allowed, false, 'Distributed volumetric flood must be throttled by global admission limit');
+    assert.match(floodRes.error, /unusually high traffic/i);
+
+    // After admission window expires (60 seconds), global admission control recovers
+    const recoveredRes = checkAdmissionLimit({ ip: '203.0.113.99' }, now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 1000);
+    assert.equal(recoveredRes.allowed, true, 'Global admission control recovers after window');
+  });
+
+  test('REGRESSION [P2]: unverified form emails cannot poison victim quota across separate IP addresses', async () => {
+    const now = 600000;
+    const attackerIp = '198.51.100.1';
+    const victimIp = '203.0.113.88';
+    const victimEmail = 'victim@example.com';
+
+    // 1. Attacker sends 5 unverified inquiries using victim@example.com from attackerIp
+    for (let i = 0; i < 5; i++) {
+      const res = await checkContactRateLimitMulti(
+        { ip: attackerIp, email: victimEmail, isEmailVerified: false },
+        now + i * 6000
+      );
+      assert.equal(res.allowed, true, `Attacker submission ${i + 1} permitted until IP limit reached`);
+    }
+
+    // 2. Attacker's 6th request from attackerIp is throttled by their own IP quota
+    const attackerThrottled = await checkContactRateLimitMulti(
+      { ip: attackerIp, email: victimEmail, isEmailVerified: false },
+      now + 35000
+    );
+    assert.equal(attackerThrottled.allowed, false, 'Attacker IP must be throttled');
+
+    // 3. Genuine victim arrives from their own IP (victimIp) with victim@example.com
+    // Because unverified email is not hard-quota'd as a shared identity, victim must NOT be blocked!
+    const victimSubmission = await checkContactRateLimitMulti(
+      { ip: victimIp, email: victimEmail, isEmailVerified: false },
+      now + 40000
+    );
+    assert.equal(victimSubmission.allowed, true, 'Genuine victim must NOT be blocked by attacker submitting their email');
+
+    // 4. If an authenticated user with verified email submits across different IPs, verified email quota IS enforced
+    const verifiedUser = 'verified-customer@example.com';
+    for (let i = 0; i < 5; i++) {
+      await checkContactRateLimitMulti(
+        { ip: `10.20.30.${i}`, email: verifiedUser, isEmailVerified: true },
+        now + 50000 + i * 6000
+      );
+    }
+    const verifiedThrottled = await checkContactRateLimitMulti(
+      { ip: '10.20.30.99', email: verifiedUser, isEmailVerified: true },
+      now + 85000
+    );
+    assert.equal(verifiedThrottled.allowed, false, 'Verified email must enforce quota across IPs');
+    assert.match(verifiedThrottled.error, /too many inquiries/i);
   });
 });

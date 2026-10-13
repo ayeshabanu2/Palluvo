@@ -79,16 +79,30 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: `Message cannot exceed ${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters.` };
     }
 
-    // 2. Independent Abuse/WAF Admission Limit & Atomic Multi-Key Rate Limiting
+    // 2. Independent Abuse/WAF Admission Limit & Rate Limiting
     const clientIp = await getClientIp();
     const admissionCheck = checkAdmissionLimit({ ip: clientIp });
     if (!admissionCheck.allowed) {
       return { success: false, error: admissionCheck.error };
     }
 
+    // Check mailbox ownership verification via authenticated session.
+    // If the caller is authenticated and matches the form email, the email is verified.
+    // Unverified caller-chosen form emails must NOT be hard rate-limited as a shared identity,
+    // preventing an attacker from poisoning a victim's email quota.
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    const isEmailVerified = Boolean(
+      user?.email && normalizeEmail(user.email) === email
+    );
+
     const rateCheck = await checkContactRateLimitMulti({
       ip: clientIp,
       email,
+      isEmailVerified,
     });
 
     if (!rateCheck.allowed) {
@@ -96,11 +110,6 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
     }
 
     // 3. Database Persistence
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
     const inquiryRecord = {
       user_id: user?.id || null,
       name,

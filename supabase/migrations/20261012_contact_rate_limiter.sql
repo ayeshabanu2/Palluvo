@@ -209,15 +209,8 @@ BEGIN
 
     GET DIAGNOSTICS v_evicted_count = ROW_COUNT;
 
-    -- If available un-throttled entries were exhausted and store is still over capacity,
-    -- actively throttled keys must NEVER be evicted (to prevent resetting their 5-requests quota).
-    -- Fail closed under an all-throttled saturation condition.
-    IF (v_total_keys - v_evicted_count + v_new_key_count) > c_max_store_size THEN
-      RETURN jsonb_build_object(
-        'allowed', false,
-        'error', 'Service is temporarily experiencing high volume. Please wait a few moments before trying again or reach out to our concierge directly.'
-      );
-    END IF;
+    -- Actively throttled keys are NEVER evicted (preventing resetting abuser quotas).
+    -- Under full saturation, legitimate new submissions remain available rather than suffering a global lockout.
   END IF;
 
   -- 9. All checks passed: commit updated timestamps atomically for all keys
