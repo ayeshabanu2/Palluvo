@@ -1,8 +1,9 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { Worker } from 'node:worker_threads';
+import { fork } from 'node:child_process';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
 import os from 'node:os';
@@ -1979,6 +1980,153 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
         try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
       }
     } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: active takeover mutex is not reaped across multiprocess pause past stale threshold', async () => {
+    const testDir = path.join(os.tmpdir(), `test_takeover_mp_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const commitMutexPath = path.join(testDir, 'test.commit_lock');
+    const takeoverLockPath = `${commitMutexPath}.takeover`;
+    const pauseFlagPath = path.join(testDir, 'pause.flag');
+    fs.writeFileSync(pauseFlagPath, 'pause', 'utf8');
+
+    // 1. Plant an abandoned commit lock with dead owner PID
+    const deadOwnerId = 'dead-owner-original-uuid';
+    const deadPid = 99999999;
+    fs.writeFileSync(
+      commitMutexPath,
+      JSON.stringify({ pid: deadPid, ownerId: deadOwnerId, createdAt: Date.now() - 5000 }),
+      'utf8'
+    );
+    const pastTime = (Date.now() - 5000) / 1000;
+    fs.utimesSync(commitMutexPath, pastTime, pastTime);
+
+    // 2. Child process script that imports atomicTakeoverStaleLock from rateLimiter.ts
+    const rateLimiterUrl = pathToFileURL(path.resolve('./src/app/contact/rateLimiter.ts')).href;
+    const childScript = path.join(testDir, 'child_recoverer.mjs');
+    fs.writeFileSync(
+      childScript,
+      `
+import { atomicTakeoverStaleLock } from '${rateLimiterUrl}';
+import fs from 'node:fs';
+
+process.on('message', (msg) => {
+  if (msg.type === 'START_TAKEOVER') {
+    const { lockFilePath, ownerId, deadOwnerId, pauseFlagPath } = msg;
+    const newLockPath = lockFilePath + '.' + ownerId + '.new';
+    const newFd = fs.openSync(newLockPath, 'wx');
+    fs.writeFileSync(newFd, JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }), 'utf8');
+
+    const onAcquired = () => {
+      process.send({ type: 'TAKEOVER_ACQUIRED', pid: process.pid });
+      // Pause while flag file exists
+      while (fs.existsSync(pauseFlagPath)) {
+        const p = Date.now() + 10;
+        while (Date.now() < p) {}
+      }
+    };
+
+    const success = atomicTakeoverStaleLock(lockFilePath, newFd, newLockPath, deadOwnerId, onAcquired);
+    try { fs.closeSync(newFd); } catch {}
+    process.send({ type: 'TAKEOVER_COMPLETE', success });
+  }
+});
+`,
+      'utf8'
+    );
+
+    const child = fork(childScript);
+    try {
+      const childOwnerId = 'child-recoverer-1-uuid';
+      const childAcquiredPromise = new Promise((resolve) => {
+        child.on('message', (msg) => {
+          if (msg.type === 'TAKEOVER_ACQUIRED') resolve(msg);
+        });
+      });
+
+      child.send({
+        type: 'START_TAKEOVER',
+        lockFilePath: commitMutexPath,
+        ownerId: childOwnerId,
+        deadOwnerId,
+        pauseFlagPath,
+      });
+
+      const acquiredMsg = await childAcquiredPromise;
+      const childPid = acquiredMsg.pid;
+      assert.ok(typeof childPid === 'number' && childPid > 0);
+
+      // 3. Verify that takeoverLockPath was created and has child PID and owner metadata written immediately
+      assert.ok(fs.existsSync(takeoverLockPath), 'Takeover lock file must exist on disk');
+      const initialMeta = JSON.parse(fs.readFileSync(takeoverLockPath, 'utf8'));
+      assert.equal(initialMeta.pid, childPid, 'Takeover lock must record active child PID immediately');
+      assert.ok(initialMeta.ownerId, 'Takeover lock must record ownerId');
+
+      // 4. In parent process (separate OS process), verify that isLockOwnerAlive returns true
+      assert.equal(
+        isLockOwnerAlive(takeoverLockPath),
+        true,
+        'Parent OS process must identify that takeover lock owner is actively alive'
+      );
+
+      // 5. Artificially age the takeover lock past the 2000ms stale threshold (e.g. 5000ms in the past)
+      fs.utimesSync(takeoverLockPath, pastTime, pastTime);
+      assert.ok(
+        Date.now() - fs.statSync(takeoverLockPath).mtimeMs > 2000,
+        'Takeover lock mtime must be older than 2s'
+      );
+
+      // 6. Crucial check: Even though mtime is older than 2s, because Child Process 1 is alive,
+      // isLockOwnerAlive MUST still return true! Stale recovery condition is FALSE!
+      assert.equal(
+        isLockOwnerAlive(takeoverLockPath),
+        true,
+        'Takeover lock must NOT be considered dead while child process is alive'
+      );
+
+      // 7. Process 2 (Parent Process) attempts takeover while Child Process 1 is paused past the stale threshold:
+      const parentOwnerId = 'parent-recoverer-2-uuid';
+      const parentNewPath = `${commitMutexPath}.${parentOwnerId}.new`;
+      const parentFd = fs.openSync(parentNewPath, 'wx');
+      fs.writeFileSync(parentFd, JSON.stringify({ pid: process.pid, ownerId: parentOwnerId, createdAt: Date.now() }), 'utf8');
+
+      let parentTakeoverResult = false;
+      try {
+        parentTakeoverResult = atomicTakeoverStaleLock(commitMutexPath, parentFd, parentNewPath, deadOwnerId);
+      } finally {
+        try { fs.closeSync(parentFd); } catch {}
+        try { if (fs.existsSync(parentNewPath)) fs.unlinkSync(parentNewPath); } catch {}
+      }
+
+      // Assert parent takeover failed and could NOT reap the active takeover lock
+      assert.equal(parentTakeoverResult, false, 'Parent takeover must fail; active takeover lock must not be reaped');
+
+      // CRITICAL ASSERTION: The takeover lock file must STILL be intact and owned by Child Process 1!
+      assert.ok(fs.existsSync(takeoverLockPath), 'Takeover lock file must not be deleted by competing recoverer');
+      const preservedMeta = JSON.parse(fs.readFileSync(takeoverLockPath, 'utf8'));
+      assert.equal(preservedMeta.pid, childPid, 'Takeover lock must remain owned by Child Process 1');
+
+      // 8. Resume Child Process 1 by unlinking pause flag file
+      const childCompletePromise = new Promise((resolve) => {
+        child.on('message', (msg) => {
+          if (msg.type === 'TAKEOVER_COMPLETE') resolve(msg);
+        });
+      });
+      fs.unlinkSync(pauseFlagPath);
+
+      const completeMsg = await childCompletePromise;
+      assert.equal(completeMsg.success, true, 'Child process must successfully complete takeover');
+
+      // 9. Verify commitMutexPath is now owned by Child Process 1 and is live
+      const finalCommitMeta = JSON.parse(fs.readFileSync(commitMutexPath, 'utf8'));
+      assert.equal(finalCommitMeta.ownerId, childOwnerId, 'Commit lock must be owned by Child Process 1');
+      assert.equal(isLockOwnerAlive(commitMutexPath), true, 'Commit lock must now be live');
+    } finally {
+      child.kill();
       try {
         fs.rmSync(testDir, { recursive: true, force: true });
       } catch {}

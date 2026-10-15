@@ -277,32 +277,77 @@ export function acquireStaleReclaimMutex(
  * Guarantees that even if two recoverers both validated a dead lock and paused after their stale check,
  * exactly one recoverer can execute the takeover, and the delayed recoverer is strictly prevented
  * from overwriting the newly live lock.
+ *
+ * Takeover operations are serialized under an exclusive takeover mutex (${lockFilePath}.takeover).
+ * The takeover mutex records owner/PID metadata immediately upon creation so separate OS processes
+ * do not falsely identify an active held takeover mutex as stale. Stale takeover mutexes are reclaimed
+ * exclusively using a ticketed election protocol rather than un-fenced unlinks, and takeover holders
+ * verify ownership fencing before performing the commit rename.
  */
 export function atomicTakeoverStaleLock(
   lockFilePath: string,
   newFd: number,
   newLockPath: string,
-  expectedDeadOwnerId?: string
+  expectedDeadOwnerId?: string,
+  onTakeoverAcquired?: () => void
 ): boolean {
   const takeoverLockPath = `${lockFilePath}.takeover`;
   let takeoverFd: number | null = null;
+  const takeoverOwnerId = crypto.randomUUID();
   const startWait = Date.now();
 
-  while (takeoverFd === null && Date.now() - startWait < 2000) {
+  while (takeoverFd === null && Date.now() - startWait < 3000) {
     try {
       takeoverFd = fs.openSync(takeoverLockPath, 'wx');
+      // CRITICAL: Write owner and PID metadata immediately so that other processes
+      // checking isLockOwnerAlive do not treat an active held takeover mutex as stale
+      fs.writeFileSync(
+        takeoverFd,
+        JSON.stringify({ pid: process.pid, ownerId: takeoverOwnerId, createdAt: Date.now() }),
+        'utf8'
+      );
     } catch (err: any) {
       try {
         if (fs.existsSync(takeoverLockPath)) {
           const tStat = fs.statSync(takeoverLockPath);
+          // Only attempt recovery if the takeover mutex is older than 2s AND owner process is demonstrably dead
           if (Date.now() - tStat.mtimeMs > 2000 && !isLockOwnerAlive(takeoverLockPath)) {
-            try { fs.unlinkSync(takeoverLockPath); } catch {}
-            try { takeoverFd = fs.openSync(takeoverLockPath, 'wx'); } catch {}
+            // Reclaim only with an owner-fenced atomic ticketed protocol
+            const reclaim = acquireStaleReclaimMutex(takeoverLockPath, takeoverOwnerId);
+            if (reclaim.won) {
+              try {
+                if (fs.existsSync(takeoverLockPath)) {
+                  const curTStat = fs.statSync(takeoverLockPath);
+                  if (Date.now() - curTStat.mtimeMs > 2000 && !isLockOwnerAlive(takeoverLockPath)) {
+                    const newTakeoverPath = `${takeoverLockPath}.${takeoverOwnerId}.new`;
+                    try {
+                      const nTfd = fs.openSync(newTakeoverPath, 'wx');
+                      fs.writeFileSync(
+                        nTfd,
+                        JSON.stringify({ pid: process.pid, ownerId: takeoverOwnerId, createdAt: Date.now() }),
+                        'utf8'
+                      );
+                      if (!isLockOwnerAlive(takeoverLockPath)) {
+                        fs.renameSync(newTakeoverPath, takeoverLockPath);
+                        takeoverFd = nTfd;
+                      } else {
+                        try { fs.closeSync(nTfd); } catch {}
+                        try { if (fs.existsSync(newTakeoverPath)) fs.unlinkSync(newTakeoverPath); } catch {}
+                      }
+                    } catch {
+                      try { if (fs.existsSync(newTakeoverPath)) fs.unlinkSync(newTakeoverPath); } catch {}
+                    }
+                  }
+                }
+              } finally {
+                reclaim.cleanup();
+              }
+            }
           }
         }
       } catch {}
       if (takeoverFd !== null) break;
-      const pauseUntil = Date.now() + 5;
+      const pauseUntil = Date.now() + 10;
       while (Date.now() < pauseUntil) {}
     }
   }
@@ -312,6 +357,30 @@ export function atomicTakeoverStaleLock(
   }
 
   try {
+    // Optional testing hook invoked while holding the takeover lock
+    if (onTakeoverAcquired) {
+      onTakeoverAcquired();
+    }
+
+    // Owner-fenced check: Verify that our takeover mutex descriptor is still valid
+    // and that our takeover ownership is recorded on disk before touching lockFilePath
+    try {
+      const tFdStat = fs.fstatSync(takeoverFd);
+      if (tFdStat.nlink === 0) {
+        return false;
+      }
+      if (!fs.existsSync(takeoverLockPath)) {
+        return false;
+      }
+      const curContent = fs.readFileSync(takeoverLockPath, 'utf8');
+      const curMeta = JSON.parse(curContent);
+      if (curMeta?.ownerId !== takeoverOwnerId || curMeta?.pid !== process.pid) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+
     // Under exclusive takeover serialization:
     // If lock file does not exist, rename immediately
     if (!fs.existsSync(lockFilePath)) {
@@ -335,6 +404,20 @@ export function atomicTakeoverStaleLock(
       } catch {}
     }
 
+    // Final fence check before modifying target lock file:
+    // Ensure our takeoverFd is still linked and we are still the takeover owner
+    try {
+      const tFdStat = fs.fstatSync(takeoverFd);
+      if (tFdStat.nlink === 0) return false;
+      const curContent = fs.readFileSync(takeoverLockPath, 'utf8');
+      const curMeta = JSON.parse(curContent);
+      if (curMeta?.ownerId !== takeoverOwnerId || curMeta?.pid !== process.pid) {
+        return false;
+      }
+    } catch {
+      return false;
+    }
+
     // Still demonstrably dead and unchanged: atomically rename over the stale lock
     fs.renameSync(newLockPath, lockFilePath);
     return true;
@@ -343,7 +426,20 @@ export function atomicTakeoverStaleLock(
   } finally {
     if (takeoverFd !== null) {
       try { fs.closeSync(takeoverFd); } catch {}
-      try { if (fs.existsSync(takeoverLockPath)) fs.unlinkSync(takeoverLockPath); } catch {}
+      // Guarded release: ONLY unlink if WE still own the takeover lock file on disk
+      try {
+        if (fs.existsSync(takeoverLockPath)) {
+          const content = fs.readFileSync(takeoverLockPath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId === takeoverOwnerId && meta?.pid === process.pid) {
+              fs.unlinkSync(takeoverLockPath);
+            }
+          } catch {
+            fs.unlinkSync(takeoverLockPath);
+          }
+        }
+      } catch {}
     }
   }
 }
