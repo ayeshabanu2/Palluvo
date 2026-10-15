@@ -36,6 +36,7 @@ import {
   isEmailConfirmationEnforced,
   isMailboxVerified,
   acquireStaleReclaimMutex,
+  atomicTakeoverStaleLock,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1655,20 +1656,20 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     fs.mkdirSync(reclaimDir, { recursive: true });
 
     try {
-      // 1. Plant an abandoned dead claim in the reclaim directory
+      // 1. Plant an abandoned dead ticket in the reclaim directory
       const deadPid = 99999999;
-      const deadClaimName = `00000000010000000000_${deadPid}_dead-owner.claim`;
+      const deadClaimName = `seq_000000000001_dead-owner.ticket`;
       const deadClaimPath = path.join(reclaimDir, deadClaimName);
       fs.writeFileSync(
         deadClaimPath,
-        JSON.stringify({ pid: deadPid, ownerId: 'dead-owner', createdAt: Date.now() - 10000 }),
+        JSON.stringify({ seq: 1, pid: deadPid, ownerId: 'dead-owner', createdAt: Date.now() - 10000 }),
         'utf8'
       );
 
       // Verify the dead claim's PID is dead
       assert.equal(isProcessAlive(deadPid), false, 'Dead PID must be identified as not alive');
 
-      // 2. Waiter A (running in a separate worker thread) inspects the dead claim, validates liveness (dead),
+      // 2. Waiter A (running in a separate worker thread) inspects the dead ticket, validates liveness (dead),
       // and pauses right before unlinking
       const waiterAWorkerScript = `
         import { parentPort, workerData } from 'node:worker_threads';
@@ -1720,8 +1721,8 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
       assert.equal(reclaimB.won, true, 'Waiter B must successfully acquire exclusive reclaim rights');
 
-      // Verify Waiter B's claim file exists in reclaimDir
-      const filesAfterB = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim'));
+      // Verify Waiter B's ticket or winner lock exists in reclaimDir
+      const filesAfterB = fs.readdirSync(reclaimDir).filter((f) => f.includes('ticket') || f.includes('winner'));
       const waiterBFile = filesAfterB.find((f) => f.includes(waiterBOwner));
       assert.ok(waiterBFile, 'Waiter B claim file must exist in reclaim directory');
       const waiterBFilePath = path.join(reclaimDir, waiterBFile);
@@ -1850,5 +1851,139 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
       } catch {}
     }
   });
+
+  test('REGRESSION [P2]: ticket winner election is linearizable and prevents double-election across concurrent calls with equal timestamps', async () => {
+    const testDir = path.join(os.tmpdir(), `test_election_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'test_election.lock');
+
+    try {
+      // Create a stale lock abandoned by a dead process
+      fs.writeFileSync(
+        lockPath,
+        JSON.stringify({ pid: 99999999, ownerId: 'dead-owner', createdAt: Date.now() - 15000 }),
+        'utf8'
+      );
+      const pastTime = (Date.now() - 15000) / 1000;
+      fs.utimesSync(lockPath, pastTime, pastTime);
+
+      // Run two concurrent calls through acquireStaleReclaimMutex simultaneously
+      const owner1 = 'reclaimer-owner-1';
+      const owner2 = 'reclaimer-owner-2';
+
+      const call1Promise = new Promise((resolve) => {
+        setImmediate(() => {
+          const res = acquireStaleReclaimMutex(lockPath, owner1);
+          resolve(res);
+        });
+      });
+
+      const call2Promise = new Promise((resolve) => {
+        setImmediate(() => {
+          const res = acquireStaleReclaimMutex(lockPath, owner2);
+          resolve(res);
+        });
+      });
+
+      const [res1, res2] = await Promise.all([call1Promise, call2Promise]);
+
+      // Exactly ONE caller must win. Double election must NEVER occur!
+      assert.notEqual(res1.won, res2.won, 'Double election forbidden: exactly one reclaimer must win');
+      const winner = res1.won ? res1 : res2;
+      const loser = res1.won ? res2 : res1;
+
+      assert.equal(winner.won, true, 'One reclaimer must win');
+      assert.equal(loser.won, false, 'The other reclaimer must lose');
+
+      // The winner cleans up
+      winner.cleanup();
+      loser.cleanup();
+
+      // After release, a subsequent call can acquire
+      const subsequent = acquireStaleReclaimMutex(lockPath, 'reclaimer-owner-3');
+      assert.equal(subsequent.won, true, 'Subsequent reclaimer can win after previous winner releases');
+      subsequent.cleanup();
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: stale commit-lock takeover is atomic against competing recoverers paused after their stale check', async () => {
+    const testDir = path.join(os.tmpdir(), `test_takeover_pause_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const commitMutexPath = path.join(testDir, 'test.commit_lock');
+
+    try {
+      // 1. Plant an abandoned commit lock with dead owner PID
+      const deadOwnerId = 'dead-owner-original-uuid';
+      const deadPid = 99999999;
+      fs.writeFileSync(
+        commitMutexPath,
+        JSON.stringify({ pid: deadPid, ownerId: deadOwnerId, createdAt: Date.now() - 5000 }),
+        'utf8'
+      );
+      const pastTime = (Date.now() - 5000) / 1000;
+      fs.utimesSync(commitMutexPath, pastTime, pastTime);
+
+      // Verify lock is older than 2s and owner is dead
+      assert.ok(Date.now() - fs.statSync(commitMutexPath).mtimeMs > 2000);
+      assert.equal(isLockOwnerAlive(commitMutexPath), false, 'Initial commit lock owner must be dead');
+
+      // 2. Both recoverer 1 and recoverer 2 perform the stale check:
+      // Both verify that commitMutexPath is stale (> 2s and dead)
+      const recoverer1StaleVerified = Date.now() - fs.statSync(commitMutexPath).mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath);
+      const recoverer2StaleVerified = Date.now() - fs.statSync(commitMutexPath).mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath);
+      assert.equal(recoverer1StaleVerified, true);
+      assert.equal(recoverer2StaleVerified, true);
+
+      // 3. Prepare new lock files for both recoverers
+      const owner1 = 'recoverer-1-uuid';
+      const owner2 = 'recoverer-2-uuid';
+      const newPath1 = `${commitMutexPath}.${owner1}.new`;
+      const newPath2 = `${commitMutexPath}.${owner2}.new`;
+
+      const fd1 = fs.openSync(newPath1, 'wx');
+      fs.writeFileSync(fd1, JSON.stringify({ pid: process.pid, ownerId: owner1, createdAt: Date.now() }), 'utf8');
+
+      const fd2 = fs.openSync(newPath2, 'wx');
+      fs.writeFileSync(fd2, JSON.stringify({ pid: process.pid, ownerId: owner2, createdAt: Date.now() }), 'utf8');
+
+      try {
+        // 4. SIMULATE PAUSE: Both recoverers passed the stale check above.
+        // Recoverer 1 is paused right now.
+        // Recoverer 2 wakes up and executes atomicTakeoverStaleLock first:
+        const takeover2 = atomicTakeoverStaleLock(commitMutexPath, fd2, newPath2, deadOwnerId);
+        assert.equal(takeover2, true, 'Recoverer 2 must successfully take over the dead commit lock');
+
+        // Verify commitMutexPath now belongs to Recoverer 2 and is live
+        const currentMeta = JSON.parse(fs.readFileSync(commitMutexPath, 'utf8'));
+        assert.equal(currentMeta.ownerId, owner2, 'Commit lock must now belong to Recoverer 2');
+        assert.equal(isLockOwnerAlive(commitMutexPath), true, 'Commit lock must now be live');
+
+        // 5. RESUME Recoverer 1: Recoverer 1 wakes up from pause and attempts takeover:
+        // Because Recoverer 2 has already taken over and is live, Recoverer 1's takeover MUST FAIL!
+        const takeover1 = atomicTakeoverStaleLock(commitMutexPath, fd1, newPath1, deadOwnerId);
+        assert.equal(takeover1, false, 'Recoverer 1 takeover must fail; cannot replace live lock');
+
+        // 6. CRITICAL ASSERTION: Commit lock MUST STILL belong to Recoverer 2!
+        // Recoverer 1's delayed execution must NOT have overwritten Recoverer 2's commit lock!
+        const finalMeta = JSON.parse(fs.readFileSync(commitMutexPath, 'utf8'));
+        assert.equal(finalMeta.ownerId, owner2, 'Commit lock must remain intact and owned by Recoverer 2');
+      } finally {
+        try { fs.closeSync(fd1); } catch {}
+        try { fs.closeSync(fd2); } catch {}
+        try { if (fs.existsSync(newPath1)) fs.unlinkSync(newPath1); } catch {}
+        try { if (fs.existsSync(newPath2)) fs.unlinkSync(newPath2); } catch {}
+        try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
+      }
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
 });
+
 

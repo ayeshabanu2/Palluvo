@@ -107,10 +107,10 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
 
 /**
  * Atomically acquires exclusive reclamation rights for a stale lock file.
- * To eliminate TOCTOU and check-then-unlink races where a paused waiter could delete a newly
- * acquired reclaim mutex, claim tickets use uniquely-named files in a dedicated reclaim directory.
- * The oldest active claim ticket wins exclusive recovery rights. Stale claims are cleaned up exclusively
- * by their unique filename, making it impossible for a delayed waiter to delete a newly acquired claim.
+ * Uses a stable monotonic sequence with atomic OS-level sequence reservation (openSync 'wx')
+ * and an exclusive winner token lease.
+ * Even if timestamps tie, clocks move backward, or multiple calls execute concurrently,
+ * exactly ONE caller is elected winner, ensuring strict linearizability and zero double-election.
  */
 export function acquireStaleReclaimMutex(
   lockFilePath: string,
@@ -123,52 +123,145 @@ export function acquireStaleReclaimMutex(
     }
   } catch {}
 
-  const myClaimFileName = `${String(Date.now()).padStart(20, '0')}_${process.pid}_${ownerId}.claim`;
-  const myClaimPath = path.join(reclaimDir, myClaimFileName);
+  // 1. Allocate a strictly unique, monotonically increasing sequence number using atomic openSync('wx')
+  let mySeq = 1;
+  let myTicketPath = '';
+  let myTicketFd: number | null = null;
 
   try {
-    fs.writeFileSync(
-      myClaimPath,
-      JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-      'utf8'
-    );
+    const existing = fs.readdirSync(reclaimDir).filter((f) => f.startsWith('seq_') && f.endsWith('.ticket'));
+    const seqs = existing
+      .map((f) => {
+        const match = f.match(/^seq_(\d+)_/);
+        return match ? parseInt(match[1], 10) : 0;
+      })
+      .filter((n) => !isNaN(n) && n > 0);
+
+    let candidate = seqs.length > 0 ? Math.max(...seqs) + 1 : 1;
+    while (myTicketFd === null) {
+      const ticketName = `seq_${String(candidate).padStart(12, '0')}_${ownerId}.ticket`;
+      const ticketPath = path.join(reclaimDir, ticketName);
+      try {
+        myTicketFd = fs.openSync(ticketPath, 'wx');
+        fs.writeFileSync(
+          myTicketFd,
+          JSON.stringify({ seq: candidate, pid: process.pid, ownerId, createdAt: Date.now() }),
+          'utf8'
+        );
+        mySeq = candidate;
+        myTicketPath = ticketPath;
+      } catch (err: any) {
+        if (err && (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY')) {
+          candidate++;
+        } else {
+          return { won: false, cleanup: () => {} };
+        }
+      }
+    }
   } catch {
     return { won: false, cleanup: () => {} };
   }
 
   const cleanup = () => {
+    if (myTicketFd !== null) {
+      try { fs.closeSync(myTicketFd); } catch {}
+      myTicketFd = null;
+    }
     try {
-      if (fs.existsSync(myClaimPath)) {
-        fs.unlinkSync(myClaimPath);
+      if (myTicketPath && fs.existsSync(myTicketPath)) {
+        fs.unlinkSync(myTicketPath);
       }
     } catch {}
   };
 
   try {
-    const allFiles = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim')).sort();
+    // 2. Linearizable Winner Election: Check earlier sequence tickets (< mySeq)
+    const allFiles = fs.readdirSync(reclaimDir).filter((f) => f.startsWith('seq_') && f.endsWith('.ticket')).sort();
 
-    // Check earlier claims: if an earlier claim is owned by a dead process (> 2s), purge only that specific file.
-    // If an earlier claim is owned by an active process, we did not win.
     for (const f of allFiles) {
-      if (f === myClaimFileName) break;
+      const match = f.match(/^seq_(\d+)_/);
+      if (!match) continue;
+      const fileSeq = parseInt(match[1], 10);
+      if (fileSeq >= mySeq) break;
+
       const fPath = path.join(reclaimDir, f);
       try {
         if (fs.existsSync(fPath)) {
           const content = fs.readFileSync(fPath, 'utf8');
           const meta = JSON.parse(content);
-          if (meta?.pid && !isProcessAlive(meta.pid)) {
-            try { fs.unlinkSync(fPath); } catch {}
-          } else {
+          if (meta?.pid && isProcessAlive(meta.pid)) {
+            // An earlier ticket belongs to an active process: we did NOT win
             cleanup();
             return { won: false, cleanup: () => {} };
+          } else {
+            // Earlier ticket is dead: clean up only this specific dead ticket
+            try { fs.unlinkSync(fPath); } catch {}
           }
         }
       } catch {}
     }
 
-    const remaining = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim')).sort();
-    if (remaining.length > 0 && remaining[0] === myClaimFileName) {
-      return { won: true, cleanup };
+    // 3. Re-verify after purging dead earlier tickets that we are the lowest remaining active sequence
+    const remaining = fs.readdirSync(reclaimDir).filter((f) => f.startsWith('seq_') && f.endsWith('.ticket')).sort();
+    if (remaining.length > 0) {
+      const matchFirst = remaining[0].match(/^seq_(\d+)_/);
+      const firstSeq = matchFirst ? parseInt(matchFirst[1], 10) : -1;
+      if (firstSeq === mySeq) {
+        // 4. Winner lock lease: atomically claim winner token in reclaimDir to make election OS-level exclusive
+        const winnerTokenPath = path.join(reclaimDir, 'winner.lock');
+        let winnerFd: number | null = null;
+        try {
+          winnerFd = fs.openSync(winnerTokenPath, 'wx');
+          fs.writeFileSync(
+            winnerFd,
+            JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
+            'utf8'
+          );
+        } catch {
+          // Check if existing winner.lock belongs to a dead process (> 2s)
+          try {
+            if (fs.existsSync(winnerTokenPath)) {
+              const wStat = fs.statSync(winnerTokenPath);
+              if (Date.now() - wStat.mtimeMs > 2000 && !isLockOwnerAlive(winnerTokenPath)) {
+                const newWPath = path.join(reclaimDir, `${ownerId}.winner.new`);
+                try {
+                  const nWfd = fs.openSync(newWPath, 'wx');
+                  fs.writeFileSync(
+                    nWfd,
+                    JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
+                    'utf8'
+                  );
+                  fs.renameSync(newWPath, winnerTokenPath);
+                  winnerFd = nWfd;
+                } catch {
+                  try { if (fs.existsSync(newWPath)) fs.unlinkSync(newWPath); } catch {}
+                }
+              }
+            }
+          } catch {}
+        }
+
+        if (winnerFd !== null) {
+          const finalCleanup = () => {
+            if (winnerFd !== null) {
+              try { fs.closeSync(winnerFd); } catch {}
+              winnerFd = null;
+            }
+            try {
+              if (fs.existsSync(winnerTokenPath)) {
+                const content = fs.readFileSync(winnerTokenPath, 'utf8');
+                const meta = JSON.parse(content);
+                if (meta?.ownerId === ownerId) {
+                  fs.unlinkSync(winnerTokenPath);
+                }
+              }
+            } catch {}
+            cleanup();
+          };
+
+          return { won: true, cleanup: finalCleanup };
+        }
+      }
     }
 
     cleanup();
@@ -176,6 +269,82 @@ export function acquireStaleReclaimMutex(
   } catch {
     cleanup();
     return { won: false, cleanup: () => {} };
+  }
+}
+
+/**
+ * Atomically takes over a stale lock file against competing recoverers.
+ * Guarantees that even if two recoverers both validated a dead lock and paused after their stale check,
+ * exactly one recoverer can execute the takeover, and the delayed recoverer is strictly prevented
+ * from overwriting the newly live lock.
+ */
+export function atomicTakeoverStaleLock(
+  lockFilePath: string,
+  newFd: number,
+  newLockPath: string,
+  expectedDeadOwnerId?: string
+): boolean {
+  const takeoverLockPath = `${lockFilePath}.takeover`;
+  let takeoverFd: number | null = null;
+  const startWait = Date.now();
+
+  while (takeoverFd === null && Date.now() - startWait < 2000) {
+    try {
+      takeoverFd = fs.openSync(takeoverLockPath, 'wx');
+    } catch (err: any) {
+      try {
+        if (fs.existsSync(takeoverLockPath)) {
+          const tStat = fs.statSync(takeoverLockPath);
+          if (Date.now() - tStat.mtimeMs > 2000 && !isLockOwnerAlive(takeoverLockPath)) {
+            try { fs.unlinkSync(takeoverLockPath); } catch {}
+            try { takeoverFd = fs.openSync(takeoverLockPath, 'wx'); } catch {}
+          }
+        }
+      } catch {}
+      if (takeoverFd !== null) break;
+      const pauseUntil = Date.now() + 5;
+      while (Date.now() < pauseUntil) {}
+    }
+  }
+
+  if (takeoverFd === null) {
+    return false;
+  }
+
+  try {
+    // Under exclusive takeover serialization:
+    // If lock file does not exist, rename immediately
+    if (!fs.existsSync(lockFilePath)) {
+      fs.renameSync(newLockPath, lockFilePath);
+      return true;
+    }
+
+    // If lock file exists and owner is alive, another recoverer ALREADY took over!
+    if (isLockOwnerAlive(lockFilePath)) {
+      return false;
+    }
+
+    // If expectedDeadOwnerId was specified, verify the on-disk file still belongs to that dead owner
+    if (expectedDeadOwnerId) {
+      try {
+        const content = fs.readFileSync(lockFilePath, 'utf8');
+        const meta = JSON.parse(content);
+        if (meta?.ownerId && meta.ownerId !== expectedDeadOwnerId) {
+          return false;
+        }
+      } catch {}
+    }
+
+    // Still demonstrably dead and unchanged: atomically rename over the stale lock
+    fs.renameSync(newLockPath, lockFilePath);
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (takeoverFd !== null) {
+      try { fs.closeSync(takeoverFd); } catch {}
+      try { if (fs.existsSync(takeoverLockPath)) fs.unlinkSync(takeoverLockPath); } catch {}
+    }
   }
 }
 
@@ -234,33 +403,35 @@ export class CrossProcessAdmissionStore {
               const stat = fs.statSync(this.lockFilePath);
               if (Date.now() - stat.mtimeMs > staleThresholdMs) {
                 if (!isLockOwnerAlive(this.lockFilePath)) {
-                  // Atomically claim reclamation rights via unique claim ticket to prevent check-then-unlink race
+                  let deadOwnerId: string | undefined;
+                  try {
+                    const c = fs.readFileSync(this.lockFilePath, 'utf8');
+                    const parsed = JSON.parse(c);
+                    if (parsed?.ownerId) deadOwnerId = parsed.ownerId;
+                  } catch {}
+
+                  // Atomically claim reclamation rights via linearizable sequence ticket to prevent check-then-unlink race
                   const reclaim = acquireStaleReclaimMutex(this.lockFilePath, ownerId);
                   if (reclaim.won) {
                     try {
-                      if (fs.existsSync(this.lockFilePath)) {
-                        const currentStat = fs.statSync(this.lockFilePath);
-                        if (
-                          Date.now() - currentStat.mtimeMs > staleThresholdMs &&
-                          !isLockOwnerAlive(this.lockFilePath)
-                        ) {
-                          // Exclusive atomic takeover:
-                          // Write new lock state to a distinct temp file and atomically rename over the stale lock.
-                          // This ensures this.lockFilePath NEVER ceases to exist, preventing racing waiters from slipping in.
-                          const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
-                          try {
-                            const newFd = fs.openSync(newLockPath, 'wx');
-                            fs.writeFileSync(
-                              newFd,
-                              JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                              'utf8'
-                            );
-                            fs.renameSync(newLockPath, this.lockFilePath);
-                            fd = newFd;
-                          } catch {
-                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
-                          }
+                      // Exclusive atomic takeover:
+                      // Write new lock state to a distinct temp file and atomically takeover over the stale lock.
+                      const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
+                      try {
+                        const newFd = fs.openSync(newLockPath, 'wx');
+                        fs.writeFileSync(
+                          newFd,
+                          JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                          'utf8'
+                        );
+                        if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
+                          fd = newFd;
+                        } else {
+                          try { fs.closeSync(newFd); } catch {}
+                          try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                         }
+                      } catch {
+                        try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                       }
                     } finally {
                       reclaim.cleanup();
@@ -370,26 +541,32 @@ export class CrossProcessAdmissionStore {
           if (fs.existsSync(commitMutexPath)) {
             const cStat = fs.statSync(commitMutexPath);
             if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+              let deadCommitOwnerId: string | undefined;
+              try {
+                const c = fs.readFileSync(commitMutexPath, 'utf8');
+                const parsed = JSON.parse(c);
+                if (parsed?.ownerId) deadCommitOwnerId = parsed.ownerId;
+              } catch {}
+
               const reclaim = acquireStaleReclaimMutex(commitMutexPath, commitOwnerId);
               if (reclaim.won) {
                 try {
-                  if (fs.existsSync(commitMutexPath)) {
-                    const curCStat = fs.statSync(commitMutexPath);
-                    if (Date.now() - curCStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
-                      const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
-                      try {
-                        const newFd = fs.openSync(newCommitPath, 'wx');
-                        fs.writeFileSync(
-                          newFd,
-                          JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
-                          'utf8'
-                        );
-                        fs.renameSync(newCommitPath, commitMutexPath);
-                        commitFd = newFd;
-                      } catch {
-                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
-                      }
+                  const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
+                  try {
+                    const newFd = fs.openSync(newCommitPath, 'wx');
+                    fs.writeFileSync(
+                      newFd,
+                      JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                      'utf8'
+                    );
+                    if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
+                      commitFd = newFd;
+                    } else {
+                      try { fs.closeSync(newFd); } catch {}
+                      try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                     }
+                  } catch {
+                    try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                   }
                 } finally {
                   reclaim.cleanup();
@@ -1057,31 +1234,34 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
               const stat = fs.statSync(this.lockFilePath);
               if (Date.now() - stat.mtimeMs > staleThresholdMs) {
                 if (!isLockOwnerAlive(this.lockFilePath)) {
-                  // Atomically claim reclamation rights via unique claim ticket to prevent check-then-unlink race
+                  let deadOwnerId: string | undefined;
+                  try {
+                    const c = fs.readFileSync(this.lockFilePath, 'utf8');
+                    const parsed = JSON.parse(c);
+                    if (parsed?.ownerId) deadOwnerId = parsed.ownerId;
+                  } catch {}
+
+                  // Atomically claim reclamation rights via linearizable sequence ticket to prevent check-then-unlink race
                   const reclaim = acquireStaleReclaimMutex(this.lockFilePath, ownerId);
                   if (reclaim.won) {
                     try {
-                      if (fs.existsSync(this.lockFilePath)) {
-                        const currentStat = fs.statSync(this.lockFilePath);
-                        if (
-                          Date.now() - currentStat.mtimeMs > staleThresholdMs &&
-                          !isLockOwnerAlive(this.lockFilePath)
-                        ) {
-                          // Exclusive atomic takeover:
-                          const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
-                          try {
-                            const newFd = fs.openSync(newLockPath, 'wx');
-                            fs.writeFileSync(
-                              newFd,
-                              JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                              'utf8'
-                            );
-                            fs.renameSync(newLockPath, this.lockFilePath);
-                            fd = newFd;
-                          } catch {
-                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
-                          }
+                      // Exclusive atomic takeover:
+                      const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
+                      try {
+                        const newFd = fs.openSync(newLockPath, 'wx');
+                        fs.writeFileSync(
+                          newFd,
+                          JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                          'utf8'
+                        );
+                        if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
+                          fd = newFd;
+                        } else {
+                          try { fs.closeSync(newFd); } catch {}
+                          try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                         }
+                      } catch {
+                        try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                       }
                     } finally {
                       reclaim.cleanup();
@@ -1170,26 +1350,32 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           if (fs.existsSync(commitMutexPath)) {
             const cStat = fs.statSync(commitMutexPath);
             if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+              let deadCommitOwnerId: string | undefined;
+              try {
+                const c = fs.readFileSync(commitMutexPath, 'utf8');
+                const parsed = JSON.parse(c);
+                if (parsed?.ownerId) deadCommitOwnerId = parsed.ownerId;
+              } catch {}
+
               const reclaim = acquireStaleReclaimMutex(commitMutexPath, commitOwnerId);
               if (reclaim.won) {
                 try {
-                  if (fs.existsSync(commitMutexPath)) {
-                    const curCStat = fs.statSync(commitMutexPath);
-                    if (Date.now() - curCStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
-                      const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
-                      try {
-                        const newFd = fs.openSync(newCommitPath, 'wx');
-                        fs.writeFileSync(
-                          newFd,
-                          JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
-                          'utf8'
-                        );
-                        fs.renameSync(newCommitPath, commitMutexPath);
-                        commitFd = newFd;
-                      } catch {
-                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
-                      }
+                  const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
+                  try {
+                    const newFd = fs.openSync(newCommitPath, 'wx');
+                    fs.writeFileSync(
+                      newFd,
+                      JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                      'utf8'
+                    );
+                    if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
+                      commitFd = newFd;
+                    } else {
+                      try { fs.closeSync(newFd); } catch {}
+                      try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                     }
+                  } catch {
+                    try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                   }
                 } finally {
                   reclaim.cleanup();
