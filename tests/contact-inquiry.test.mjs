@@ -29,6 +29,9 @@ import {
   resetAdmissionTracker,
   defaultAdmissionStore,
   CrossProcessAdmissionStore,
+  hasOpenFileDescriptor,
+  isProcessAlive,
+  isLockOwnerAlive,
   isEmailConfirmationEnforced,
   isMailboxVerified,
 } from '../src/app/contact/rateLimiter.ts';
@@ -1150,6 +1153,78 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const result = checkAdmissionLimit({ ip: '203.0.113.60', maxWaitMs: 1000 });
     assert.equal(result.allowed, true, 'Stale lock (>10s old) must be reclaimed to allow admission');
     assert.equal(fs.existsSync(lockPath), false, 'Lock must be cleaned up after successful execution');
+  });
+
+  test('REGRESSION [P2]: live lock holder with aged mtime (> 10s) is not reclaimed while descriptor remains open', () => {
+    const lockPath = defaultAdmissionStore.lockFilePath;
+    try {
+      if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath);
+      }
+    } catch {}
+
+    // 1. Live holder opens file descriptor and holds it open
+    const fd = fs.openSync(lockPath, 'wx');
+    try {
+      // Artificially age the lock file's mtime to 15 seconds in the past (older than 10s staleThresholdMs)
+      const pastTime = (Date.now() - 15000) / 1000;
+      fs.utimesSync(lockPath, pastTime, pastTime);
+
+      // Verify lock mtime is older than 10 seconds
+      const statBefore = fs.statSync(lockPath);
+      assert.ok(Date.now() - statBefore.mtimeMs > 10000, 'Lock mtime must be older than 10s threshold');
+
+      // Verify liveness detection identifies the active descriptor
+      assert.equal(hasOpenFileDescriptor(lockPath), true, 'hasOpenFileDescriptor must detect open handle');
+      assert.equal(isLockOwnerAlive(lockPath), true, 'isLockOwnerAlive must return true for open descriptor');
+
+      // 2. A waiter calls checkAdmissionLimit() while the holder descriptor remains open
+      const waiterResult = checkAdmissionLimit({ ip: '203.0.113.60', maxWaitMs: 200 });
+
+      // 3. The waiter MUST NOT steal the lock or return allowed: true!
+      // It must fail closed and report service momentarily busy
+      assert.equal(waiterResult.allowed, false, 'Waiter must not steal live lock despite aged mtime > 10s');
+      assert.equal(waiterResult.retryAfterSeconds, 5);
+      assert.match(waiterResult.error, /momentarily busy/i);
+
+      // 4. CRITICAL ASSERTION: The live lock file MUST NOT have been unlinked or reclaimed!
+      assert.ok(fs.existsSync(lockPath), 'Lock file must remain on disk while holder descriptor is open');
+    } finally {
+      // 5. Clean up live descriptor
+      try { fs.closeSync(fd); } catch {}
+      try { fs.unlinkSync(lockPath); } catch {}
+    }
+
+    // 6. After the holder legitimately closes its descriptor, admission recovers cleanly
+    const subsequentResult = checkAdmissionLimit({ ip: '203.0.113.60', maxWaitMs: 2000 });
+    assert.equal(subsequentResult.allowed, true, 'Subsequent admission must succeed after holder releases');
+  });
+
+  test('REGRESSION [P2]: rate limit store does not steal lock from live descriptor with aged mtime (> 10s)', async () => {
+    const store = new CrossProcessRateLimitStore();
+    try {
+      if (fs.existsSync(store.lockFilePath)) {
+        fs.unlinkSync(store.lockFilePath);
+      }
+    } catch {}
+
+    const fd = fs.openSync(store.lockFilePath, 'wx');
+    try {
+      const pastTime = (Date.now() - 15000) / 1000;
+      fs.utimesSync(store.lockFilePath, pastTime, pastTime);
+
+      const waiterResult = await store.consumeKeys(['ip:203.0.113.70'], Date.now(), 200);
+      assert.equal(waiterResult.allowed, false, 'Rate limit waiter must not steal live lock despite aged mtime');
+      assert.equal(waiterResult.retryAfterSeconds, 5);
+      assert.match(waiterResult.error, /momentarily busy/i);
+      assert.ok(fs.existsSync(store.lockFilePath), 'Lock file must remain intact while holder descriptor is open');
+    } finally {
+      try { fs.closeSync(fd); } catch {}
+      try { fs.unlinkSync(store.lockFilePath); } catch {}
+    }
+
+    const subsequentResult = await store.consumeKeys(['ip:203.0.113.70'], Date.now(), 2000);
+    assert.equal(subsequentResult.allowed, true, 'Subsequent rate limit request succeeds after holder releases');
   });
 
   test('REGRESSION [P2]: unverified form emails cannot poison victim quota across separate IP addresses', async () => {

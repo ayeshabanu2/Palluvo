@@ -38,6 +38,73 @@ interface SharedAdmissionData {
 }
 
 /**
+ * Checks if any open file descriptor in the current process (including worker threads)
+ * currently holds an open file handle referencing the specified file path.
+ */
+export function hasOpenFileDescriptor(filePath: string): boolean {
+  try {
+    const fileStat = fs.statSync(filePath);
+    for (let fd = 3; fd < 1024; fd++) {
+      try {
+        const fdStat = fs.fstatSync(fd);
+        if (fdStat.ino === fileStat.ino && fdStat.dev === fileStat.dev) {
+          return true;
+        }
+      } catch (err: any) {
+        if (err && err.code === 'EBADF') continue;
+      }
+    }
+  } catch {
+    return false;
+  }
+  return false;
+}
+
+/**
+ * Checks whether an operating system process ID is still alive and running.
+ */
+export function isProcessAlive(pid: number): boolean {
+  if (typeof pid !== 'number' || isNaN(pid) || pid <= 0) return false;
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (err: any) {
+    return err && err.code === 'EPERM';
+  }
+}
+
+/**
+ * Checks whether the owner of a lock file is still actively alive.
+ * Returns true if:
+ * 1. An open file descriptor in the current process or any worker thread holds the file.
+ * 2. Or the lock metadata records an active, running OS process PID.
+ */
+export function isLockOwnerAlive(lockFilePath: string): boolean {
+  if (hasOpenFileDescriptor(lockFilePath)) {
+    return true;
+  }
+  try {
+    if (fs.existsSync(lockFilePath)) {
+      const content = fs.readFileSync(lockFilePath, 'utf8').trim();
+      if (content.length > 0) {
+        let pid: number | null = null;
+        try {
+          const parsed = JSON.parse(content);
+          if (typeof parsed?.pid === 'number') pid = parsed.pid;
+        } catch {
+          const match = content.match(/(\d+)/);
+          if (match) pid = parseInt(match[1], 10);
+        }
+        if (pid !== null && isProcessAlive(pid)) {
+          return true;
+        }
+      }
+    }
+  } catch {}
+  return false;
+}
+
+/**
  * Cross-Process File-Backed Atomic Admission Store.
  * Shares the global admission window and per-IP admission tracking across
  * independent Node worker processes/threads and serverless instances using atomic file locking.
@@ -57,15 +124,23 @@ export class CrossProcessAdmissionStore {
     this.lockFilePath = path.join(dir, 'admission_store.lock');
   }
 
-  private withLock<T>(fn: () => T, customWaitMs?: number): T {
+  private withLock<T>(fn: (fencingToken?: string) => T, customWaitMs?: number): T {
     const maxWaitMs = customWaitMs ?? 5000;
     const staleThresholdMs = 10000;
     const start = Date.now();
+    const ownerId = crypto.randomUUID();
     let fd: number | null = null;
 
     while (fd === null) {
       try {
         fd = fs.openSync(this.lockFilePath, 'wx');
+        try {
+          fs.writeFileSync(
+            fd,
+            JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+            'utf8'
+          );
+        } catch {}
       } catch (err: any) {
         if (
           err &&
@@ -74,11 +149,14 @@ export class CrossProcessAdmissionStore {
             err.code === 'EBUSY' ||
             err.code === 'EACCES')
         ) {
-          // Only reclaim a demonstrably stale lock (> 10s old) from a crashed/abandoned process
+          // Reclaim ONLY if the owner is provably dead/closed AND mtime exceeds stale threshold.
+          // Never steal or unlink if the owner process or an open file descriptor is still active!
           try {
             const stat = fs.statSync(this.lockFilePath);
             if (Date.now() - stat.mtimeMs > staleThresholdMs) {
-              try { fs.unlinkSync(this.lockFilePath); } catch {}
+              if (!isLockOwnerAlive(this.lockFilePath)) {
+                try { fs.unlinkSync(this.lockFilePath); } catch {}
+              }
             }
           } catch {}
 
@@ -96,12 +174,25 @@ export class CrossProcessAdmissionStore {
     }
 
     try {
-      return fn();
+      return fn(ownerId);
     } finally {
       if (fd !== null) {
         try { fs.closeSync(fd); } catch {}
       }
-      try { fs.unlinkSync(this.lockFilePath); } catch {}
+      // Guarded release: only unlink if WE still own the lock on disk
+      try {
+        if (fs.existsSync(this.lockFilePath)) {
+          const content = fs.readFileSync(this.lockFilePath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId === ownerId) {
+              fs.unlinkSync(this.lockFilePath);
+            }
+          } catch {
+            fs.unlinkSync(this.lockFilePath);
+          }
+        }
+      } catch {}
     }
   }
 
@@ -121,7 +212,24 @@ export class CrossProcessAdmissionStore {
     }
   }
 
-  private writeData(data: SharedAdmissionData): void {
+  private writeData(data: SharedAdmissionData, fencingToken?: string): void {
+    if (fencingToken) {
+      try {
+        if (fs.existsSync(this.lockFilePath)) {
+          const content = fs.readFileSync(this.lockFilePath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId && meta.ownerId !== fencingToken) {
+              throw new Error('LockFenced: Lock ownership was reassigned; aborting stale write');
+            }
+          } catch (e: any) {
+            if (e?.message?.includes('LockFenced')) throw e;
+          }
+        }
+      } catch (err: any) {
+        if (err?.message?.includes('LockFenced')) throw err;
+      }
+    }
     const tempPath = `${this.filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
     fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
     fs.renameSync(tempPath, this.filePath);
@@ -132,7 +240,7 @@ export class CrossProcessAdmissionStore {
     now: number = Date.now()
   ): RateLimitResult {
     try {
-      return this.withLock(() => {
+      return this.withLock((fencingToken) => {
         const data = this.readData();
         const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
 
@@ -152,7 +260,7 @@ export class CrossProcessAdmissionStore {
 
         if (!ip || ip === 'unknown') {
           data.globalTimestamps.push(now);
-          this.writeData(data);
+          this.writeData(data, fencingToken);
           return { allowed: true };
         }
 
@@ -212,7 +320,7 @@ export class CrossProcessAdmissionStore {
         }
 
         data.globalTimestamps.push(now);
-        this.writeData(data);
+        this.writeData(data, fencingToken);
         return { allowed: true };
       }, maxWaitMs);
     } catch (err: any) {
@@ -230,7 +338,7 @@ export class CrossProcessAdmissionStore {
 
   pruneExpired(now: number = Date.now()): number {
     try {
-      return this.withLock(() => {
+      return this.withLock((fencingToken) => {
         const data = this.readData();
         const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
         data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
@@ -242,7 +350,7 @@ export class CrossProcessAdmissionStore {
             pruned++;
           }
         }
-        this.writeData(data);
+        this.writeData(data, fencingToken);
         return pruned;
       });
     } catch {
@@ -666,15 +774,23 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     this.lockFilePath = path.join(baseDir, 'contact_limits.lock');
   }
 
-  private withLock<T>(fn: () => T, customWaitMs?: number): T {
+  private withLock<T>(fn: (fencingToken?: string) => T, customWaitMs?: number): T {
     const maxWaitMs = customWaitMs ?? 5000;
     const staleThresholdMs = 10000;
     const start = Date.now();
+    const ownerId = crypto.randomUUID();
     let fd: number | null = null;
 
     while (fd === null) {
       try {
         fd = fs.openSync(this.lockFilePath, 'wx');
+        try {
+          fs.writeFileSync(
+            fd,
+            JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+            'utf8'
+          );
+        } catch {}
       } catch (err: any) {
         if (
           err &&
@@ -683,11 +799,14 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             err.code === 'EBUSY' ||
             err.code === 'EACCES')
         ) {
-          // Only reclaim a demonstrably stale lock (> 10s old) from a crashed/abandoned process
+          // Reclaim ONLY if the owner is provably dead/closed AND mtime exceeds stale threshold.
+          // Never steal or unlink if the owner process or an open file descriptor is still active!
           try {
             const stat = fs.statSync(this.lockFilePath);
             if (Date.now() - stat.mtimeMs > staleThresholdMs) {
-              try { fs.unlinkSync(this.lockFilePath); } catch {}
+              if (!isLockOwnerAlive(this.lockFilePath)) {
+                try { fs.unlinkSync(this.lockFilePath); } catch {}
+              }
             }
           } catch {}
 
@@ -705,12 +824,25 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     }
 
     try {
-      return fn();
+      return fn(ownerId);
     } finally {
       if (fd !== null) {
         try { fs.closeSync(fd); } catch {}
       }
-      try { fs.unlinkSync(this.lockFilePath); } catch {}
+      // Guarded release: only unlink if WE still own the lock on disk
+      try {
+        if (fs.existsSync(this.lockFilePath)) {
+          const content = fs.readFileSync(this.lockFilePath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId === ownerId) {
+              fs.unlinkSync(this.lockFilePath);
+            }
+          } catch {
+            fs.unlinkSync(this.lockFilePath);
+          }
+        }
+      } catch {}
     }
   }
 
@@ -725,7 +857,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     }
 
     try {
-      return this.withLock(() => {
+      return this.withLock((fencingToken) => {
         let data: Record<string, RateLimitRecord> = {};
         if (fs.existsSync(this.storeFilePath)) {
           try {
@@ -829,7 +961,25 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           record.lastUpdated = now;
         }
 
-        // 5. Atomic write to disk
+        // 5. Atomic write to disk with fencing check
+        if (fencingToken) {
+          try {
+            if (fs.existsSync(this.lockFilePath)) {
+              const currentLock = fs.readFileSync(this.lockFilePath, 'utf8');
+              try {
+                const meta = JSON.parse(currentLock);
+                if (meta?.ownerId && meta.ownerId !== fencingToken) {
+                  throw new Error('LockFenced: Lock ownership reassigned; aborting stale write');
+                }
+              } catch (e: any) {
+                if (e?.message?.includes('LockFenced')) throw e;
+              }
+            }
+          } catch (err: any) {
+            if (err?.message?.includes('LockFenced')) throw err;
+          }
+        }
+
         const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.tmp`;
         fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
         fs.renameSync(tempPath, this.storeFilePath);
