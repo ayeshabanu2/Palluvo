@@ -106,6 +106,80 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
 }
 
 /**
+ * Atomically acquires exclusive reclamation rights for a stale lock file.
+ * To eliminate TOCTOU and check-then-unlink races where a paused waiter could delete a newly
+ * acquired reclaim mutex, claim tickets use uniquely-named files in a dedicated reclaim directory.
+ * The oldest active claim ticket wins exclusive recovery rights. Stale claims are cleaned up exclusively
+ * by their unique filename, making it impossible for a delayed waiter to delete a newly acquired claim.
+ */
+export function acquireStaleReclaimMutex(
+  lockFilePath: string,
+  ownerId: string
+): { won: boolean; cleanup: () => void } {
+  const reclaimDir = `${lockFilePath}.reclaim_dir`;
+  try {
+    if (!fs.existsSync(reclaimDir)) {
+      fs.mkdirSync(reclaimDir, { recursive: true });
+    }
+  } catch {}
+
+  const myClaimFileName = `${String(Date.now()).padStart(20, '0')}_${process.pid}_${ownerId}.claim`;
+  const myClaimPath = path.join(reclaimDir, myClaimFileName);
+
+  try {
+    fs.writeFileSync(
+      myClaimPath,
+      JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+      'utf8'
+    );
+  } catch {
+    return { won: false, cleanup: () => {} };
+  }
+
+  const cleanup = () => {
+    try {
+      if (fs.existsSync(myClaimPath)) {
+        fs.unlinkSync(myClaimPath);
+      }
+    } catch {}
+  };
+
+  try {
+    const allFiles = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim')).sort();
+
+    // Check earlier claims: if an earlier claim is owned by a dead process (> 2s), purge only that specific file.
+    // If an earlier claim is owned by an active process, we did not win.
+    for (const f of allFiles) {
+      if (f === myClaimFileName) break;
+      const fPath = path.join(reclaimDir, f);
+      try {
+        if (fs.existsSync(fPath)) {
+          const content = fs.readFileSync(fPath, 'utf8');
+          const meta = JSON.parse(content);
+          if (meta?.pid && !isProcessAlive(meta.pid)) {
+            try { fs.unlinkSync(fPath); } catch {}
+          } else {
+            cleanup();
+            return { won: false, cleanup: () => {} };
+          }
+        }
+      } catch {}
+    }
+
+    const remaining = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim')).sort();
+    if (remaining.length > 0 && remaining[0] === myClaimFileName) {
+      return { won: true, cleanup };
+    }
+
+    cleanup();
+    return { won: false, cleanup: () => {} };
+  } catch {
+    cleanup();
+    return { won: false, cleanup: () => {} };
+  }
+}
+
+/**
  * Cross-Process File-Backed Atomic Admission Store.
  * Shares the global admission window and per-IP admission tracking across
  * independent Node worker processes/threads and serverless instances using atomic file locking.
@@ -131,7 +205,6 @@ export class CrossProcessAdmissionStore {
   ): T {
     const maxWaitMs = customWaitMs ?? 5000;
     const staleThresholdMs = 10000;
-    const reclaimLockPath = `${this.lockFilePath}.reclaim`;
     const start = Date.now();
     const ownerId = crypto.randomUUID();
     let fd: number | null = null;
@@ -161,30 +234,10 @@ export class CrossProcessAdmissionStore {
               const stat = fs.statSync(this.lockFilePath);
               if (Date.now() - stat.mtimeMs > staleThresholdMs) {
                 if (!isLockOwnerAlive(this.lockFilePath)) {
-                  // Atomically claim reclamation rights to prevent check-then-unlink race across competing waiters
-                  let reclaimFd: number | null = null;
-                  try {
-                    reclaimFd = fs.openSync(reclaimLockPath, 'wx');
+                  // Atomically claim reclamation rights via unique claim ticket to prevent check-then-unlink race
+                  const reclaim = acquireStaleReclaimMutex(this.lockFilePath, ownerId);
+                  if (reclaim.won) {
                     try {
-                      fs.writeFileSync(
-                        reclaimFd,
-                        JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                        'utf8'
-                      );
-                    } catch {}
-                  } catch {
-                    // Check if reclaim lock itself was abandoned by a dead process (> 2s)
-                    try {
-                      const rStat = fs.statSync(reclaimLockPath);
-                      if (Date.now() - rStat.mtimeMs > 2000 && !isLockOwnerAlive(reclaimLockPath)) {
-                        try { fs.unlinkSync(reclaimLockPath); } catch {}
-                      }
-                    } catch {}
-                  }
-
-                  if (reclaimFd !== null) {
-                    try {
-                      // Double-check: re-verify main lock is STILL stale and owner STILL dead
                       if (fs.existsSync(this.lockFilePath)) {
                         const currentStat = fs.statSync(this.lockFilePath);
                         if (
@@ -210,8 +263,7 @@ export class CrossProcessAdmissionStore {
                         }
                       }
                     } finally {
-                      try { fs.closeSync(reclaimFd); } catch {}
-                      try { fs.unlinkSync(reclaimLockPath); } catch {}
+                      reclaim.cleanup();
                     }
                   }
                 }
@@ -297,21 +349,58 @@ export class CrossProcessAdmissionStore {
     const commitMutexPath = `${this.filePath}.commit_lock`;
     const startCommit = Date.now();
     let commitFd: number | null = null;
+    const commitOwnerId = crypto.randomUUID();
 
     while (commitFd === null) {
       try {
         commitFd = fs.openSync(commitMutexPath, 'wx');
+        try {
+          fs.writeFileSync(
+            commitFd,
+            JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+            'utf8'
+          );
+        } catch {}
       } catch (err: any) {
         if (Date.now() - startCommit > 5000) {
           try { fs.unlinkSync(tempPath); } catch {}
           throw new Error('LockTimeout: Timeout acquiring commit lock');
         }
         try {
-          const cStat = fs.statSync(commitMutexPath);
-          if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
-            try { fs.unlinkSync(commitMutexPath); } catch {}
+          if (fs.existsSync(commitMutexPath)) {
+            const cStat = fs.statSync(commitMutexPath);
+            if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+              const reclaim = acquireStaleReclaimMutex(commitMutexPath, commitOwnerId);
+              if (reclaim.won) {
+                try {
+                  if (fs.existsSync(commitMutexPath)) {
+                    const curCStat = fs.statSync(commitMutexPath);
+                    if (Date.now() - curCStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+                      const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
+                      try {
+                        const newFd = fs.openSync(newCommitPath, 'wx');
+                        fs.writeFileSync(
+                          newFd,
+                          JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                          'utf8'
+                        );
+                        fs.renameSync(newCommitPath, commitMutexPath);
+                        commitFd = newFd;
+                      } catch {
+                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
+                      }
+                    }
+                  }
+                } finally {
+                  reclaim.cleanup();
+                }
+              }
+            }
           }
         } catch {}
+
+        if (commitFd !== null) break;
+
         const pauseUntil = Date.now() + 5;
         while (Date.now() < pauseUntil) {}
       }
@@ -343,7 +432,7 @@ export class CrossProcessAdmissionStore {
         }
       }
 
-      // 2. Lock ownership check
+      // 3. Lock ownership check
       if (fencingToken) {
         if (!fs.existsSync(this.lockFilePath)) {
           throw new Error('LockFenced: Lock file missing; stale commit rejected');
@@ -355,7 +444,7 @@ export class CrossProcessAdmissionStore {
         }
       }
 
-      // 3. Atomic CAS: Compare on-disk epoch
+      // 4. Atomic CAS: Compare on-disk epoch
       if (fs.existsSync(this.filePath)) {
         const diskContent = fs.readFileSync(this.filePath, 'utf8');
         const diskParsed = JSON.parse(diskContent);
@@ -371,13 +460,25 @@ export class CrossProcessAdmissionStore {
         );
       }
 
-      // 4. Atomic Swap
+      // 5. Atomic Swap
       fs.renameSync(tempPath, this.filePath);
     } finally {
       try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
       if (commitFd !== null) {
         try { fs.closeSync(commitFd); } catch {}
-        try { fs.unlinkSync(commitMutexPath); } catch {}
+        try {
+          if (fs.existsSync(commitMutexPath)) {
+            const content = fs.readFileSync(commitMutexPath, 'utf8');
+            try {
+              const meta = JSON.parse(content);
+              if (meta?.ownerId === commitOwnerId) {
+                fs.unlinkSync(commitMutexPath);
+              }
+            } catch {
+              fs.unlinkSync(commitMutexPath);
+            }
+          }
+        } catch {}
       }
     }
   }
@@ -927,7 +1028,6 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
   ): T {
     const maxWaitMs = customWaitMs ?? 5000;
     const staleThresholdMs = 10000;
-    const reclaimLockPath = `${this.lockFilePath}.reclaim`;
     const start = Date.now();
     const ownerId = crypto.randomUUID();
     let fd: number | null = null;
@@ -957,27 +1057,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
               const stat = fs.statSync(this.lockFilePath);
               if (Date.now() - stat.mtimeMs > staleThresholdMs) {
                 if (!isLockOwnerAlive(this.lockFilePath)) {
-                  // Atomically claim reclamation rights to prevent check-then-unlink race across competing waiters
-                  let reclaimFd: number | null = null;
-                  try {
-                    reclaimFd = fs.openSync(reclaimLockPath, 'wx');
-                    try {
-                      fs.writeFileSync(
-                        reclaimFd,
-                        JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                        'utf8'
-                      );
-                    } catch {}
-                  } catch {
-                    try {
-                      const rStat = fs.statSync(reclaimLockPath);
-                      if (Date.now() - rStat.mtimeMs > 2000 && !isLockOwnerAlive(reclaimLockPath)) {
-                        try { fs.unlinkSync(reclaimLockPath); } catch {}
-                      }
-                    } catch {}
-                  }
-
-                  if (reclaimFd !== null) {
+                  // Atomically claim reclamation rights via unique claim ticket to prevent check-then-unlink race
+                  const reclaim = acquireStaleReclaimMutex(this.lockFilePath, ownerId);
+                  if (reclaim.won) {
                     try {
                       if (fs.existsSync(this.lockFilePath)) {
                         const currentStat = fs.statSync(this.lockFilePath);
@@ -1002,8 +1084,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
                         }
                       }
                     } finally {
-                      try { fs.closeSync(reclaimFd); } catch {}
-                      try { fs.unlinkSync(reclaimLockPath); } catch {}
+                      reclaim.cleanup();
                     }
                   }
                 }
@@ -1068,21 +1149,58 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     const commitMutexPath = `${this.storeFilePath}.commit_lock`;
     const startCommit = Date.now();
     let commitFd: number | null = null;
+    const commitOwnerId = crypto.randomUUID();
 
     while (commitFd === null) {
       try {
         commitFd = fs.openSync(commitMutexPath, 'wx');
+        try {
+          fs.writeFileSync(
+            commitFd,
+            JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+            'utf8'
+          );
+        } catch {}
       } catch (err: any) {
         if (Date.now() - startCommit > 5000) {
           try { fs.unlinkSync(tempPath); } catch {}
           throw new Error('LockTimeout: Timeout acquiring commit lock');
         }
         try {
-          const cStat = fs.statSync(commitMutexPath);
-          if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
-            try { fs.unlinkSync(commitMutexPath); } catch {}
+          if (fs.existsSync(commitMutexPath)) {
+            const cStat = fs.statSync(commitMutexPath);
+            if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+              const reclaim = acquireStaleReclaimMutex(commitMutexPath, commitOwnerId);
+              if (reclaim.won) {
+                try {
+                  if (fs.existsSync(commitMutexPath)) {
+                    const curCStat = fs.statSync(commitMutexPath);
+                    if (Date.now() - curCStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+                      const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
+                      try {
+                        const newFd = fs.openSync(newCommitPath, 'wx');
+                        fs.writeFileSync(
+                          newFd,
+                          JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                          'utf8'
+                        );
+                        fs.renameSync(newCommitPath, commitMutexPath);
+                        commitFd = newFd;
+                      } catch {
+                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
+                      }
+                    }
+                  }
+                } finally {
+                  reclaim.cleanup();
+                }
+              }
+            }
           }
         } catch {}
+
+        if (commitFd !== null) break;
+
         const pauseUntil = Date.now() + 5;
         while (Date.now() < pauseUntil) {}
       }
@@ -1148,7 +1266,19 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
       try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
       if (commitFd !== null) {
         try { fs.closeSync(commitFd); } catch {}
-        try { fs.unlinkSync(commitMutexPath); } catch {}
+        try {
+          if (fs.existsSync(commitMutexPath)) {
+            const content = fs.readFileSync(commitMutexPath, 'utf8');
+            try {
+              const meta = JSON.parse(content);
+              if (meta?.ownerId === commitOwnerId) {
+                fs.unlinkSync(commitMutexPath);
+              }
+            } catch {
+              fs.unlinkSync(commitMutexPath);
+            }
+          }
+        } catch {}
       }
     }
   }

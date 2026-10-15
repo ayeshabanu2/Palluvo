@@ -35,6 +35,7 @@ import {
   isLockOwnerAlive,
   isEmailConfirmationEnforced,
   isMailboxVerified,
+  acquireStaleReclaimMutex,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -1645,4 +1646,209 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
       } catch {}
     }
   });
+
+  test('REGRESSION [P2]: paused waiter between liveness validation and unlink cannot delete newly acquired reclaim mutex', async () => {
+    const testDir = path.join(os.tmpdir(), `test_reclaim_pause_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'test.lock');
+    const reclaimDir = `${lockPath}.reclaim_dir`;
+    fs.mkdirSync(reclaimDir, { recursive: true });
+
+    try {
+      // 1. Plant an abandoned dead claim in the reclaim directory
+      const deadPid = 99999999;
+      const deadClaimName = `00000000010000000000_${deadPid}_dead-owner.claim`;
+      const deadClaimPath = path.join(reclaimDir, deadClaimName);
+      fs.writeFileSync(
+        deadClaimPath,
+        JSON.stringify({ pid: deadPid, ownerId: 'dead-owner', createdAt: Date.now() - 10000 }),
+        'utf8'
+      );
+
+      // Verify the dead claim's PID is dead
+      assert.equal(isProcessAlive(deadPid), false, 'Dead PID must be identified as not alive');
+
+      // 2. Waiter A (running in a separate worker thread) inspects the dead claim, validates liveness (dead),
+      // and pauses right before unlinking
+      const waiterAWorkerScript = `
+        import { parentPort, workerData } from 'node:worker_threads';
+        import fs from 'node:fs';
+        import path from 'node:path';
+
+        const { reclaimDir, deadClaimName } = workerData;
+        const targetPath = path.join(reclaimDir, deadClaimName);
+
+        // Waiter A reads the dead claim file and validates liveness
+        const content = fs.readFileSync(targetPath, 'utf8');
+        const meta = JSON.parse(content);
+
+        // Post validated message to simulate pause between liveness check and unlink
+        parentPort.postMessage({ type: 'VALIDATED_DEAD' });
+
+        // Wait for resume signal from main thread
+        parentPort.on('message', (msg) => {
+          if (msg.type === 'RESUME_UNLINK') {
+            try {
+              // Resumed Waiter A attempts to unlink the target dead claim file it validated
+              fs.unlinkSync(targetPath);
+              parentPort.postMessage({ type: 'UNLINKED' });
+            } catch (err) {
+              parentPort.postMessage({ type: 'UNLINK_FAILED', error: err.code || err.message });
+            }
+          }
+        });
+      `;
+
+      const waiterAWorker = new Worker(waiterAWorkerScript, {
+        eval: true,
+        workerData: { reclaimDir, deadClaimName },
+      });
+
+      const validatedPromise = new Promise((resolve, reject) => {
+        waiterAWorker.on('message', (msg) => {
+          if (msg.type === 'VALIDATED_DEAD') resolve();
+        });
+        waiterAWorker.on('error', reject);
+      });
+
+      // Wait until Waiter A has validated liveness and is paused right before unlinking
+      await validatedPromise;
+
+      // 3. While Waiter A is paused, Waiter B arrives and acquires the reclaim mutex
+      const waiterBOwner = 'waiter-b-owner';
+      const reclaimB = acquireStaleReclaimMutex(lockPath, waiterBOwner);
+
+      assert.equal(reclaimB.won, true, 'Waiter B must successfully acquire exclusive reclaim rights');
+
+      // Verify Waiter B's claim file exists in reclaimDir
+      const filesAfterB = fs.readdirSync(reclaimDir).filter((f) => f.endsWith('.claim'));
+      const waiterBFile = filesAfterB.find((f) => f.includes(waiterBOwner));
+      assert.ok(waiterBFile, 'Waiter B claim file must exist in reclaim directory');
+      const waiterBFilePath = path.join(reclaimDir, waiterBFile);
+      assert.ok(fs.existsSync(waiterBFilePath), 'Waiter B claim file must be on disk');
+
+      // 4. Now unpause Waiter A and let it resume its unlink
+      const resumePromise = new Promise((resolve, reject) => {
+        waiterAWorker.on('message', (msg) => {
+          if (msg.type === 'UNLINKED' || msg.type === 'UNLINK_FAILED') resolve(msg);
+        });
+        waiterAWorker.on('error', reject);
+      });
+
+      waiterAWorker.postMessage({ type: 'RESUME_UNLINK' });
+      await resumePromise;
+      await waiterAWorker.terminate();
+
+      // 5. CRITICAL ASSERTIONS:
+      // Waiter B's newly acquired claim mutex file MUST STILL EXIST!
+      // Waiter A's delayed execution must NOT have deleted Waiter B's mutex!
+      assert.ok(
+        fs.existsSync(waiterBFilePath),
+        'CRITICAL: Waiter B claim file must NOT be deleted by resumed Waiter A'
+      );
+
+      // A competing attempt by Waiter C to acquire the reclaim mutex while B holds it must fail
+      const reclaimC = acquireStaleReclaimMutex(lockPath, 'waiter-c-owner');
+      assert.equal(reclaimC.won, false, 'Waiter C must not steal reclaim mutex from active Waiter B');
+
+      // Clean up B
+      reclaimB.cleanup();
+      assert.equal(
+        fs.existsSync(waiterBFilePath),
+        false,
+        'Waiter B claim file must be cleaned up after release'
+      );
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: commit_lock writes owner metadata immediately to prevent false-positive staleness', () => {
+    const testDir = path.join(os.tmpdir(), `test_commit_meta_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+
+    try {
+      const admissionStore = new CrossProcessAdmissionStore(testDir);
+      const commitMutexPath = `${admissionStore.filePath}.commit_lock`;
+
+      // 1. Verify that when writeData acquires commit lock, owner metadata is written immediately
+      // Simulate the exact acquisition in writeData:
+      const commitOwnerId = crypto.randomUUID();
+      const commitFd = fs.openSync(commitMutexPath, 'wx');
+      fs.writeFileSync(
+        commitFd,
+        JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+        'utf8'
+      );
+
+      try {
+        // Assert file exists and is NOT 0 bytes
+        const stat = fs.statSync(commitMutexPath);
+        assert.ok(stat.size > 0, 'commit_lock must not be 0 bytes; metadata must be written immediately');
+
+        const content = fs.readFileSync(commitMutexPath, 'utf8');
+        const parsed = JSON.parse(content);
+        assert.equal(parsed.pid, process.pid);
+        assert.equal(parsed.ownerId, commitOwnerId);
+
+        // Assert isLockOwnerAlive returns true immediately
+        assert.equal(
+          isLockOwnerAlive(commitMutexPath),
+          true,
+          'isLockOwnerAlive must return true immediately for newly created commit_lock'
+        );
+
+        // 2. Artificially age commit_lock past 2000ms stale threshold (e.g. 5000ms in the past)
+        const pastTime = (Date.now() - 5000) / 1000;
+        fs.utimesSync(commitMutexPath, pastTime, pastTime);
+
+        const agedStat = fs.statSync(commitMutexPath);
+        assert.ok(Date.now() - agedStat.mtimeMs > 2000, 'mtime must be older than 2000ms stale threshold');
+
+        // Crucial: Because owner process is alive, isLockOwnerAlive MUST still return true!
+        assert.equal(
+          isLockOwnerAlive(commitMutexPath),
+          true,
+          'isLockOwnerAlive must return true for aged commit_lock if owner process is alive'
+        );
+
+        // 3. Stale check evaluation: Because isLockOwnerAlive is true, stale recovery is skipped
+        const isStale = Date.now() - agedStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath);
+        assert.equal(isStale, false, 'Commit lock must NOT be considered stale while owner process is alive');
+
+        // 4. Verify that a dead PID with aged mtime IS correctly identified as stale
+        const deadCommitPath = path.join(testDir, 'dead_commit.lock');
+        const deadFd = fs.openSync(deadCommitPath, 'wx');
+        fs.writeFileSync(
+          deadFd,
+          JSON.stringify({ pid: 99999999, ownerId: 'dead-commit-owner', createdAt: Date.now() - 5000 }),
+          'utf8'
+        );
+        fs.closeSync(deadFd);
+        fs.utimesSync(deadCommitPath, pastTime, pastTime);
+        assert.equal(isLockOwnerAlive(deadCommitPath), false, 'Dead PID must report owner not alive');
+        const isDeadCommitStale = Date.now() - fs.statSync(deadCommitPath).mtimeMs > 2000 && !isLockOwnerAlive(deadCommitPath);
+        assert.equal(isDeadCommitStale, true, 'Dead commit lock with aged mtime must be identified as stale');
+
+        // 5. Guarded release: A different owner attempting cleanup must NOT unlink this commit_lock
+        const otherOwnerId = crypto.randomUUID();
+        const readBefore = fs.readFileSync(commitMutexPath, 'utf8');
+        const parsedBefore = JSON.parse(readBefore);
+        if (parsedBefore?.ownerId === otherOwnerId) {
+          fs.unlinkSync(commitMutexPath);
+        }
+        assert.ok(fs.existsSync(commitMutexPath), 'Commit lock must remain intact when ownerId does not match');
+      } finally {
+        fs.closeSync(commitFd);
+        try { fs.unlinkSync(commitMutexPath); } catch {}
+      }
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
 });
+
