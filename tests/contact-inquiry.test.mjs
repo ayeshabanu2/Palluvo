@@ -2132,6 +2132,158 @@ process.on('message', (msg) => {
       } catch {}
     }
   });
+
+  test('REGRESSION [P2]: orphan malformed ticket does not deadlock reclaim election queue', () => {
+    const testDir = path.join(os.tmpdir(), `reclaim_orphan_test_${crypto.randomUUID()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockFilePath = path.join(testDir, 'test.lock');
+    const reclaimDir = `${lockFilePath}.reclaim_dir`;
+    fs.mkdirSync(reclaimDir, { recursive: true });
+
+    try {
+      // 1. Plant an orphan 0-byte ticket from a dead crashed process (seq 1)
+      const orphanTicket1 = path.join(reclaimDir, 'seq_000000000001_dead-crashed-1.ticket');
+      fs.writeFileSync(orphanTicket1, '', 'utf8');
+
+      // 2. Plant an orphan corrupted/unparseable ticket from a dead crashed process (seq 2)
+      const orphanTicket2 = path.join(reclaimDir, 'seq_000000000002_dead-crashed-2.ticket');
+      fs.writeFileSync(orphanTicket2, '{corrupted-json', 'utf8');
+
+      // 3. Plant a dead-process ticket (seq 3)
+      const deadTicket3 = path.join(reclaimDir, 'seq_000000000003_dead-crashed-3.ticket');
+      fs.writeFileSync(deadTicket3, JSON.stringify({ seq: 3, pid: 99999999, ownerId: 'dead-3' }), 'utf8');
+
+      // 4. A live process attempts to acquire the reclaim mutex
+      const activeOwnerId = crypto.randomUUID();
+      const reclaim = acquireStaleReclaimMutex(lockFilePath, activeOwnerId);
+
+      // Verify that the live process safely cleans up earlier dead/malformed tickets and WINS
+      assert.equal(reclaim.won, true, 'Live process must safely recover from orphan tickets and win election');
+
+      // Verify orphan tickets 1 and 2 and dead ticket 3 were unlinked from disk
+      assert.equal(fs.existsSync(orphanTicket1), false, 'Orphan empty ticket must be unlinked');
+      assert.equal(fs.existsSync(orphanTicket2), false, 'Orphan corrupted ticket must be unlinked');
+      assert.equal(fs.existsSync(deadTicket3), false, 'Dead process ticket must be unlinked');
+
+      // Cleanup
+      reclaim.cleanup();
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: withLock fails closed on metadata write failure and aborts if lock is unlinked before entering fn', () => {
+    const testDir = path.join(os.tmpdir(), `lock_fail_closed_test_${crypto.randomUUID()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const store = new CrossProcessAdmissionStore(testDir);
+
+    // Part A: Fail closed on metadata write failure
+    const origWriteFileSync = fs.writeFileSync;
+    let failNextLockWrite = true;
+    let writeFailureThrown = false;
+    let criticalSectionEntered = false;
+
+    fs.writeFileSync = function(fileOrFd, data, options) {
+      if (typeof fileOrFd === 'number' && failNextLockWrite && typeof data === 'string' && data.includes('"pid"')) {
+        failNextLockWrite = false;
+        throw new Error('ENOSPC: Simulated disk full during metadata write');
+      }
+      return origWriteFileSync.apply(this, arguments);
+    };
+
+    try {
+      store['withLock'](() => {
+        criticalSectionEntered = true;
+      });
+    } catch (err) {
+      writeFailureThrown = true;
+      assert.match(err.message, /Simulated disk full/);
+    } finally {
+      fs.writeFileSync = origWriteFileSync;
+    }
+
+    assert.equal(writeFailureThrown, true, 'Metadata write failure must be thrown rather than swallowed');
+    assert.equal(criticalSectionEntered, false, 'Critical section must not execute on write failure');
+    assert.equal(fs.existsSync(store.lockFilePath), false, 'Partial lock file must be immediately cleaned up on write failure');
+
+    // Part B: Pre-critical-section owner fencing aborts if lock was unlinked before entering fn
+    let fencingTriggered = false;
+    let fnExecuted = false;
+
+    fs.writeFileSync = function(fileOrFd, data, options) {
+      const res = origWriteFileSync.apply(this, arguments);
+      // Simulate another process taking over or unlinking the lock right after writeFileSync succeeds
+      if (typeof fileOrFd === 'number' && typeof data === 'string' && data.includes('"pid"')) {
+        try {
+          if (fs.existsSync(store.lockFilePath)) {
+            fs.unlinkSync(store.lockFilePath);
+          }
+        } catch {}
+      }
+      return res;
+    };
+
+    try {
+      store['withLock'](() => {
+        fnExecuted = true;
+      });
+    } catch (err) {
+      fencingTriggered = true;
+      assert.match(err.message, /LockFenced/);
+    } finally {
+      fs.writeFileSync = origWriteFileSync;
+    }
+
+    assert.equal(fencingTriggered, true, 'Pre-critical-section owner fencing must trigger when lock is unlinked');
+    assert.equal(fnExecuted, false, 'fn must NOT execute when lock descriptor was invalidated before entering fn');
+
+    // Part C: Verify CrossProcessRateLimitStore withLock also fences
+    const rateStore = new CrossProcessRateLimitStore();
+    try {
+      if (fs.existsSync(rateStore.lockFilePath)) {
+        fs.unlinkSync(rateStore.lockFilePath);
+      }
+    } catch {}
+
+    let rateFencingTriggered = false;
+    let rateFnExecuted = false;
+    fs.writeFileSync = function(fileOrFd, data, options) {
+      const res = origWriteFileSync.apply(this, arguments);
+      if (typeof fileOrFd === 'number' && typeof data === 'string' && data.includes('"pid"')) {
+        try {
+          if (fs.existsSync(rateStore.lockFilePath)) {
+            fs.unlinkSync(rateStore.lockFilePath);
+          }
+        } catch {}
+      }
+      return res;
+    };
+
+    try {
+      rateStore['withLock'](() => {
+        rateFnExecuted = true;
+      });
+    } catch (err) {
+      rateFencingTriggered = true;
+      assert.match(err.message, /LockFenced/);
+    } finally {
+      fs.writeFileSync = origWriteFileSync;
+      try {
+        if (fs.existsSync(rateStore.lockFilePath)) {
+          fs.unlinkSync(rateStore.lockFilePath);
+        }
+      } catch {}
+    }
+
+    assert.equal(rateFencingTriggered, true, 'CrossProcessRateLimitStore withLock must fence before fn');
+    assert.equal(rateFnExecuted, false, 'CrossProcessRateLimitStore fn must not execute when fenced');
+
+    try {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    } catch {}
+  });
 });
 
 

@@ -143,14 +143,25 @@ export function acquireStaleReclaimMutex(
       const ticketPath = path.join(reclaimDir, ticketName);
       try {
         myTicketFd = fs.openSync(ticketPath, 'wx');
-        fs.writeFileSync(
-          myTicketFd,
-          JSON.stringify({ seq: candidate, pid: process.pid, ownerId, createdAt: Date.now() }),
-          'utf8'
-        );
-        mySeq = candidate;
-        myTicketPath = ticketPath;
+        try {
+          fs.writeFileSync(
+            myTicketFd,
+            JSON.stringify({ seq: candidate, pid: process.pid, ownerId, createdAt: Date.now() }),
+            'utf8'
+          );
+          mySeq = candidate;
+          myTicketPath = ticketPath;
+        } catch (writeErr) {
+          try { fs.closeSync(myTicketFd); } catch {}
+          myTicketFd = null;
+          try { if (fs.existsSync(ticketPath)) fs.unlinkSync(ticketPath); } catch {}
+          throw writeErr;
+        }
       } catch (err: any) {
+        if (myTicketFd !== null) {
+          try { fs.closeSync(myTicketFd); } catch {}
+          myTicketFd = null;
+        }
         if (err && (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY')) {
           candidate++;
         } else {
@@ -187,9 +198,20 @@ export function acquireStaleReclaimMutex(
       const fPath = path.join(reclaimDir, f);
       try {
         if (fs.existsSync(fPath)) {
-          const content = fs.readFileSync(fPath, 'utf8');
-          const meta = JSON.parse(content);
-          if (meta?.pid && isProcessAlive(meta.pid)) {
+          const content = fs.readFileSync(fPath, 'utf8').trim();
+          let meta: any = null;
+          let isMalformed = false;
+          try {
+            meta = JSON.parse(content);
+          } catch {
+            isMalformed = true;
+          }
+
+          if (isMalformed || !meta || typeof meta.pid !== 'number') {
+            // Malformed, empty, or unparseable ticket left by a crashed/failed process:
+            // Safely recover and remove the orphan ticket so it does not block the queue
+            try { fs.unlinkSync(fPath); } catch {}
+          } else if (isProcessAlive(meta.pid)) {
             // An earlier ticket belongs to an active process: we did NOT win
             cleanup();
             return { won: false, cleanup: () => {} };
@@ -198,11 +220,42 @@ export function acquireStaleReclaimMutex(
             try { fs.unlinkSync(fPath); } catch {}
           }
         }
-      } catch {}
+      } catch {
+        try { if (fs.existsSync(fPath)) fs.unlinkSync(fPath); } catch {}
+      }
     }
 
-    // 3. Re-verify after purging dead earlier tickets that we are the lowest remaining active sequence
+    // 3. Re-verify after purging dead and malformed earlier tickets that we are the lowest remaining active sequence
     const remaining = fs.readdirSync(reclaimDir).filter((f) => f.startsWith('seq_') && f.endsWith('.ticket')).sort();
+    while (remaining.length > 0) {
+      const firstFile = remaining[0];
+      const matchFirst = firstFile.match(/^seq_(\d+)_/);
+      const firstSeq = matchFirst ? parseInt(matchFirst[1], 10) : -1;
+      if (firstSeq >= mySeq) break;
+
+      const fPath = path.join(reclaimDir, firstFile);
+      try {
+        if (fs.existsSync(fPath)) {
+          const content = fs.readFileSync(fPath, 'utf8').trim();
+          let meta: any = null;
+          try { meta = JSON.parse(content); } catch {}
+          if (!meta || typeof meta.pid !== 'number' || !isProcessAlive(meta.pid)) {
+            try { fs.unlinkSync(fPath); } catch {}
+            remaining.shift();
+            continue;
+          }
+        } else {
+          remaining.shift();
+          continue;
+        }
+      } catch {
+        try { fs.unlinkSync(fPath); } catch {}
+        remaining.shift();
+        continue;
+      }
+      break;
+    }
+
     if (remaining.length > 0) {
       const matchFirst = remaining[0].match(/^seq_(\d+)_/);
       const firstSeq = matchFirst ? parseInt(matchFirst[1], 10) : -1;
@@ -212,11 +265,18 @@ export function acquireStaleReclaimMutex(
         let winnerFd: number | null = null;
         try {
           winnerFd = fs.openSync(winnerTokenPath, 'wx');
-          fs.writeFileSync(
-            winnerFd,
-            JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
-            'utf8'
-          );
+          try {
+            fs.writeFileSync(
+              winnerFd,
+              JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
+              'utf8'
+            );
+          } catch (writeErr) {
+            try { fs.closeSync(winnerFd); } catch {}
+            winnerFd = null;
+            try { if (fs.existsSync(winnerTokenPath)) fs.unlinkSync(winnerTokenPath); } catch {}
+            throw writeErr;
+          }
         } catch {
           // Check if existing winner.lock belongs to a dead process (> 2s)
           try {
@@ -226,13 +286,18 @@ export function acquireStaleReclaimMutex(
                 const newWPath = path.join(reclaimDir, `${ownerId}.winner.new`);
                 try {
                   const nWfd = fs.openSync(newWPath, 'wx');
-                  fs.writeFileSync(
-                    nWfd,
-                    JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
-                    'utf8'
-                  );
-                  fs.renameSync(newWPath, winnerTokenPath);
-                  winnerFd = nWfd;
+                  try {
+                    fs.writeFileSync(
+                      nWfd,
+                      JSON.stringify({ seq: mySeq, pid: process.pid, ownerId, createdAt: Date.now() }),
+                      'utf8'
+                    );
+                    fs.renameSync(newWPath, winnerTokenPath);
+                    winnerFd = nWfd;
+                  } catch (wErr) {
+                    try { fs.closeSync(nWfd); } catch {}
+                    try { if (fs.existsSync(newWPath)) fs.unlinkSync(newWPath); } catch {}
+                  }
                 } catch {
                   try { if (fs.existsSync(newWPath)) fs.unlinkSync(newWPath); } catch {}
                 }
@@ -301,11 +366,18 @@ export function atomicTakeoverStaleLock(
       takeoverFd = fs.openSync(takeoverLockPath, 'wx');
       // CRITICAL: Write owner and PID metadata immediately so that other processes
       // checking isLockOwnerAlive do not treat an active held takeover mutex as stale
-      fs.writeFileSync(
-        takeoverFd,
-        JSON.stringify({ pid: process.pid, ownerId: takeoverOwnerId, createdAt: Date.now() }),
-        'utf8'
-      );
+      try {
+        fs.writeFileSync(
+          takeoverFd,
+          JSON.stringify({ pid: process.pid, ownerId: takeoverOwnerId, createdAt: Date.now() }),
+          'utf8'
+        );
+      } catch (writeErr) {
+        try { fs.closeSync(takeoverFd); } catch {}
+        takeoverFd = null;
+        try { if (fs.existsSync(takeoverLockPath)) fs.unlinkSync(takeoverLockPath); } catch {}
+        throw writeErr;
+      }
     } catch (err: any) {
       try {
         if (fs.existsSync(takeoverLockPath)) {
@@ -483,7 +555,12 @@ export class CrossProcessAdmissionStore {
             JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
             'utf8'
           );
-        } catch {}
+        } catch (writeErr) {
+          try { fs.closeSync(fd); } catch {}
+          fd = null;
+          try { if (fs.existsSync(this.lockFilePath)) fs.unlinkSync(this.lockFilePath); } catch {}
+          throw writeErr;
+        }
       } catch (err: any) {
         if (
           err &&
@@ -515,14 +592,19 @@ export class CrossProcessAdmissionStore {
                       const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
                       try {
                         const newFd = fs.openSync(newLockPath, 'wx');
-                        fs.writeFileSync(
-                          newFd,
-                          JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                          'utf8'
-                        );
-                        if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
-                          fd = newFd;
-                        } else {
+                        try {
+                          fs.writeFileSync(
+                            newFd,
+                            JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                            'utf8'
+                          );
+                          if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
+                            fd = newFd;
+                          } else {
+                            try { fs.closeSync(newFd); } catch {}
+                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
+                          }
+                        } catch (nTwriteErr) {
                           try { fs.closeSync(newFd); } catch {}
                           try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                         }
@@ -551,6 +633,30 @@ export class CrossProcessAdmissionStore {
           throw err;
         }
       }
+    }
+
+    if (fd === null) {
+      throw new Error('LockTimeout: Timeout waiting for cross-process admission lock');
+    }
+
+    // Owner fencing: verify descriptor remains linked and on-disk ownerId matches before entering fn
+    try {
+      const fdStat = fs.fstatSync(fd);
+      if (fdStat.nlink === 0) {
+        throw new Error('LockFenced: Lock file descriptor was unlinked on disk before critical section');
+      }
+      if (!fs.existsSync(this.lockFilePath)) {
+        throw new Error('LockFenced: Lock file is missing on disk before critical section');
+      }
+      const lockContent = fs.readFileSync(this.lockFilePath, 'utf8');
+      const lockMeta = JSON.parse(lockContent);
+      if (lockMeta?.ownerId !== ownerId || lockMeta?.pid !== process.pid) {
+        throw new Error('LockFenced: Lock ownership reassigned before critical section');
+      }
+    } catch (fenceErr: any) {
+      try { fs.closeSync(fd); } catch {}
+      fd = null;
+      throw fenceErr;
     }
 
     try {
@@ -627,7 +733,12 @@ export class CrossProcessAdmissionStore {
             JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
             'utf8'
           );
-        } catch {}
+        } catch (writeErr) {
+          try { fs.closeSync(commitFd); } catch {}
+          commitFd = null;
+          try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
+          throw writeErr;
+        }
       } catch (err: any) {
         if (Date.now() - startCommit > 5000) {
           try { fs.unlinkSync(tempPath); } catch {}
@@ -650,14 +761,19 @@ export class CrossProcessAdmissionStore {
                   const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
                   try {
                     const newFd = fs.openSync(newCommitPath, 'wx');
-                    fs.writeFileSync(
-                      newFd,
-                      JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
-                      'utf8'
-                    );
-                    if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
-                      commitFd = newFd;
-                    } else {
+                    try {
+                      fs.writeFileSync(
+                        newFd,
+                        JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                        'utf8'
+                      );
+                      if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
+                        commitFd = newFd;
+                      } else {
+                        try { fs.closeSync(newFd); } catch {}
+                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
+                      }
+                    } catch (nTwriteErr) {
                       try { fs.closeSync(newFd); } catch {}
                       try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                     }
@@ -686,6 +802,14 @@ export class CrossProcessAdmissionStore {
           const cStat = fs.fstatSync(commitFd);
           if (cStat.nlink === 0) {
             throw new Error('LockFenced: Commit mutex was unlinked; commit aborted');
+          }
+          if (!fs.existsSync(commitMutexPath)) {
+            throw new Error('LockFenced: Commit mutex file missing; commit aborted');
+          }
+          const cContent = fs.readFileSync(commitMutexPath, 'utf8');
+          const cMeta = JSON.parse(cContent);
+          if (cMeta?.ownerId !== commitOwnerId || cMeta?.pid !== process.pid) {
+            throw new Error('LockFenced: Commit mutex ownership reassigned; commit aborted');
           }
         } catch (err: any) {
           if (err?.message?.includes('LockFenced')) throw err;
@@ -1314,7 +1438,12 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
             'utf8'
           );
-        } catch {}
+        } catch (writeErr) {
+          try { fs.closeSync(fd); } catch {}
+          fd = null;
+          try { if (fs.existsSync(this.lockFilePath)) fs.unlinkSync(this.lockFilePath); } catch {}
+          throw writeErr;
+        }
       } catch (err: any) {
         if (
           err &&
@@ -1345,14 +1474,19 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
                       const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
                       try {
                         const newFd = fs.openSync(newLockPath, 'wx');
-                        fs.writeFileSync(
-                          newFd,
-                          JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                          'utf8'
-                        );
-                        if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
-                          fd = newFd;
-                        } else {
+                        try {
+                          fs.writeFileSync(
+                            newFd,
+                            JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                            'utf8'
+                          );
+                          if (atomicTakeoverStaleLock(this.lockFilePath, newFd, newLockPath, deadOwnerId)) {
+                            fd = newFd;
+                          } else {
+                            try { fs.closeSync(newFd); } catch {}
+                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
+                          }
+                        } catch (nTwriteErr) {
                           try { fs.closeSync(newFd); } catch {}
                           try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
                         }
@@ -1381,6 +1515,30 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           throw err;
         }
       }
+    }
+
+    if (fd === null) {
+      throw new Error('LockTimeout: Timeout waiting for cross-process rate limit lock');
+    }
+
+    // Owner fencing: verify descriptor remains linked and on-disk ownerId matches before entering fn
+    try {
+      const fdStat = fs.fstatSync(fd);
+      if (fdStat.nlink === 0) {
+        throw new Error('LockFenced: Lock file descriptor was unlinked on disk before critical section');
+      }
+      if (!fs.existsSync(this.lockFilePath)) {
+        throw new Error('LockFenced: Lock file is missing on disk before critical section');
+      }
+      const lockContent = fs.readFileSync(this.lockFilePath, 'utf8');
+      const lockMeta = JSON.parse(lockContent);
+      if (lockMeta?.ownerId !== ownerId || lockMeta?.pid !== process.pid) {
+        throw new Error('LockFenced: Lock ownership reassigned before critical section');
+      }
+    } catch (fenceErr: any) {
+      try { fs.closeSync(fd); } catch {}
+      fd = null;
+      throw fenceErr;
     }
 
     try {
@@ -1436,7 +1594,12 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
             'utf8'
           );
-        } catch {}
+        } catch (writeErr) {
+          try { fs.closeSync(commitFd); } catch {}
+          commitFd = null;
+          try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
+          throw writeErr;
+        }
       } catch (err: any) {
         if (Date.now() - startCommit > 5000) {
           try { fs.unlinkSync(tempPath); } catch {}
@@ -1459,14 +1622,19 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
                   const newCommitPath = `${commitMutexPath}.${commitOwnerId}.new`;
                   try {
                     const newFd = fs.openSync(newCommitPath, 'wx');
-                    fs.writeFileSync(
-                      newFd,
-                      JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
-                      'utf8'
-                    );
-                    if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
-                      commitFd = newFd;
-                    } else {
+                    try {
+                      fs.writeFileSync(
+                        newFd,
+                        JSON.stringify({ pid: process.pid, ownerId: commitOwnerId, createdAt: Date.now() }),
+                        'utf8'
+                      );
+                      if (atomicTakeoverStaleLock(commitMutexPath, newFd, newCommitPath, deadCommitOwnerId)) {
+                        commitFd = newFd;
+                      } else {
+                        try { fs.closeSync(newFd); } catch {}
+                        try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
+                      }
+                    } catch (nTwriteErr) {
                       try { fs.closeSync(newFd); } catch {}
                       try { if (fs.existsSync(newCommitPath)) fs.unlinkSync(newCommitPath); } catch {}
                     }
@@ -1495,6 +1663,14 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           const cStat = fs.fstatSync(commitFd);
           if (cStat.nlink === 0) {
             throw new Error('LockFenced: Commit mutex was unlinked; commit aborted');
+          }
+          if (!fs.existsSync(commitMutexPath)) {
+            throw new Error('LockFenced: Commit mutex file missing; commit aborted');
+          }
+          const cContent = fs.readFileSync(commitMutexPath, 'utf8');
+          const cMeta = JSON.parse(cContent);
+          if (cMeta?.ownerId !== commitOwnerId || cMeta?.pid !== process.pid) {
+            throw new Error('LockFenced: Commit mutex ownership reassigned; commit aborted');
           }
         } catch (err: any) {
           if (err?.message?.includes('LockFenced')) throw err;
