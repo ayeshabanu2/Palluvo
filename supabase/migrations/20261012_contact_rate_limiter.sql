@@ -80,6 +80,9 @@ DECLARE
   c_max_store_size CONSTANT INT := 1000;       -- 1000 active keys max
   c_max_keys CONSTANT INT := 2;                -- max 2 keys per check (IP and email digests)
   c_max_key_length CONSTANT INT := 120;        -- max characters per key (digest:sha256:<64-hex> is 79 chars)
+  c_global_window_ms CONSTANT BIGINT := 60000; -- 1 minute sliding window for global admission
+  c_max_global_requests CONSTANT INT := 120;   -- 120 submissions per minute max globally across all instances
+  c_global_admission_key CONSTANT TEXT := 'digest:sha256:0000000000000000000000000000000000000000000000000000000000000000';
 
   -- Server-side timestamp derivation (prevents caller timestamp manipulation)
   v_now BIGINT := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
@@ -87,6 +90,8 @@ DECLARE
 
   v_key TEXT;
   v_rec RECORD;
+  v_global_rec RECORD;
+  v_global_ts BIGINT[];
   v_filtered_ts BIGINT[];
   v_last_ts BIGINT;
   v_active_count INT;
@@ -143,8 +148,35 @@ BEGIN
   DELETE FROM public.contact_rate_limits
   WHERE expires_at < to_timestamp(v_now / 1000.0);
 
-  -- 6. Count current active entries in the store
-  SELECT COUNT(*) INTO v_total_keys FROM public.contact_rate_limits;
+  -- 5b. Shared global admission check across all distributed serverless instances (WAF / bot flood protection)
+  SELECT * INTO v_global_rec
+  FROM public.contact_rate_limits
+  WHERE key = c_global_admission_key
+  FOR UPDATE;
+
+  IF FOUND THEN
+    SELECT COALESCE(array_agg(ts), '{}'::BIGINT[]) INTO v_global_ts
+    FROM unnest(v_global_rec.timestamps) AS ts
+    WHERE ts > (v_now - c_global_window_ms);
+
+    IF v_global_ts IS NULL THEN
+      v_global_ts := '{}'::BIGINT[];
+    END IF;
+
+    IF array_length(v_global_ts, 1) >= c_max_global_requests THEN
+      v_retry_after := CEIL((v_global_ts[1] + c_global_window_ms - v_now) / 1000.0);
+      RETURN jsonb_build_object(
+        'allowed', false,
+        'retryAfterSeconds', v_retry_after,
+        'error', 'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.'
+      );
+    END IF;
+  ELSE
+    v_global_ts := '{}'::BIGINT[];
+  END IF;
+
+  -- 6. Count current active client entries in the store (excluding global admission tracker)
+  SELECT COUNT(*) INTO v_total_keys FROM public.contact_rate_limits WHERE key != c_global_admission_key;
 
   -- 7. Check all keys under row-level locks
   FOREACH v_key IN ARRAY v_sorted_keys LOOP
@@ -201,6 +233,7 @@ BEGIN
       SELECT key
       FROM public.contact_rate_limits
       WHERE key != ALL(v_sorted_keys)
+        AND key != c_global_admission_key
         AND array_length(timestamps, 1) < c_max_requests
         AND (v_now - last_updated) >= c_cooldown_ms
       ORDER BY array_length(timestamps, 1) ASC, last_updated ASC
@@ -209,11 +242,35 @@ BEGIN
 
     GET DIAGNOSTICS v_evicted_count = ROW_COUNT;
 
-    -- Actively throttled keys are NEVER evicted (preventing resetting abuser quotas).
-    -- Under full saturation, legitimate new submissions remain available rather than suffering a global lockout.
+    -- Enforce hard storage capacity bound: if store remains full because remaining rows are actively throttled,
+    -- do NOT insert new keys. Reject submission while strictly preserving all active throttled quotas intact.
+    IF (v_total_keys - v_evicted_count + v_new_key_count) > c_max_store_size THEN
+      RETURN jsonb_build_object(
+        'allowed', false,
+        'retryAfterSeconds', 60,
+        'error', 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.'
+      );
+    END IF;
   END IF;
 
-  -- 9. All checks passed: commit updated timestamps atomically for all keys
+  -- 9. All checks passed: commit updated timestamps atomically for global tracker and all keys
+  v_global_ts := array_append(v_global_ts, v_now);
+  IF v_global_rec.key IS NOT NULL THEN
+    UPDATE public.contact_rate_limits
+    SET timestamps = v_global_ts,
+        last_updated = v_now,
+        expires_at = to_timestamp((v_now + c_global_window_ms) / 1000.0)
+    WHERE key = c_global_admission_key;
+  ELSE
+    INSERT INTO public.contact_rate_limits (key, timestamps, last_updated, expires_at)
+    VALUES (
+      c_global_admission_key,
+      v_global_ts,
+      v_now,
+      to_timestamp((v_now + c_global_window_ms) / 1000.0)
+    );
+  END IF;
+
   FOREACH v_key IN ARRAY v_sorted_keys LOOP
     SELECT * INTO v_rec
     FROM public.contact_rate_limits

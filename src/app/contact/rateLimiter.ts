@@ -32,25 +32,232 @@ interface AdmissionRecord {
   lastUpdated: number;
 }
 
-const admissionMap = new Map<string, AdmissionRecord>();
-let globalAdmissionTimestamps: number[] = [];
+interface SharedAdmissionData {
+  globalTimestamps: number[];
+  ipRecords: Record<string, AdmissionRecord>;
+}
+
+/**
+ * Cross-Process File-Backed Atomic Admission Store.
+ * Shares the global admission window and per-IP admission tracking across
+ * independent Node worker processes/threads and serverless instances using atomic file locking.
+ */
+export class CrossProcessAdmissionStore {
+  readonly filePath: string;
+  readonly lockFilePath: string;
+
+  constructor(baseDir?: string) {
+    const dir = baseDir || path.join(os.tmpdir(), 'palluvo_rate_limits');
+    if (!fs.existsSync(/*turbopackIgnore: true*/ dir)) {
+      try {
+        fs.mkdirSync(dir, { recursive: true });
+      } catch {}
+    }
+    this.filePath = path.join(dir, 'admission_store.json');
+    this.lockFilePath = path.join(dir, 'admission_store.lock');
+  }
+
+  private withLock<T>(fn: () => T): T {
+    const maxWaitMs = 5000;
+    const start = Date.now();
+    let fd: number | null = null;
+
+    while (fd === null) {
+      try {
+        fd = fs.openSync(this.lockFilePath, 'wx');
+      } catch (err: any) {
+        if (
+          err &&
+          (err.code === 'EEXIST' ||
+            err.code === 'EPERM' ||
+            err.code === 'EBUSY' ||
+            err.code === 'EACCES')
+        ) {
+          try {
+            const stat = fs.statSync(this.lockFilePath);
+            if (Date.now() - stat.mtimeMs > 10000) {
+              try { fs.unlinkSync(this.lockFilePath); } catch {}
+            }
+          } catch {}
+
+          if (Date.now() - start > maxWaitMs) {
+            try { fs.unlinkSync(this.lockFilePath); } catch {}
+          }
+          const pauseUntil = Date.now() + 10 + Math.floor(Math.random() * 10);
+          while (Date.now() < pauseUntil) {}
+        } else {
+          throw err;
+        }
+      }
+    }
+
+    try {
+      return fn();
+    } finally {
+      if (fd !== null) {
+        try { fs.closeSync(fd); } catch {}
+      }
+      try { fs.unlinkSync(this.lockFilePath); } catch {}
+    }
+  }
+
+  private readData(): SharedAdmissionData {
+    if (!fs.existsSync(this.filePath)) {
+      return { globalTimestamps: [], ipRecords: {} };
+    }
+    try {
+      const content = fs.readFileSync(this.filePath, 'utf8');
+      const parsed = JSON.parse(content);
+      return {
+        globalTimestamps: Array.isArray(parsed?.globalTimestamps) ? parsed.globalTimestamps : [],
+        ipRecords: parsed?.ipRecords && typeof parsed.ipRecords === 'object' ? parsed.ipRecords : {},
+      };
+    } catch {
+      return { globalTimestamps: [], ipRecords: {} };
+    }
+  }
+
+  private writeData(data: SharedAdmissionData): void {
+    const tempPath = `${this.filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
+    fs.renameSync(tempPath, this.filePath);
+  }
+
+  checkAdmission({ ip }: { ip?: string }, now: number = Date.now()): RateLimitResult {
+    return this.withLock(() => {
+      const data = this.readData();
+      const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+
+      // 1. Shared global WAF admission window across all instances/workers
+      data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
+      if (data.globalTimestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS) {
+        const retryAfter = Math.ceil(
+          (data.globalTimestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
+        );
+        return {
+          allowed: false,
+          retryAfterSeconds: retryAfter,
+          error:
+            'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
+        };
+      }
+
+      if (!ip || ip === 'unknown') {
+        data.globalTimestamps.push(now);
+        this.writeData(data);
+        return { allowed: true };
+      }
+
+      // 2. Per-IP admission limit
+      let record: AdmissionRecord | undefined = data.ipRecords[ip];
+      if (record) {
+        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+        if (record.timestamps.length === 0) {
+          delete data.ipRecords[ip];
+          record = undefined;
+        }
+      }
+
+      // Memory/capacity bounding on ipRecords
+      const currentKeys = Object.keys(data.ipRecords);
+      if (!record && currentKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+        // Sweep expired
+        for (const [k, rec] of Object.entries(data.ipRecords)) {
+          rec.timestamps = rec.timestamps.filter((ts) => ts > windowStart);
+          if (rec.timestamps.length === 0) {
+            delete data.ipRecords[k];
+          }
+        }
+        const remainingKeys = Object.keys(data.ipRecords);
+        if (remainingKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+          const needed = remainingKeys.length + 1 - ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE;
+          const oldest = Object.entries(data.ipRecords)
+            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated)
+            .slice(0, needed)
+            .map(([k]) => k);
+          for (const k of oldest) {
+            delete data.ipRecords[k];
+          }
+        }
+      }
+
+      if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
+        const oldest = record.timestamps[0];
+        const retryAfter = Math.ceil((oldest + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+        return {
+          allowed: false,
+          retryAfterSeconds: retryAfter,
+          error:
+            'Too many inquiries received from your connection. Please wait a moment before trying again.',
+        };
+      }
+
+      if (!record) {
+        record = { timestamps: [now], lastUpdated: now };
+        data.ipRecords[ip] = record;
+      } else {
+        record.timestamps.push(now);
+        record.lastUpdated = now;
+      }
+
+      data.globalTimestamps.push(now);
+      this.writeData(data);
+      return { allowed: true };
+    });
+  }
+
+  pruneExpired(now: number = Date.now()): number {
+    return this.withLock(() => {
+      const data = this.readData();
+      const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+      data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
+      let pruned = 0;
+      for (const [ip, record] of Object.entries(data.ipRecords)) {
+        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+        if (record.timestamps.length === 0) {
+          delete data.ipRecords[ip];
+          pruned++;
+        }
+      }
+      this.writeData(data);
+      return pruned;
+    });
+  }
+
+  getTrackerSize(): number {
+    return this.withLock(() => {
+      const data = this.readData();
+      return Object.keys(data.ipRecords).length;
+    });
+  }
+
+  getGlobalCount(): number {
+    return this.withLock(() => {
+      const data = this.readData();
+      return data.globalTimestamps.length;
+    });
+  }
+
+  clear(): void {
+    this.withLock(() => {
+      try {
+        if (fs.existsSync(this.filePath)) {
+          fs.unlinkSync(this.filePath);
+        }
+      } catch {}
+    });
+  }
+}
+
+// Active singleton cross-process admission store
+export const defaultAdmissionStore = new CrossProcessAdmissionStore();
 
 /**
  * Periodically or on-demand sweeps and deletes stale IP entries and global timestamps older than the sliding window.
- * Ensures the per-process admission map does not accumulate stale client addresses indefinitely.
+ * Ensures the shared admission store does not accumulate stale client addresses indefinitely.
  */
 export function pruneExpiredAdmissions(now: number = Date.now()): number {
-  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
-  globalAdmissionTimestamps = globalAdmissionTimestamps.filter((ts) => ts > windowStart);
-  let pruned = 0;
-  for (const [ip, record] of admissionMap.entries()) {
-    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
-    if (record.timestamps.length === 0) {
-      admissionMap.delete(ip);
-      pruned++;
-    }
-  }
-  return pruned;
+  return defaultAdmissionStore.pruneExpired(now);
 }
 
 // Background sweep in warm Node process environments
@@ -66,91 +273,25 @@ if (typeof setInterval !== 'undefined') {
 /**
  * Independent abuse/WAF admission limit at the application boundary.
  * Throttles rapid bursts from a single source connection as well as global volumetric floods
- * before inquiry persistence, with bounded memory and expiration cleanup.
+ * before inquiry persistence, backed by shared atomic cross-process state.
  */
 export function checkAdmissionLimit(
   { ip }: { ip?: string },
   now: number = Date.now()
 ): RateLimitResult {
-  const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
-
-  // 1. Independent global/WAF admission control against volumetric bot floods across IPs
-  globalAdmissionTimestamps = globalAdmissionTimestamps.filter((ts) => ts > windowStart);
-  if (globalAdmissionTimestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS) {
-    const retryAfter = Math.ceil(
-      (globalAdmissionTimestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
-    );
-    return {
-      allowed: false,
-      retryAfterSeconds: retryAfter,
-      error: 'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
-    };
-  }
-
-  if (!ip || ip === 'unknown') {
-    globalAdmissionTimestamps.push(now);
-    return { allowed: true };
-  }
-
-  let record = admissionMap.get(ip);
-  if (record) {
-    record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
-    if (record.timestamps.length === 0) {
-      admissionMap.delete(ip);
-      record = undefined;
-    }
-  }
-
-  // Enforce memory bound: if map size reaches limit before inserting a new IP,
-  // sweep expired entries, and evict least recently active entries if still full.
-  if (!record && admissionMap.size >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
-    pruneExpiredAdmissions(now);
-    if (admissionMap.size >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
-      const needed = admissionMap.size + 1 - ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE;
-      const oldestKeys = Array.from(admissionMap.entries())
-        .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated)
-        .slice(0, needed)
-        .map(([k]) => k);
-      for (const k of oldestKeys) {
-        admissionMap.delete(k);
-      }
-    }
-  }
-
-  if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
-    const retryAfter = Math.ceil(
-      (record.timestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
-    );
-    return {
-      allowed: false,
-      retryAfterSeconds: retryAfter,
-      error: 'Too many inquiries received from your connection. Please wait a moment before trying again.',
-    };
-  }
-
-  if (!record) {
-    record = { timestamps: [now], lastUpdated: now };
-    admissionMap.set(ip, record);
-  } else {
-    record.timestamps.push(now);
-    record.lastUpdated = now;
-  }
-
-  globalAdmissionTimestamps.push(now);
-  return { allowed: true };
+  return defaultAdmissionStore.checkAdmission({ ip }, now);
 }
 
 export function getAdmissionTrackerSize(): number {
-  return admissionMap.size;
+  return defaultAdmissionStore.getTrackerSize();
 }
 
 export function getGlobalAdmissionCount(): number {
-  return globalAdmissionTimestamps.length;
+  return defaultAdmissionStore.getGlobalCount();
 }
 
 export function resetAdmissionTracker(): void {
-  admissionMap.clear();
-  globalAdmissionTimestamps = [];
+  defaultAdmissionStore.clear();
 }
 
 export interface RateLimitRecord {
@@ -474,7 +615,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     this.maxStoreSize = options.maxStoreSize ?? options.MAX_STORE_SIZE ?? RATE_LIMIT_CONFIG.MAX_STORE_SIZE;
 
     const baseDir = path.join(os.tmpdir(), 'palluvo_rate_limits');
-    if (!fs.existsSync(baseDir)) {
+    if (!fs.existsSync(/*turbopackIgnore: true*/ baseDir)) {
       try {
         fs.mkdirSync(baseDir, { recursive: true });
       } catch {}
@@ -492,7 +633,13 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
       try {
         fd = fs.openSync(this.lockFilePath, 'wx');
       } catch (err: any) {
-        if (err && err.code === 'EEXIST') {
+        if (
+          err &&
+          (err.code === 'EEXIST' ||
+            err.code === 'EPERM' ||
+            err.code === 'EBUSY' ||
+            err.code === 'EACCES')
+        ) {
           try {
             const stat = fs.statSync(this.lockFilePath);
             if (Date.now() - stat.mtimeMs > 10000) {
@@ -503,7 +650,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           if (Date.now() - start > maxWaitMs) {
             try { fs.unlinkSync(this.lockFilePath); } catch {}
           }
-          const pauseUntil = Date.now() + 15;
+          const pauseUntil = Date.now() + 10 + Math.floor(Math.random() * 10);
           while (Date.now() < pauseUntil) {}
         } else {
           throw err;
@@ -514,7 +661,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     try {
       return fn();
     } finally {
-      try { fs.closeSync(fd); } catch {}
+      if (fd !== null) {
+        try { fs.closeSync(fd); } catch {}
+      }
       try { fs.unlinkSync(this.lockFilePath); } catch {}
     }
   }
@@ -605,6 +754,16 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
 
         for (const k of keysToEvict) {
           delete data[k];
+        }
+
+        // Enforce hard storage capacity bound: if store remains full because remaining entries are actively throttled,
+        // do NOT insert new keys. Reject while strictly preserving all active throttled quotas intact.
+        if (Object.keys(data).length + newKeys.length > this.maxStoreSize) {
+          return {
+            allowed: false,
+            retryAfterSeconds: 60,
+            error: 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.',
+          };
         }
       }
 
@@ -840,6 +999,16 @@ export class SharedRateLimiter implements RateLimitStore {
 
         for (const k of keysToEvict) {
           this.store.delete(k);
+        }
+
+        // Enforce hard storage capacity bound: if store remains full because remaining entries are actively throttled,
+        // do NOT insert new keys. Reject while strictly preserving all active throttled quotas intact.
+        if (this.store.size + newKeys.length > this.maxStoreSize) {
+          return {
+            allowed: false,
+            retryAfterSeconds: 60,
+            error: 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.',
+          };
         }
       }
     }

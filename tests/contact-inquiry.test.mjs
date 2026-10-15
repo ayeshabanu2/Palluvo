@@ -834,7 +834,7 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     );
   });
 
-  test('REGRESSION [P2]: preserves active quota records during all-throttled store saturation while legitimate new visitors remain available', async () => {
+  test('REGRESSION [P2]: preserves active quota records during all-throttled store saturation and enforces hard capacity bound', async () => {
     // SharedRateLimiter with a bounded target size of 5 keys
     const limiter = new SharedRateLimiter({ maxStoreSize: 5 });
     const now = 300000;
@@ -850,11 +850,13 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     }
     assert.equal(limiter.getStoreSize(), 5, 'Store is at full capacity (5)');
 
-    // 2. A new legitimate visitor arrives with a 6th distinct key while all 5 slots are actively throttled.
-    // Under no circumstances should any of the 5 actively throttled rows be evicted (resets penalty),
-    // and the legitimate visitor must REMAIN AVAILABLE rather than suffering service-wide lockout!
-    const legitVisitorAttempt = await limiter.consumeKeys(['ip:legit-new-visitor'], now + 40000);
-    assert.equal(legitVisitorAttempt.allowed, true, 'Legitimate new visitor must be admitted under all-throttled saturation');
+    // 2. A new submission arrives with a 6th distinct key while all 5 slots are actively throttled.
+    // The store must strictly enforce the hard capacity bound without growing beyond maxStoreSize,
+    // and without evicting or resetting any of the 5 actively throttled rows!
+    const fullStoreAttempt = await limiter.consumeKeys(['ip:new-visitor-full'], now + 40000);
+    assert.equal(fullStoreAttempt.allowed, false, 'Store must enforce hard capacity bound when all entries are throttled');
+    assert.match(fullStoreAttempt.error, /high inquiry volume/i);
+    assert.equal(limiter.getStoreSize(), 5, 'Store size must strictly remain within hard cap (5)');
 
     // 3. Verify ALL 5 original throttled keys were PRESERVED and their quotas were NOT reset
     for (let keyIdx = 0; keyIdx < 5; keyIdx++) {
@@ -886,18 +888,30 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
         const totalKeys = dbStore.size;
         const newKeys = keys.filter((k) => !dbStore.has(k));
 
+        let evictedCount = 0;
         if (newKeys.length > 0 && totalKeys + newKeys.length > capacityLimit) {
-          // SQL logic: only unthrottled keys (< 5 requests and not in cooldown) can be evicted
           const needed = (totalKeys + newKeys.length) - capacityLimit;
           const unthrottled = Array.from(dbStore.entries())
-            .filter(([k, rec]) => !keys.includes(k) && rec.timestamps.length < 5)
+            .filter(([k, rec]) => !keys.includes(k) && rec.timestamps.length < 5 && (now - rec.lastUpdated >= 5000))
             .map(([k]) => k);
 
           const evicted = unthrottled.slice(0, needed);
+          evictedCount = evicted.length;
           for (const k of evicted) {
             dbStore.delete(k);
           }
-          // Throttled keys are never evicted. Store admits new keys so public submissions cannot lock out users.
+
+          // Enforce hard capacity bound: if store remains full because remaining entries are throttled, do NOT insert
+          if (totalKeys - evictedCount + newKeys.length > capacityLimit) {
+            return {
+              data: {
+                allowed: false,
+                retryAfterSeconds: 60,
+                error: 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.',
+              },
+              error: null,
+            };
+          }
         }
 
         for (const k of keys) {
@@ -916,11 +930,35 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
 
     const clientStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
     const dbResult = await clientStore.consumeKeys(['ip:legit-db-visitor']);
-    assert.equal(dbResult.allowed, true, 'Legitimate new visitor admitted in database store');
+    assert.equal(dbResult.allowed, false, 'Database RPC must enforce capacity bound when all slots are throttled');
+    assert.match(dbResult.error, /high inquiry volume/i);
+    assert.equal(dbStore.size, capacityLimit, 'Database row count must strictly stay at cap (3)');
+    assert.ok(!dbStore.has(hashRateLimitIdentifier('ip:legit-db-visitor')), 'New visitor key was not inserted into saturated database');
     assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-0')), 'Throttled entry 0 preserved');
     assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-1')), 'Throttled entry 1 preserved');
     assert.ok(dbStore.has(hashRateLimitIdentifier('ip:db-throttled-2')), 'Throttled entry 2 preserved');
-    assert.ok(dbStore.has(hashRateLimitIdentifier('ip:legit-db-visitor')), 'New visitor key recorded in database store');
+  });
+
+  test('[P2] evicts unthrottled synthetic keys to admit legitimate visitors when store capacity is reached', async () => {
+    const limiter = new SharedRateLimiter({ maxStoreSize: 3 });
+    const now = 400000;
+
+    // 2 throttled keys (5 requests each) + 1 unthrottled key (1 request)
+    for (let req = 0; req < 5; req++) {
+      await limiter.consumeKeys(['ip:throttled-1'], now + req * 6000);
+      await limiter.consumeKeys(['ip:throttled-2'], now + req * 6000);
+    }
+    await limiter.consumeKeys(['ip:unthrottled-3'], now);
+    assert.equal(limiter.getStoreSize(), 3, 'Store reaches capacity with 2 throttled and 1 unthrottled');
+
+    // New visitor arrives: unthrottled key is evicted in Phase 1, visitor is admitted within cap
+    const admitNew = await limiter.consumeKeys(['ip:new-visitor'], now + 25000);
+    assert.equal(admitNew.allowed, true, 'Unthrottled key must be evicted to admit new visitor');
+    assert.equal(limiter.getStoreSize(), 3, 'Store size must strictly stay at cap (3)');
+    assert.ok(limiter.getRecord('ip:throttled-1'), 'Throttled 1 preserved');
+    assert.ok(limiter.getRecord('ip:throttled-2'), 'Throttled 2 preserved');
+    assert.ok(!limiter.getRecord('ip:unthrottled-3'), 'Unthrottled key was evicted');
+    assert.ok(limiter.getRecord('ip:new-visitor'), 'New visitor was recorded');
   });
 
   test('[P2] independent global/WAF admission control throttles distributed flood across IPs', () => {
@@ -942,6 +980,50 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     // After admission window expires (60 seconds), global admission control recovers
     const recoveredRes = checkAdmissionLimit({ ip: '203.0.113.99' }, now + ADMISSION_LIMIT_CONFIG.WINDOW_MS + 1000);
     assert.equal(recoveredRes.allowed, true, 'Global admission control recovers after window');
+  });
+
+  test('[P2] cross-worker global admission control: separate Node worker threads share atomic global admission window across workers', async () => {
+    resetAdmissionTracker();
+    const now = 900000;
+
+    // Worker script running in isolated V8 context
+    const workerScript = `
+      import { checkAdmissionLimit } from './src/app/contact/rateLimiter.ts';
+      import { parentPort, workerData } from 'node:worker_threads';
+
+      const results = [];
+      for (let i = 0; i < workerData.count; i++) {
+        const res = checkAdmissionLimit({ ip: \`10.1.\${workerData.workerId}.\${i}\` }, workerData.now + i * 10);
+        results.push(res.allowed);
+      }
+      parentPort.postMessage({ results, allAllowed: results.every(Boolean) });
+    `;
+
+    const runWorker = (workerId, count, startTime) => {
+      return new Promise((resolve, reject) => {
+        const worker = new Worker(workerScript, {
+          eval: true,
+          workerData: { workerId, count, now: startTime },
+        });
+        worker.on('message', resolve);
+        worker.on('error', reject);
+      });
+    };
+
+    // Concurrently run Worker A (60 admissions) and Worker B (60 admissions)
+    const [resA, resB] = await Promise.all([
+      runWorker('a', 60, now),
+      runWorker('b', 60, now + 100),
+    ]);
+
+    assert.equal(resA.allAllowed, true, 'Worker A admissions must be allowed');
+    assert.equal(resB.allAllowed, true, 'Worker B admissions must be allowed');
+    assert.equal(getGlobalAdmissionCount(), 120, 'Shared global admission count must be 120 across workers');
+
+    // 121st admission from main thread is throttled by the shared global limit across workers
+    const throttledMain = checkAdmissionLimit({ ip: '203.0.113.199' }, now + 2000);
+    assert.equal(throttledMain.allowed, false, '121st admission across workers must be throttled');
+    assert.match(throttledMain.error, /unusually high traffic/i);
   });
 
   test('REGRESSION [P2]: unverified form emails cannot poison victim quota across separate IP addresses', async () => {
