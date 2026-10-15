@@ -191,17 +191,22 @@ export class CrossProcessAdmissionStore {
                           Date.now() - currentStat.mtimeMs > staleThresholdMs &&
                           !isLockOwnerAlive(this.lockFilePath)
                         ) {
-                          try { fs.unlinkSync(this.lockFilePath); } catch {}
+                          // Exclusive atomic takeover:
+                          // Write new lock state to a distinct temp file and atomically rename over the stale lock.
+                          // This ensures this.lockFilePath NEVER ceases to exist, preventing racing waiters from slipping in.
+                          const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
                           try {
-                            fd = fs.openSync(this.lockFilePath, 'wx');
-                            try {
-                              fs.writeFileSync(
-                                fd,
-                                JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                                'utf8'
-                              );
-                            } catch {}
-                          } catch {}
+                            const newFd = fs.openSync(newLockPath, 'wx');
+                            fs.writeFileSync(
+                              newFd,
+                              JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                              'utf8'
+                            );
+                            fs.renameSync(newLockPath, this.lockFilePath);
+                            fd = newFd;
+                          } catch {
+                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
+                          }
                         }
                       }
                     } finally {
@@ -285,60 +290,95 @@ export class CrossProcessAdmissionStore {
     const tempPath = `${this.filePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
     fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
 
-    // Fencing verification effective at commit time:
-    if (lockFd !== null && lockFd !== undefined) {
+    // Atomic CAS commit transaction:
+    // Guarantees that validation and swap are completely inseparable under commitMutexPath.
+    // If a writer is paused after validation and a newer writer commits,
+    // the on-disk epoch compare inside the commit transaction catches it and rejects the stale commit.
+    const commitMutexPath = `${this.filePath}.commit_lock`;
+    const startCommit = Date.now();
+    let commitFd: number | null = null;
+
+    while (commitFd === null) {
       try {
-        const fdStat = fs.fstatSync(lockFd);
-        if (fdStat.nlink === 0) {
-          try { fs.unlinkSync(tempPath); } catch {}
-          throw new Error('LockFenced: Lock file descriptor was unlinked on disk; stale commit rejected');
-        }
+        commitFd = fs.openSync(commitMutexPath, 'wx');
       } catch (err: any) {
-        try { fs.unlinkSync(tempPath); } catch {}
-        throw new Error('LockFenced: Lock descriptor invalid; stale commit rejected');
+        if (Date.now() - startCommit > 5000) {
+          try { fs.unlinkSync(tempPath); } catch {}
+          throw new Error('LockTimeout: Timeout acquiring commit lock');
+        }
+        try {
+          const cStat = fs.statSync(commitMutexPath);
+          if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+            try { fs.unlinkSync(commitMutexPath); } catch {}
+          }
+        } catch {}
+        const pauseUntil = Date.now() + 5;
+        while (Date.now() < pauseUntil) {}
       }
     }
 
-    if (fencingToken) {
-      try {
+    try {
+      // 1. Commit mutex descriptor check
+      if (commitFd !== null) {
+        try {
+          const cStat = fs.fstatSync(commitFd);
+          if (cStat.nlink === 0) {
+            throw new Error('LockFenced: Commit mutex was unlinked; commit aborted');
+          }
+        } catch (err: any) {
+          if (err?.message?.includes('LockFenced')) throw err;
+          throw new Error('LockFenced: Commit mutex invalid; commit aborted');
+        }
+      }
+
+      // 2. Lock descriptor check
+      if (lockFd !== null && lockFd !== undefined) {
+        try {
+          const fdStat = fs.fstatSync(lockFd);
+          if (fdStat.nlink === 0) {
+            throw new Error('LockFenced: Lock file descriptor was unlinked on disk; stale commit rejected');
+          }
+        } catch (err: any) {
+          throw new Error('LockFenced: Lock descriptor invalid; stale commit rejected');
+        }
+      }
+
+      // 2. Lock ownership check
+      if (fencingToken) {
         if (!fs.existsSync(this.lockFilePath)) {
-          try { fs.unlinkSync(tempPath); } catch {}
           throw new Error('LockFenced: Lock file missing; stale commit rejected');
         }
         const lockContent = fs.readFileSync(this.lockFilePath, 'utf8');
         const meta = JSON.parse(lockContent);
         if (meta?.ownerId && meta.ownerId !== fencingToken) {
-          try { fs.unlinkSync(tempPath); } catch {}
           throw new Error('LockFenced: Lock ownership reassigned; stale commit rejected');
         }
-      } catch (err: any) {
-        try { fs.unlinkSync(tempPath); } catch {}
-        if (err?.message?.includes('LockFenced')) throw err;
       }
-    }
 
-    if (fs.existsSync(this.filePath)) {
-      try {
+      // 3. Atomic CAS: Compare on-disk epoch
+      if (fs.existsSync(this.filePath)) {
         const diskContent = fs.readFileSync(this.filePath, 'utf8');
         const diskParsed = JSON.parse(diskContent);
         const diskEpoch = typeof diskParsed?.epoch === 'number' ? diskParsed.epoch : 0;
-        if (diskEpoch !== initialEpoch && diskEpoch >= newEpoch) {
-          try { fs.unlinkSync(tempPath); } catch {}
+        if (diskEpoch !== initialEpoch || diskEpoch >= newEpoch) {
           throw new Error(
-            `LockFenced: Storage epoch on disk has advanced (${diskEpoch} >= ${newEpoch}); stale commit rejected`
+            `LockFenced: Storage epoch on disk has advanced (${diskEpoch} !== ${initialEpoch}); stale commit rejected`
           );
         }
-      } catch (err: any) {
-        try { fs.unlinkSync(tempPath); } catch {}
-        if (err?.message?.includes('LockFenced')) throw err;
+      } else if (initialEpoch !== 0) {
+        throw new Error(
+          `LockFenced: Initial epoch was ${initialEpoch} but storage file is missing; stale commit rejected`
+        );
       }
-    }
 
-    try {
+      // 4. Atomic Swap
       fs.renameSync(tempPath, this.filePath);
-    } catch (err) {
-      try { fs.unlinkSync(tempPath); } catch {}
-      throw err;
+    } finally {
+      try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
+      if (commitFd !== null) {
+        try { fs.closeSync(commitFd); } catch {}
+        try { fs.unlinkSync(commitMutexPath); } catch {}
+      }
     }
   }
 
@@ -945,17 +985,20 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
                           Date.now() - currentStat.mtimeMs > staleThresholdMs &&
                           !isLockOwnerAlive(this.lockFilePath)
                         ) {
-                          try { fs.unlinkSync(this.lockFilePath); } catch {}
+                          // Exclusive atomic takeover:
+                          const newLockPath = `${this.lockFilePath}.${ownerId}.new`;
                           try {
-                            fd = fs.openSync(this.lockFilePath, 'wx');
-                            try {
-                              fs.writeFileSync(
-                                fd,
-                                JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
-                                'utf8'
-                              );
-                            } catch {}
-                          } catch {}
+                            const newFd = fs.openSync(newLockPath, 'wx');
+                            fs.writeFileSync(
+                              newFd,
+                              JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+                              'utf8'
+                            );
+                            fs.renameSync(newLockPath, this.lockFilePath);
+                            fd = newFd;
+                          } catch {
+                            try { if (fs.existsSync(newLockPath)) fs.unlinkSync(newLockPath); } catch {}
+                          }
                         }
                       }
                     } finally {
@@ -1003,6 +1046,110 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           }
         }
       } catch {}
+    }
+  }
+
+  private writeData(
+    data: Record<string, RateLimitRecord>,
+    initialEpoch: number,
+    fencingToken?: string,
+    lockFd?: number | null
+  ): void {
+    const newEpoch = initialEpoch + 1;
+    const toCommit = { ...data, __epoch: newEpoch };
+
+    const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
+    fs.writeFileSync(tempPath, JSON.stringify(toCommit), 'utf8');
+
+    // Atomic CAS commit transaction:
+    // Guarantees that validation and swap are completely broadcast-safe and inseparable under commitMutexPath.
+    // If a writer is paused after validation and a newer writer commits,
+    // the on-disk epoch compare inside the commit transaction catches it and rejects the stale commit.
+    const commitMutexPath = `${this.storeFilePath}.commit_lock`;
+    const startCommit = Date.now();
+    let commitFd: number | null = null;
+
+    while (commitFd === null) {
+      try {
+        commitFd = fs.openSync(commitMutexPath, 'wx');
+      } catch (err: any) {
+        if (Date.now() - startCommit > 5000) {
+          try { fs.unlinkSync(tempPath); } catch {}
+          throw new Error('LockTimeout: Timeout acquiring commit lock');
+        }
+        try {
+          const cStat = fs.statSync(commitMutexPath);
+          if (Date.now() - cStat.mtimeMs > 2000 && !isLockOwnerAlive(commitMutexPath)) {
+            try { fs.unlinkSync(commitMutexPath); } catch {}
+          }
+        } catch {}
+        const pauseUntil = Date.now() + 5;
+        while (Date.now() < pauseUntil) {}
+      }
+    }
+
+    try {
+      // 1. Commit mutex descriptor check
+      if (commitFd !== null) {
+        try {
+          const cStat = fs.fstatSync(commitFd);
+          if (cStat.nlink === 0) {
+            throw new Error('LockFenced: Commit mutex was unlinked; commit aborted');
+          }
+        } catch (err: any) {
+          if (err?.message?.includes('LockFenced')) throw err;
+          throw new Error('LockFenced: Commit mutex invalid; commit aborted');
+        }
+      }
+
+      // 2. Lock descriptor check
+      if (lockFd !== null && lockFd !== undefined) {
+        try {
+          const fdStat = fs.fstatSync(lockFd);
+          if (fdStat.nlink === 0) {
+            throw new Error('LockFenced: Lock file descriptor was unlinked on disk; stale commit rejected');
+          }
+        } catch (err: any) {
+          throw new Error('LockFenced: Lock descriptor invalid; stale commit rejected');
+        }
+      }
+
+      // 3. Lock ownership check
+      if (fencingToken) {
+        if (!fs.existsSync(this.lockFilePath)) {
+          throw new Error('LockFenced: Lock file missing; stale commit rejected');
+        }
+        const lockContent = fs.readFileSync(this.lockFilePath, 'utf8');
+        const meta = JSON.parse(lockContent);
+        if (meta?.ownerId && meta.ownerId !== fencingToken) {
+          throw new Error('LockFenced: Lock ownership reassigned; stale commit rejected');
+        }
+      }
+
+      // 4. Atomic CAS: Compare on-disk epoch
+      if (fs.existsSync(this.storeFilePath)) {
+        const diskContent = fs.readFileSync(this.storeFilePath, 'utf8');
+        const diskParsed = JSON.parse(diskContent);
+        const diskEpoch = typeof diskParsed?.__epoch === 'number' ? diskParsed.__epoch : 0;
+        if (diskEpoch !== initialEpoch || diskEpoch >= newEpoch) {
+          throw new Error(
+            `LockFenced: Storage epoch on disk has advanced (${diskEpoch} !== ${initialEpoch}); stale commit rejected`
+          );
+        }
+      } else if (initialEpoch !== 0) {
+        throw new Error(
+          `LockFenced: Initial epoch was ${initialEpoch} but storage file is missing; stale commit rejected`
+        );
+      }
+
+      // 5. Atomic Swap
+      fs.renameSync(tempPath, this.storeFilePath);
+    } finally {
+      try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
+      if (commitFd !== null) {
+        try { fs.closeSync(commitFd); } catch {}
+        try { fs.unlinkSync(commitMutexPath); } catch {}
+      }
     }
   }
 
@@ -1127,67 +1274,8 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
           record.lastUpdated = now;
         }
 
-        // 5. Commit with fencing validation effective at commit
-        const newEpoch = initialEpoch + 1;
-        const toCommit = { ...data, __epoch: newEpoch };
-
-        const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
-        fs.writeFileSync(tempPath, JSON.stringify(toCommit), 'utf8');
-
-        if (lockFd !== null && lockFd !== undefined) {
-          try {
-            const fdStat = fs.fstatSync(lockFd);
-            if (fdStat.nlink === 0) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error('LockFenced: Lock file descriptor was unlinked on disk; stale commit rejected');
-            }
-          } catch (err: any) {
-            try { fs.unlinkSync(tempPath); } catch {}
-            throw new Error('LockFenced: Lock descriptor invalid; stale commit rejected');
-          }
-        }
-
-        if (fencingToken) {
-          try {
-            if (!fs.existsSync(this.lockFilePath)) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error('LockFenced: Lock file missing; stale commit rejected');
-            }
-            const currentLock = fs.readFileSync(this.lockFilePath, 'utf8');
-            const meta = JSON.parse(currentLock);
-            if (meta?.ownerId && meta.ownerId !== fencingToken) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error('LockFenced: Lock ownership reassigned; stale commit rejected');
-            }
-          } catch (err: any) {
-            try { fs.unlinkSync(tempPath); } catch {}
-            if (err?.message?.includes('LockFenced')) throw err;
-          }
-        }
-
-        if (fs.existsSync(this.storeFilePath)) {
-          try {
-            const diskContent = fs.readFileSync(this.storeFilePath, 'utf8');
-            const diskParsed = JSON.parse(diskContent);
-            const diskEpoch = typeof diskParsed?.__epoch === 'number' ? diskParsed.__epoch : 0;
-            if (diskEpoch !== initialEpoch && diskEpoch >= newEpoch) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error(
-                `LockFenced: Storage epoch on disk has advanced (${diskEpoch} >= ${newEpoch}); stale commit rejected`
-              );
-            }
-          } catch (err: any) {
-            try { fs.unlinkSync(tempPath); } catch {}
-            if (err?.message?.includes('LockFenced')) throw err;
-          }
-        }
-
-        try {
-          fs.renameSync(tempPath, this.storeFilePath);
-        } catch (err) {
-          try { fs.unlinkSync(tempPath); } catch {}
-          throw err;
-        }
+        // 5. Commit with atomic CAS transaction
+        this.writeData(data, initialEpoch, fencingToken, lockFd);
 
         return { allowed: true };
       }, maxWaitMs);
@@ -1239,40 +1327,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             pruned++;
           }
         }
-        const newEpoch = initialEpoch + 1;
-        const toCommit = { ...data, __epoch: newEpoch };
-        const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.${Math.random().toString(36).slice(2)}.tmp`;
-        fs.writeFileSync(tempPath, JSON.stringify(toCommit), 'utf8');
-
-        if (lockFd !== null && lockFd !== undefined) {
-          try {
-            if (fs.fstatSync(lockFd).nlink === 0) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error('LockFenced');
-            }
-          } catch {
-            try { fs.unlinkSync(tempPath); } catch {}
-            throw new Error('LockFenced');
-          }
-        }
-
-        if (fencingToken && fs.existsSync(this.lockFilePath)) {
-          try {
-            const meta = JSON.parse(fs.readFileSync(this.lockFilePath, 'utf8'));
-            if (meta?.ownerId && meta.ownerId !== fencingToken) {
-              try { fs.unlinkSync(tempPath); } catch {}
-              throw new Error('LockFenced');
-            }
-          } catch (e: any) {
-            if (e?.message?.includes('LockFenced')) throw e;
-          }
-        }
-
-        try {
-          fs.renameSync(tempPath, this.storeFilePath);
-        } catch {
-          try { fs.unlinkSync(tempPath); } catch {}
-        }
+        this.writeData(data, initialEpoch, fencingToken, lockFd);
         return pruned;
       } catch {
         return 0;

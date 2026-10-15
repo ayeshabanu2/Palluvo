@@ -5,6 +5,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
 import {
   CONTACT_FIELD_LIMITS,
   RATE_LIMIT_CONFIG,
@@ -1536,6 +1537,112 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
       );
     } finally {
       process.env = originalEnv;
+    }
+  });
+
+  test('REGRESSION [P2]: writer paused after validation cannot overwrite newer owner commit (atomic CAS)', async () => {
+    const testDir = path.join(os.tmpdir(), `test_fencing_cas_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+
+    try {
+      // 1. Test CrossProcessAdmissionStore
+      const admissionStore = new CrossProcessAdmissionStore();
+      admissionStore.filePath = path.join(testDir, 'test_admission.json');
+      admissionStore.lockFilePath = path.join(testDir, 'test_admission.lock');
+
+      // Seed store at epoch 1 with initial entry
+      admissionStore.checkAdmission({ ip: '10.0.0.1' }, 1000);
+      const { data: writer1Data, epoch: writer1Epoch } = admissionStore['readData']();
+      assert.equal(writer1Epoch, 1);
+
+      // Writer 1 prepares its update based on epoch 1
+      writer1Data.globalTimestamps.push(2000);
+
+      // Now simulate Writer 1 being paused after reading/validating initial state (e.g. GC pause or event loop delay).
+      // While Writer 1 is paused, Writer 2 arrives, reads epoch 1, and successfully commits epoch 2!
+      const writer2Res = admissionStore.checkAdmission({ ip: '10.0.0.2' }, 3000);
+      assert.equal(writer2Res.allowed, true);
+
+      const diskAfterWriter2 = JSON.parse(fs.readFileSync(admissionStore.filePath, 'utf8'));
+      assert.equal(diskAfterWriter2.epoch, 2, 'Writer 2 successfully committed epoch 2 to disk');
+
+      // Now Writer 1 wakes up from pause and attempts to commit its stale data (still based on epoch 1)
+      assert.throws(
+        () => {
+          admissionStore['writeData'](writer1Data, writer1Epoch);
+        },
+        /LockFenced.*epoch.*advanced/i,
+        'Stale Writer 1 must be rejected by atomic CAS validation when epoch on disk has advanced'
+      );
+
+      // Verify on-disk state is preserved: Writer 2 data remains, Writer 1 stale data did NOT overwrite it
+      const finalDiskContent = JSON.parse(fs.readFileSync(admissionStore.filePath, 'utf8'));
+      assert.equal(finalDiskContent.epoch, 2, 'On-disk epoch must remain 2');
+      assert.equal(
+        finalDiskContent.globalTimestamps.includes(2000),
+        false,
+        'Stale timestamp from paused Writer 1 must not appear on disk'
+      );
+
+      // 2. Test CrossProcessRateLimitStore
+      const rateLimitStore = new CrossProcessRateLimitStore();
+      rateLimitStore.storeFilePath = path.join(testDir, 'test_ratelimit.json');
+      rateLimitStore.lockFilePath = path.join(testDir, 'test_ratelimit.lock');
+
+      // Seed rateLimitStore at epoch 1
+      await rateLimitStore.consumeKeys(['key1'], 1000);
+      const content1 = JSON.parse(fs.readFileSync(rateLimitStore.storeFilePath, 'utf8'));
+      assert.equal(content1.__epoch, 1);
+
+      // Stale writer prepares data based on epoch 1
+      const staleData = {
+        key1: { timestamps: [1000, 1500], lastUpdated: 1500 },
+        stale_key: { timestamps: [1500], lastUpdated: 1500 },
+      };
+
+      // Newer writer runs while stale writer is paused, committing epoch 2
+      await rateLimitStore.consumeKeys(['key2'], 2000);
+      const content2 = JSON.parse(fs.readFileSync(rateLimitStore.storeFilePath, 'utf8'));
+      assert.equal(content2.__epoch, 2);
+      assert.ok(content2.key2, 'Writer 2 committed key2');
+
+      // Stale writer resumes and attempts commit with epoch 1
+      assert.throws(
+        () => {
+          rateLimitStore['writeData'](staleData, 1);
+        },
+        /LockFenced.*epoch.*advanced/i,
+        'Stale writer on CrossProcessRateLimitStore must be rejected by atomic CAS'
+      );
+
+      // Verify key2 is intact and stale_key was never written
+      const finalStoreContent = JSON.parse(fs.readFileSync(rateLimitStore.storeFilePath, 'utf8'));
+      assert.equal(finalStoreContent.__epoch, 2);
+      assert.ok(finalStoreContent.key2);
+      assert.equal(finalStoreContent.stale_key, undefined, 'Stale key must not overwrite storage');
+
+      // 3. Test interception / pause right before atomic commit swap
+      // Simulate Writer 1 acquiring lock with token 1.
+      // Writer 1 is paused so long that its lock is reclaimed via exclusive takeover by Writer 2 with token 2.
+      // Writer 2 commits with token 2.
+      // Writer 1 tries to commit with stale token 1: rejected by lock ownership check!
+      fs.writeFileSync(
+        rateLimitStore.lockFilePath,
+        JSON.stringify({ pid: process.pid, ownerId: 'writer2-token', createdAt: Date.now() }),
+        'utf8'
+      );
+
+      assert.throws(
+        () => {
+          rateLimitStore['writeData'](staleData, 2, 'writer1-token');
+        },
+        /LockFenced.*reassigned/i,
+        'Writer with stale ownership token must be rejected even if epoch matched'
+      );
+    } finally {
+      try {
+        fs.rmSync(testDir, { recursive: true, force: true });
+      } catch {}
     }
   });
 });
