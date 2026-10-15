@@ -4,6 +4,7 @@ import { Worker } from 'node:worker_threads';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import crypto from 'node:crypto';
+import fs from 'node:fs';
 import {
   CONTACT_FIELD_LIMITS,
   RATE_LIMIT_CONFIG,
@@ -26,6 +27,8 @@ import {
   getAdmissionTrackerSize,
   getGlobalAdmissionCount,
   resetAdmissionTracker,
+  defaultAdmissionStore,
+  CrossProcessAdmissionStore,
   isEmailConfirmationEnforced,
   isMailboxVerified,
 } from '../src/app/contact/rateLimiter.ts';
@@ -504,6 +507,27 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     // Verify distinct inputs produce distinct digests
     const differentIpDigest = hashRateLimitIdentifier('ip:203.0.113.196');
     assert.notEqual(ipDigest, differentIpDigest, 'Different identifiers must yield distinct digests');
+
+    // Regression check: verify admission_store.json does NOT contain raw IP strings and indexes records by keyed digest
+    const admissionTestIp = '198.51.100.77';
+    checkAdmissionLimit({ ip: admissionTestIp });
+    assert.ok(fs.existsSync(defaultAdmissionStore.filePath), 'Admission store file must exist on disk');
+    const storeContent = fs.readFileSync(defaultAdmissionStore.filePath, 'utf8');
+    assert.equal(
+      storeContent.includes(admissionTestIp),
+      false,
+      'Raw IP address must NEVER be serialized or persisted in admission_store.json'
+    );
+    const expectedAdmissionKey = hashRateLimitIdentifier(`ip:${admissionTestIp}`);
+    const parsedAdmissionData = JSON.parse(storeContent);
+    assert.ok(
+      parsedAdmissionData.ipRecords && typeof parsedAdmissionData.ipRecords === 'object',
+      'ipRecords map must be present in admission_store.json'
+    );
+    assert.ok(
+      expectedAdmissionKey in parsedAdmissionData.ipRecords,
+      'Admission record must be indexed under keyed digest (digest:sha256:...)'
+    );
   });
 
   test('[P2] enforces actual expiry cleanup via prune_expired_contact_rate_limits RPC', async () => {
@@ -1024,6 +1048,108 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     const throttledMain = checkAdmissionLimit({ ip: '203.0.113.199' }, now + 2000);
     assert.equal(throttledMain.allowed, false, '121st admission across workers must be throttled');
     assert.match(throttledMain.error, /unusually high traffic/i);
+  });
+
+  test('[P2] live lock holder is not unlinked when waiter times out', async () => {
+    const lockPath = defaultAdmissionStore.lockFilePath;
+    try {
+      if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath);
+      }
+    } catch {}
+
+    // Worker holds the admission lock file for 700ms
+    const holderWorkerScript = `
+      import { parentPort, workerData } from 'node:worker_threads';
+      import fs from 'node:fs';
+
+      let fd = null;
+      try {
+        fd = fs.openSync(workerData.lockPath, 'wx');
+        parentPort.postMessage({ type: 'ACQUIRED' });
+      } catch (err) {
+        parentPort.postMessage({ type: 'ERROR', error: err.message });
+      }
+
+      // Hold lock until delay expires
+      const stopAt = Date.now() + workerData.holdMs;
+      while (Date.now() < stopAt) {}
+
+      if (fd !== null) {
+        try { fs.closeSync(fd); } catch {}
+      }
+      try { fs.unlinkSync(workerData.lockPath); } catch {}
+      parentPort.postMessage({ type: 'RELEASED' });
+    `;
+
+    const holderWorker = new Worker(holderWorkerScript, {
+      eval: true,
+      workerData: { lockPath, holdMs: 700 },
+    });
+
+    const holderAcquired = new Promise((resolve, reject) => {
+      holderWorker.on('message', (msg) => {
+        if (msg.type === 'ACQUIRED') resolve();
+        else if (msg.type === 'ERROR') reject(new Error(msg.error));
+      });
+      holderWorker.on('error', reject);
+    });
+
+    const holderReleased = new Promise((resolve, reject) => {
+      holderWorker.on('message', (msg) => {
+        if (msg.type === 'RELEASED') resolve();
+      });
+      holderWorker.on('error', reject);
+    });
+
+    // Wait until the holder has acquired the lock
+    await holderAcquired;
+    assert.ok(fs.existsSync(lockPath), 'Lock file must exist while holder is active');
+
+    // Waiter attempts admission with a timeout (200ms) shorter than holder's duration (700ms)
+    const waiterResult = checkAdmissionLimit({ ip: '203.0.113.50', maxWaitMs: 200 });
+
+    // The waiter must fail closed cleanly without crashing
+    assert.equal(waiterResult.allowed, false, 'Waiter must fail closed when lock cannot be acquired within maxWaitMs');
+    assert.equal(waiterResult.retryAfterSeconds, 5);
+    assert.match(waiterResult.error, /momentarily busy/i);
+
+    // CRITICAL ASSERTION: The live lock file MUST NOT have been unlinked by the timed-out waiter!
+    assert.ok(
+      fs.existsSync(lockPath),
+      'Live lock file must NOT be deleted/unlinked when a waiter times out'
+    );
+
+    // Wait for holder to finish and cleanly release its lock
+    await holderReleased;
+    await holderWorker.terminate();
+
+    // Subsequent admission request after holder releases must succeed without being blocked
+    const subsequentResult = checkAdmissionLimit({ ip: '203.0.113.50', maxWaitMs: 2000 });
+    assert.equal(subsequentResult.allowed, true, 'Subsequent request must succeed after live holder finishes');
+  });
+
+  test('[P2] reclaims demonstrably stale lock (> 10s old) from abandoned process', () => {
+    const lockPath = defaultAdmissionStore.lockFilePath;
+    try {
+      if (fs.existsSync(lockPath)) {
+        fs.unlinkSync(lockPath);
+      }
+    } catch {}
+
+    // Create an abandoned lock file with mtime 15 seconds in the past
+    fs.writeFileSync(lockPath, 'abandoned-pid-99999');
+    const pastTime = (Date.now() - 15000) / 1000;
+    fs.utimesSync(lockPath, pastTime, pastTime);
+
+    // Verify lock file exists and is older than 10s
+    const statBefore = fs.statSync(lockPath);
+    assert.ok(Date.now() - statBefore.mtimeMs > 10000, 'Lock mtime must be older than 10 seconds');
+
+    // checkAdmissionLimit should identify it as demonstrably stale (> 10s) and reclaim it
+    const result = checkAdmissionLimit({ ip: '203.0.113.60', maxWaitMs: 1000 });
+    assert.equal(result.allowed, true, 'Stale lock (>10s old) must be reclaimed to allow admission');
+    assert.equal(fs.existsSync(lockPath), false, 'Lock must be cleaned up after successful execution');
   });
 
   test('REGRESSION [P2]: unverified form emails cannot poison victim quota across separate IP addresses', async () => {

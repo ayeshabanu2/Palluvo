@@ -57,8 +57,9 @@ export class CrossProcessAdmissionStore {
     this.lockFilePath = path.join(dir, 'admission_store.lock');
   }
 
-  private withLock<T>(fn: () => T): T {
-    const maxWaitMs = 5000;
+  private withLock<T>(fn: () => T, customWaitMs?: number): T {
+    const maxWaitMs = customWaitMs ?? 5000;
+    const staleThresholdMs = 10000;
     const start = Date.now();
     let fd: number | null = null;
 
@@ -73,16 +74,19 @@ export class CrossProcessAdmissionStore {
             err.code === 'EBUSY' ||
             err.code === 'EACCES')
         ) {
+          // Only reclaim a demonstrably stale lock (> 10s old) from a crashed/abandoned process
           try {
             const stat = fs.statSync(this.lockFilePath);
-            if (Date.now() - stat.mtimeMs > 10000) {
+            if (Date.now() - stat.mtimeMs > staleThresholdMs) {
               try { fs.unlinkSync(this.lockFilePath); } catch {}
             }
           } catch {}
 
+          // On waiter timeout, DO NOT unlink the live lock file! Fail closed to prevent racing critical sections.
           if (Date.now() - start > maxWaitMs) {
-            try { fs.unlinkSync(this.lockFilePath); } catch {}
+            throw new Error('LockTimeout: Timeout waiting for cross-process admission lock');
           }
+
           const pauseUntil = Date.now() + 10 + Math.floor(Math.random() * 10);
           while (Date.now() < pauseUntil) {}
         } else {
@@ -123,129 +127,167 @@ export class CrossProcessAdmissionStore {
     fs.renameSync(tempPath, this.filePath);
   }
 
-  checkAdmission({ ip }: { ip?: string }, now: number = Date.now()): RateLimitResult {
-    return this.withLock(() => {
-      const data = this.readData();
-      const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+  checkAdmission(
+    { ip, maxWaitMs }: { ip?: string; maxWaitMs?: number },
+    now: number = Date.now()
+  ): RateLimitResult {
+    try {
+      return this.withLock(() => {
+        const data = this.readData();
+        const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
 
-      // 1. Shared global WAF admission window across all instances/workers
-      data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
-      if (data.globalTimestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS) {
-        const retryAfter = Math.ceil(
-          (data.globalTimestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
-        );
-        return {
-          allowed: false,
-          retryAfterSeconds: retryAfter,
-          error:
-            'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
-        };
-      }
+        // 1. Shared global WAF admission window across all instances/workers
+        data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
+        if (data.globalTimestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_GLOBAL_ADMISSIONS) {
+          const retryAfter = Math.ceil(
+            (data.globalTimestamps[0] + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000
+          );
+          return {
+            allowed: false,
+            retryAfterSeconds: retryAfter,
+            error:
+              'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
+          };
+        }
 
-      if (!ip || ip === 'unknown') {
+        if (!ip || ip === 'unknown') {
+          data.globalTimestamps.push(now);
+          this.writeData(data);
+          return { allowed: true };
+        }
+
+        // Hash IP key using required server secret before persisting state to prevent storing plaintext PII
+        const ipKey = hashRateLimitIdentifier(`ip:${ip}`);
+
+        // 2. Per-IP admission limit
+        let record: AdmissionRecord | undefined = data.ipRecords[ipKey];
+        if (record) {
+          record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+          if (record.timestamps.length === 0) {
+            delete data.ipRecords[ipKey];
+            record = undefined;
+          }
+        }
+
+        // Memory/capacity bounding on ipRecords
+        const currentKeys = Object.keys(data.ipRecords);
+        if (!record && currentKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+          // Sweep expired
+          for (const [k, rec] of Object.entries(data.ipRecords)) {
+            rec.timestamps = rec.timestamps.filter((ts) => ts > windowStart);
+            if (rec.timestamps.length === 0) {
+              delete data.ipRecords[k];
+            }
+          }
+          const remainingKeys = Object.keys(data.ipRecords);
+          if (remainingKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
+            const needed = remainingKeys.length + 1 - ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE;
+            const oldest = Object.entries(data.ipRecords)
+              .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated)
+              .slice(0, needed)
+              .map(([k]) => k);
+            for (const k of oldest) {
+              delete data.ipRecords[k];
+            }
+          }
+        }
+
+        if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
+          const oldest = record.timestamps[0];
+          const retryAfter = Math.ceil((oldest + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+          return {
+            allowed: false,
+            retryAfterSeconds: retryAfter,
+            error:
+              'Too many inquiries received from your connection. Please wait a moment before trying again.',
+          };
+        }
+
+        if (!record) {
+          record = { timestamps: [now], lastUpdated: now };
+          data.ipRecords[ipKey] = record;
+        } else {
+          record.timestamps.push(now);
+          record.lastUpdated = now;
+        }
+
         data.globalTimestamps.push(now);
         this.writeData(data);
         return { allowed: true };
-      }
-
-      // 2. Per-IP admission limit
-      let record: AdmissionRecord | undefined = data.ipRecords[ip];
-      if (record) {
-        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
-        if (record.timestamps.length === 0) {
-          delete data.ipRecords[ip];
-          record = undefined;
-        }
-      }
-
-      // Memory/capacity bounding on ipRecords
-      const currentKeys = Object.keys(data.ipRecords);
-      if (!record && currentKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
-        // Sweep expired
-        for (const [k, rec] of Object.entries(data.ipRecords)) {
-          rec.timestamps = rec.timestamps.filter((ts) => ts > windowStart);
-          if (rec.timestamps.length === 0) {
-            delete data.ipRecords[k];
-          }
-        }
-        const remainingKeys = Object.keys(data.ipRecords);
-        if (remainingKeys.length >= ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE) {
-          const needed = remainingKeys.length + 1 - ADMISSION_LIMIT_CONFIG.MAX_MAP_SIZE;
-          const oldest = Object.entries(data.ipRecords)
-            .sort((a, b) => a[1].lastUpdated - b[1].lastUpdated)
-            .slice(0, needed)
-            .map(([k]) => k);
-          for (const k of oldest) {
-            delete data.ipRecords[k];
-          }
-        }
-      }
-
-      if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
-        const oldest = record.timestamps[0];
-        const retryAfter = Math.ceil((oldest + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+      }, maxWaitMs);
+    } catch (err: any) {
+      if (err?.message?.includes('LockTimeout')) {
         return {
           allowed: false,
-          retryAfterSeconds: retryAfter,
+          retryAfterSeconds: 5,
           error:
-            'Too many inquiries received from your connection. Please wait a moment before trying again.',
+            'Inquiry service is momentarily busy processing concurrent requests. Please wait a moment.',
         };
       }
-
-      if (!record) {
-        record = { timestamps: [now], lastUpdated: now };
-        data.ipRecords[ip] = record;
-      } else {
-        record.timestamps.push(now);
-        record.lastUpdated = now;
-      }
-
-      data.globalTimestamps.push(now);
-      this.writeData(data);
-      return { allowed: true };
-    });
+      throw err;
+    }
   }
 
   pruneExpired(now: number = Date.now()): number {
-    return this.withLock(() => {
-      const data = this.readData();
-      const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
-      data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
-      let pruned = 0;
-      for (const [ip, record] of Object.entries(data.ipRecords)) {
-        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
-        if (record.timestamps.length === 0) {
-          delete data.ipRecords[ip];
-          pruned++;
+    try {
+      return this.withLock(() => {
+        const data = this.readData();
+        const windowStart = now - ADMISSION_LIMIT_CONFIG.WINDOW_MS;
+        data.globalTimestamps = data.globalTimestamps.filter((ts) => ts > windowStart);
+        let pruned = 0;
+        for (const [ipKey, record] of Object.entries(data.ipRecords)) {
+          record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+          if (record.timestamps.length === 0) {
+            delete data.ipRecords[ipKey];
+            pruned++;
+          }
         }
-      }
-      this.writeData(data);
-      return pruned;
-    });
+        this.writeData(data);
+        return pruned;
+      });
+    } catch {
+      return 0;
+    }
   }
 
   getTrackerSize(): number {
-    return this.withLock(() => {
-      const data = this.readData();
-      return Object.keys(data.ipRecords).length;
-    });
+    try {
+      return this.withLock(() => {
+        const data = this.readData();
+        return Object.keys(data.ipRecords).length;
+      });
+    } catch {
+      return 0;
+    }
   }
 
   getGlobalCount(): number {
-    return this.withLock(() => {
-      const data = this.readData();
-      return data.globalTimestamps.length;
-    });
+    try {
+      return this.withLock(() => {
+        const data = this.readData();
+        return data.globalTimestamps.length;
+      });
+    } catch {
+      return 0;
+    }
   }
 
   clear(): void {
-    this.withLock(() => {
+    try {
+      this.withLock(() => {
+        try {
+          if (fs.existsSync(this.filePath)) {
+            fs.unlinkSync(this.filePath);
+          }
+        } catch {}
+      });
+    } catch {
       try {
         if (fs.existsSync(this.filePath)) {
           fs.unlinkSync(this.filePath);
         }
       } catch {}
-    });
+    }
   }
 }
 
@@ -276,10 +318,10 @@ if (typeof setInterval !== 'undefined') {
  * before inquiry persistence, backed by shared atomic cross-process state.
  */
 export function checkAdmissionLimit(
-  { ip }: { ip?: string },
+  { ip, maxWaitMs }: { ip?: string; maxWaitMs?: number },
   now: number = Date.now()
 ): RateLimitResult {
-  return defaultAdmissionStore.checkAdmission({ ip }, now);
+  return defaultAdmissionStore.checkAdmission({ ip, maxWaitMs }, now);
 }
 
 export function getAdmissionTrackerSize(): number {
@@ -624,8 +666,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     this.lockFilePath = path.join(baseDir, 'contact_limits.lock');
   }
 
-  private withLock<T>(fn: () => T): T {
-    const maxWaitMs = 5000;
+  private withLock<T>(fn: () => T, customWaitMs?: number): T {
+    const maxWaitMs = customWaitMs ?? 5000;
+    const staleThresholdMs = 10000;
     const start = Date.now();
     let fd: number | null = null;
 
@@ -640,16 +683,19 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             err.code === 'EBUSY' ||
             err.code === 'EACCES')
         ) {
+          // Only reclaim a demonstrably stale lock (> 10s old) from a crashed/abandoned process
           try {
             const stat = fs.statSync(this.lockFilePath);
-            if (Date.now() - stat.mtimeMs > 10000) {
+            if (Date.now() - stat.mtimeMs > staleThresholdMs) {
               try { fs.unlinkSync(this.lockFilePath); } catch {}
             }
           } catch {}
 
+          // On waiter timeout, DO NOT unlink the live lock file! Fail closed.
           if (Date.now() - start > maxWaitMs) {
-            try { fs.unlinkSync(this.lockFilePath); } catch {}
+            throw new Error('LockTimeout: Timeout waiting for cross-process rate limit lock');
           }
+
           const pauseUntil = Date.now() + 10 + Math.floor(Math.random() * 10);
           while (Date.now() < pauseUntil) {}
         } else {
@@ -668,123 +714,139 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     }
   }
 
-  async consumeKeys(keys: string[], now: number = Date.now()): Promise<RateLimitResult> {
+  async consumeKeys(
+    keys: string[],
+    now: number = Date.now(),
+    maxWaitMs?: number
+  ): Promise<RateLimitResult> {
     const validKeys = [...new Set(keys.filter((k) => typeof k === 'string' && k.trim().length > 0))];
     if (validKeys.length === 0) {
       return { allowed: true };
     }
 
-    return this.withLock(() => {
-      let data: Record<string, RateLimitRecord> = {};
-      if (fs.existsSync(this.storeFilePath)) {
-        try {
-          const content = fs.readFileSync(this.storeFilePath, 'utf8');
-          data = JSON.parse(content) || {};
-        } catch {
-          data = {};
-        }
-      }
-
-      const windowStart = now - this.windowMs;
-
-      // 1. Prune expired timestamps across all keys
-      for (const [key, record] of Object.entries(data)) {
-        record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
-        if (record.timestamps.length === 0) {
-          delete data[key];
-        }
-      }
-
-      // 2. Multi-key evaluation for burst cooldown and window quota
-      for (const key of validKeys) {
-        const record = data[key];
-        if (record && record.timestamps.length > 0) {
-          const lastTs = record.timestamps[record.timestamps.length - 1];
-          if (now - lastTs < this.cooldownMs) {
-            const retryAfter = Math.ceil((this.cooldownMs - (now - lastTs)) / 1000);
-            return {
-              allowed: false,
-              retryAfterSeconds: retryAfter,
-              error: 'Please wait a moment before sending another message.',
-            };
-          }
-
-          if (record.timestamps.length >= this.maxPerWindow) {
-            const oldest = record.timestamps[0];
-            const retryAfter = Math.ceil((oldest + this.windowMs - now) / 1000);
-            return {
-              allowed: false,
-              retryAfterSeconds: retryAfter,
-              error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
-            };
+    try {
+      return this.withLock(() => {
+        let data: Record<string, RateLimitRecord> = {};
+        if (fs.existsSync(this.storeFilePath)) {
+          try {
+            const content = fs.readFileSync(this.storeFilePath, 'utf8');
+            data = JSON.parse(content) || {};
+          } catch {
+            data = {};
           }
         }
-      }
 
-      // 3. Resilient capacity strategy for new keys:
-      // Prevent untrusted public submissions from globally exhausting the shared key budget
-      const currentKeys = Object.keys(data);
-      const newKeys = validKeys.filter((k) => !data[k]);
-      if (currentKeys.length + newKeys.length > this.maxStoreSize) {
-        const needed = currentKeys.length + newKeys.length - this.maxStoreSize;
-        const keysToEvict: string[] = [];
-        const eligibleEntries = Object.entries(data).filter(([k]) => !validKeys.includes(k));
+        const windowStart = now - this.windowMs;
 
-        // Phase 1: Evict un-throttled entries (single-use or low-frequency synthetic keys from rotated submissions)
-        // Strictly protects active throttled quotas (keys with >= maxPerWindow or within burst cooldown)
-        const unthrottledEntries = eligibleEntries
-          .filter(([, rec]) => {
-            const isThrottled = rec.timestamps.length >= this.maxPerWindow;
-            const inCooldown =
-              rec.timestamps.length > 0 &&
-              now - rec.timestamps[rec.timestamps.length - 1] < this.cooldownMs;
-            return !isThrottled && !inCooldown;
-          })
-          .sort((a, b) => {
-            if (a[1].timestamps.length !== b[1].timestamps.length) {
-              return a[1].timestamps.length - b[1].timestamps.length;
+        // 1. Prune expired timestamps across all keys
+        for (const [key, record] of Object.entries(data)) {
+          record.timestamps = record.timestamps.filter((ts) => ts > windowStart);
+          if (record.timestamps.length === 0) {
+            delete data[key];
+          }
+        }
+
+        // 2. Multi-key evaluation for burst cooldown and window quota
+        for (const key of validKeys) {
+          const record = data[key];
+          if (record && record.timestamps.length > 0) {
+            const lastTs = record.timestamps[record.timestamps.length - 1];
+            if (now - lastTs < this.cooldownMs) {
+              const retryAfter = Math.ceil((this.cooldownMs - (now - lastTs)) / 1000);
+              return {
+                allowed: false,
+                retryAfterSeconds: retryAfter,
+                error: 'Please wait a moment before sending another message.',
+              };
             }
-            return a[1].lastUpdated - b[1].lastUpdated;
-          });
 
-        for (const [k] of unthrottledEntries) {
-          if (keysToEvict.length >= needed) break;
-          keysToEvict.push(k);
+            if (record.timestamps.length >= this.maxPerWindow) {
+              const oldest = record.timestamps[0];
+              const retryAfter = Math.ceil((oldest + this.windowMs - now) / 1000);
+              return {
+                allowed: false,
+                retryAfterSeconds: retryAfter,
+                error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
+              };
+            }
+          }
         }
 
-        for (const k of keysToEvict) {
-          delete data[k];
+        // 3. Resilient capacity strategy for new keys:
+        // Prevent untrusted public submissions from globally exhausting the shared key budget
+        const currentKeys = Object.keys(data);
+        const newKeys = validKeys.filter((k) => !data[k]);
+        if (currentKeys.length + newKeys.length > this.maxStoreSize) {
+          const needed = currentKeys.length + newKeys.length - this.maxStoreSize;
+          const keysToEvict: string[] = [];
+          const eligibleEntries = Object.entries(data).filter(([k]) => !validKeys.includes(k));
+
+          // Phase 1: Evict un-throttled entries (single-use or low-frequency synthetic keys from rotated submissions)
+          // Strictly protects active throttled quotas (keys with >= maxPerWindow or within burst cooldown)
+          const unthrottledEntries = eligibleEntries
+            .filter(([, rec]) => {
+              const isThrottled = rec.timestamps.length >= this.maxPerWindow;
+              const inCooldown =
+                rec.timestamps.length > 0 &&
+                now - rec.timestamps[rec.timestamps.length - 1] < this.cooldownMs;
+              return !isThrottled && !inCooldown;
+            })
+            .sort((a, b) => {
+              if (a[1].timestamps.length !== b[1].timestamps.length) {
+                return a[1].timestamps.length - b[1].timestamps.length;
+              }
+              return a[1].lastUpdated - b[1].lastUpdated;
+            });
+
+          for (const [k] of unthrottledEntries) {
+            if (keysToEvict.length >= needed) break;
+            keysToEvict.push(k);
+          }
+
+          for (const k of keysToEvict) {
+            delete data[k];
+          }
+
+          // Enforce hard storage capacity bound: if store remains full because remaining entries are actively throttled,
+          // do NOT insert new keys. Reject while strictly preserving all active throttled quotas intact.
+          if (Object.keys(data).length + newKeys.length > this.maxStoreSize) {
+            return {
+              allowed: false,
+              retryAfterSeconds: 60,
+              error: 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.',
+            };
+          }
         }
 
-        // Enforce hard storage capacity bound: if store remains full because remaining entries are actively throttled,
-        // do NOT insert new keys. Reject while strictly preserving all active throttled quotas intact.
-        if (Object.keys(data).length + newKeys.length > this.maxStoreSize) {
-          return {
-            allowed: false,
-            retryAfterSeconds: 60,
-            error: 'Service is currently experiencing high inquiry volume. Please try again in a few moments or reach out to our concierge directly.',
-          };
+        // 4. Commit timestamps atomically for all keys
+        for (const key of validKeys) {
+          let record = data[key];
+          if (!record) {
+            record = { timestamps: [], lastUpdated: now };
+            data[key] = record;
+          }
+          record.timestamps.push(now);
+          record.lastUpdated = now;
         }
+
+        // 5. Atomic write to disk
+        const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.tmp`;
+        fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
+        fs.renameSync(tempPath, this.storeFilePath);
+
+        return { allowed: true };
+      }, maxWaitMs);
+    } catch (err: any) {
+      if (err?.message?.includes('LockTimeout')) {
+        return {
+          allowed: false,
+          retryAfterSeconds: 5,
+          error:
+            'Inquiry service is momentarily busy processing concurrent requests. Please wait a moment.',
+        };
       }
-
-      // 4. Commit timestamps atomically for all keys
-      for (const key of validKeys) {
-        let record = data[key];
-        if (!record) {
-          record = { timestamps: [], lastUpdated: now };
-          data[key] = record;
-        }
-        record.timestamps.push(now);
-        record.lastUpdated = now;
-      }
-
-      // 5. Atomic write to disk
-      const tempPath = `${this.storeFilePath}.${process.pid}.${Date.now()}.tmp`;
-      fs.writeFileSync(tempPath, JSON.stringify(data), 'utf8');
-      fs.renameSync(tempPath, this.storeFilePath);
-
-      return { allowed: true };
-    });
+      throw err;
+    }
   }
 
   getStoreSize(): number {
