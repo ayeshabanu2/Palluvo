@@ -1227,6 +1227,152 @@ describe('Contact Inquiry Server-Side Rate Limiting & Bounds Tests', () => {
     assert.equal(subsequentResult.allowed, true, 'Subsequent rate limit request succeeds after holder releases');
   });
 
+  test('REGRESSION [P2]: two simultaneous stale-lock recoverers atomically contend without unlinking live lock or losing admissions', async () => {
+    const store = new CrossProcessAdmissionStore();
+    try {
+      if (fs.existsSync(store.lockFilePath)) {
+        fs.unlinkSync(store.lockFilePath);
+      }
+      if (fs.existsSync(`${store.lockFilePath}.reclaim`)) {
+        fs.unlinkSync(`${store.lockFilePath}.reclaim`);
+      }
+      if (fs.existsSync(store.filePath)) {
+        fs.unlinkSync(store.filePath);
+      }
+    } catch {}
+
+    // 1. Create an abandoned dead-owner lock older than 15s (staleThresholdMs = 10s)
+    const deadPid = 99999999;
+    fs.writeFileSync(
+      store.lockFilePath,
+      JSON.stringify({ pid: deadPid, ownerId: 'dead-abandoned-owner', createdAt: Date.now() - 15000 }),
+      'utf8'
+    );
+    const pastTime = (Date.now() - 15000) / 1000;
+    fs.utimesSync(store.lockFilePath, pastTime, pastTime);
+
+    // Verify lock is older than 10s and owner is dead
+    assert.ok(Date.now() - fs.statSync(store.lockFilePath).mtimeMs > 10000);
+    assert.equal(isLockOwnerAlive(store.lockFilePath), false, 'Owner must be dead');
+
+    // 2. Launch two simultaneous stale-lock recoverers racing concurrently
+    const recoverer1 = new Promise((resolve) => {
+      setImmediate(() => {
+        const res = store.checkAdmission({ ip: '198.51.100.10', maxWaitMs: 3000 });
+        resolve(res);
+      });
+    });
+
+    const recoverer2 = new Promise((resolve) => {
+      setImmediate(() => {
+        const res = store.checkAdmission({ ip: '198.51.100.20', maxWaitMs: 3000 });
+        resolve(res);
+      });
+    });
+
+    const [res1, res2] = await Promise.all([recoverer1, recoverer2]);
+
+    assert.equal(res1.allowed, true, 'Recoverer 1 must succeed');
+    assert.equal(res2.allowed, true, 'Recoverer 2 must succeed');
+
+    // 3. Both admissions must be recorded without lost updates
+    const globalCount = store.getGlobalCount();
+    assert.equal(globalCount, 2, 'Both simultaneous recoverers must have their admissions counted');
+
+    // 4. Rate limit store simultaneous recovery test as well
+    const rateStore = new CrossProcessRateLimitStore();
+    try {
+      if (fs.existsSync(rateStore.lockFilePath)) {
+        fs.unlinkSync(rateStore.lockFilePath);
+      }
+      if (fs.existsSync(`${rateStore.lockFilePath}.reclaim`)) {
+        fs.unlinkSync(`${rateStore.lockFilePath}.reclaim`);
+      }
+      if (fs.existsSync(rateStore.storeFilePath)) {
+        fs.unlinkSync(rateStore.storeFilePath);
+      }
+    } catch {}
+
+    fs.writeFileSync(
+      rateStore.lockFilePath,
+      JSON.stringify({ pid: deadPid, ownerId: 'dead-rate-owner', createdAt: Date.now() - 15000 }),
+      'utf8'
+    );
+    fs.utimesSync(rateStore.lockFilePath, pastTime, pastTime);
+
+    const rateRec1 = rateStore.consumeKeys(['ip:198.51.100.30'], Date.now(), 3000);
+    const rateRec2 = rateStore.consumeKeys(['ip:198.51.100.40'], Date.now(), 3000);
+
+    const [rateRes1, rateRes2] = await Promise.all([rateRec1, rateRec2]);
+    assert.equal(rateRes1.allowed, true, 'Rate recoverer 1 must succeed');
+    assert.equal(rateRes2.allowed, true, 'Rate recoverer 2 must succeed');
+    assert.equal(rateStore.getStoreSize(), 2, 'Both rate limit keys must be committed without lost updates');
+  });
+
+  test('REGRESSION [P2]: fenced commit aborts stale write if lock ownership was reassigned or storage epoch advanced', () => {
+    const store = new CrossProcessAdmissionStore();
+    try {
+      if (fs.existsSync(store.lockFilePath)) {
+        fs.unlinkSync(store.lockFilePath);
+      }
+      if (fs.existsSync(store.filePath)) {
+        fs.unlinkSync(store.filePath);
+      }
+    } catch {}
+
+    // Initialize store with epoch 1
+    store.checkAdmission({ ip: '198.51.100.50' });
+    const { data: initialData, epoch: initialEpoch } = store['readData']();
+    assert.equal(initialEpoch, 1);
+
+    // 1. Stale token test: attempt writeData with an outdated fencingToken when lock has been reassigned
+    fs.writeFileSync(
+      store.lockFilePath,
+      JSON.stringify({ pid: process.pid, ownerId: 'newer-owner-uuid', createdAt: Date.now() }),
+      'utf8'
+    );
+
+    assert.throws(
+      () => {
+        store['writeData'](initialData, initialEpoch, 'stale-token-uuid');
+      },
+      /LockFenced/i,
+      'writeData must throw LockFenced when lock ownership is reassigned'
+    );
+
+    // 2. Advanced storage epoch test: simulate disk advancing to epoch 5
+    fs.writeFileSync(
+      store.filePath,
+      JSON.stringify({ epoch: 5, globalTimestamps: [Date.now()], ipRecords: {} }),
+      'utf8'
+    );
+    // Write matching lock file
+    fs.writeFileSync(
+      store.lockFilePath,
+      JSON.stringify({ pid: process.pid, ownerId: 'matching-owner', createdAt: Date.now() }),
+      'utf8'
+    );
+
+    assert.throws(
+      () => {
+        // Attempting to commit with initialEpoch = 1 when disk is already at 5
+        store['writeData'](initialData, 1, 'matching-owner');
+      },
+      /LockFenced/i,
+      'writeData must throw LockFenced when on-disk storage epoch has advanced'
+    );
+
+    // Ensure the on-disk state was NOT overwritten by the stale commit
+    const diskContent = JSON.parse(fs.readFileSync(store.filePath, 'utf8'));
+    assert.equal(diskContent.epoch, 5, 'On-disk epoch must remain protected from stale commit');
+
+    // Clean up
+    try {
+      if (fs.existsSync(store.lockFilePath)) fs.unlinkSync(store.lockFilePath);
+      if (fs.existsSync(store.filePath)) fs.unlinkSync(store.filePath);
+    } catch {}
+  });
+
   test('REGRESSION [P2]: unverified form emails cannot poison victim quota across separate IP addresses', async () => {
     const now = 600000;
     const attackerIp = '198.51.100.1';
