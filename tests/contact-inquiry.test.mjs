@@ -38,6 +38,7 @@ import {
   isMailboxVerified,
   acquireStaleReclaimMutex,
   atomicTakeoverStaleLock,
+  unlinkIfSameInode,
 } from '../src/app/contact/rateLimiter.ts';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -2281,6 +2282,137 @@ process.on('message', (msg) => {
     assert.equal(rateFnExecuted, false, 'CrossProcessRateLimitStore fn must not execute when fenced');
 
     try {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    } catch {}
+  });
+
+  test('REGRESSION [P2]: unlinkIfSameInode strictly fences cleanup to open descriptor inode', () => {
+    const testDir = path.join(os.tmpdir(), `inode_fence_test_${crypto.randomUUID()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'test.lock');
+
+    // Case 1: Matching inode unlinks successfully
+    const fd1 = fs.openSync(lockPath, 'wx');
+    assert.equal(fs.existsSync(lockPath), true);
+    const unlinked1 = unlinkIfSameInode(lockPath, fd1);
+    assert.equal(unlinked1, true, 'unlinkIfSameInode must unlink matching open descriptor inode');
+    fs.closeSync(fd1);
+    assert.equal(fs.existsSync(lockPath), false);
+
+    // Case 2: Replacement file with different inode is NOT deleted
+    const fd2 = fs.openSync(lockPath, 'wx');
+    fs.closeSync(fd2);
+    fs.unlinkSync(lockPath);
+    const contenderFd = fs.openSync(lockPath, 'wx');
+    const contenderMeta = JSON.stringify({ pid: process.pid, ownerId: 'contender-123', createdAt: Date.now() });
+    fs.writeFileSync(contenderFd, contenderMeta, 'utf8');
+    fs.closeSync(contenderFd);
+
+    // Test with null or mismatched owner
+    const unlinkedMismatched = unlinkIfSameInode(lockPath, null, 'original-owner');
+    assert.equal(unlinkedMismatched, false);
+    assert.equal(fs.existsSync(lockPath), true, 'Contender lock must remain intact');
+
+    // Test with fresh descriptor to another file (different inode)
+    const otherPath = path.join(testDir, 'other.tmp');
+    const otherFd = fs.openSync(otherPath, 'wx');
+    const unlinkedDifferentInode = unlinkIfSameInode(lockPath, otherFd, 'original-owner');
+    assert.equal(unlinkedDifferentInode, false, 'Must NOT unlink file when descriptor points to different inode');
+    fs.closeSync(otherFd);
+
+    // Verify contender lock is still 100% intact on disk
+    assert.equal(fs.existsSync(lockPath), true);
+    assert.equal(fs.readFileSync(lockPath, 'utf8'), contenderMeta);
+
+    fs.unlinkSync(lockPath);
+    try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+  });
+
+  test('REGRESSION [P2]: write failure cleanup does not delete replacement lock if lock was taken over during pause', () => {
+    const testDir = path.join(os.tmpdir(), `write_fail_takeover_test_${crypto.randomUUID()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const store = new CrossProcessAdmissionStore(testDir);
+
+    const origWriteFileSync = fs.writeFileSync;
+    const contenderOwnerId = `contender-${crypto.randomUUID()}`;
+
+    // Simulate process pausing after openSync('wx'), during which a contender replaces the lock
+    fs.writeFileSync = function(fileOrFd, data, options) {
+      if (typeof fileOrFd === 'number' && typeof data === 'string' && data.includes('"pid"')) {
+        // Contender replaces the file at lockFilePath with its own lock
+        try {
+          const tempContenderPath = path.join(testDir, 'contender.lock.new');
+          fs.writeFileSync(
+            tempContenderPath,
+            JSON.stringify({ pid: process.pid, ownerId: contenderOwnerId, createdAt: Date.now() }),
+            'utf8'
+          );
+          try {
+            fs.renameSync(tempContenderPath, store.lockFilePath);
+          } catch {
+            origWriteFileSync.call(
+              fs,
+              store.lockFilePath,
+              JSON.stringify({ pid: process.pid, ownerId: contenderOwnerId, createdAt: Date.now() }),
+              'utf8'
+            );
+          }
+        } catch {}
+
+        // Now simulate write failure on the original paused process
+        throw new Error('EIO: Simulated disk error during metadata write');
+      }
+      return origWriteFileSync.apply(this, arguments);
+    };
+
+    let caughtError = false;
+    try {
+      store['withLock'](() => {});
+    } catch (err) {
+      caughtError = true;
+      assert.match(err.message, /Simulated disk error/);
+    } finally {
+      fs.writeFileSync = origWriteFileSync;
+    }
+
+    assert.equal(caughtError, true, 'Write error must be thrown');
+    assert.equal(fs.existsSync(store.lockFilePath), true, 'Contender replacement lock must NOT be deleted by write failure cleanup');
+    const remainingContent = JSON.parse(fs.readFileSync(store.lockFilePath, 'utf8'));
+    assert.equal(remainingContent.ownerId, contenderOwnerId, 'Remaining lock on disk must belong to contender');
+
+    try {
+      fs.unlinkSync(store.lockFilePath);
+      fs.rmSync(testDir, { recursive: true, force: true });
+    } catch {}
+  });
+
+  test('REGRESSION [P2]: withLock guarded release does not delete competitor lock on malformed JSON', () => {
+    const testDir = path.join(os.tmpdir(), `guarded_release_test_${crypto.randomUUID()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const store = new CrossProcessAdmissionStore(testDir);
+
+    // Create a lock file held by another process with malformed/in-progress content
+    fs.writeFileSync(store.lockFilePath, '{"partial_unparseable', 'utf8');
+
+    // Run simulated release cleanup with a different ownerId: must NOT unlink on parse error
+    const fakeOwnerId = `fake-${crypto.randomUUID()}`;
+    try {
+      if (fs.existsSync(store.lockFilePath)) {
+        const content = fs.readFileSync(store.lockFilePath, 'utf8');
+        try {
+          const meta = JSON.parse(content);
+          if (meta?.ownerId === fakeOwnerId) {
+            fs.unlinkSync(store.lockFilePath);
+          }
+        } catch {}
+      }
+    } catch {}
+
+    assert.equal(fs.existsSync(store.lockFilePath), true, 'Malformed lock file from competitor must NOT be unlinked by release cleanup');
+    assert.equal(fs.readFileSync(store.lockFilePath, 'utf8'), '{"partial_unparseable');
+
+    try {
+      fs.unlinkSync(store.lockFilePath);
       fs.rmSync(testDir, { recursive: true, force: true });
     } catch {}
   });

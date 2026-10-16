@@ -20,6 +20,21 @@ export const RATE_LIMIT_CONFIG = {
   MAX_STORE_SIZE: 1000, // Bounded capacity limit to prevent memory/storage exhaustion
 } as const;
 
+/**
+ * Admission limit configuration for pre-RPC application-boundary filtering.
+ *
+ * NOTE ON DEPLOYMENT ARCHITECTURE:
+ * - Single Persistent Host / Worker Cluster: When deployed on a single persistent VM, Docker
+ *   container, or Node.js cluster, `CrossProcessAdmissionStore` uses atomic file locking in
+ *   `os.tmpdir()` to share `MAX_GLOBAL_ADMISSIONS` (120/min) and IP quotas across worker threads
+ *   and processes.
+ * - Multi-Instance Serverless (e.g., Vercel Functions): Serverless function instances run in
+ *   isolated containers where `os.tmpdir()` is instance-local. In serverless environments, this
+ *   pre-RPC gate protects individual function instances from burst saturation, while authoritative
+ *   global multi-instance flood protection across all instances is enforced downstream by the
+ *   centralized Supabase database RPC (`consume_contact_rate_limit`) which shares the global
+ *   120/min admission window across all instances via PostgreSQL row locks.
+ */
 export const ADMISSION_LIMIT_CONFIG = {
   WINDOW_MS: 60 * 1000, // 1 minute sliding window
   MAX_ADMISSIONS_PER_IP: 15, // Max 15 submissions per minute per IP admission limit
@@ -106,6 +121,57 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
 }
 
 /**
+ * Safely unlinks a lock or mutex file ONLY if the file currently on disk at `filePath`
+ * matches the exact inode and device of the open file descriptor `fd` created by this call,
+ * and (if metadata was written) matches `expectedOwnerId`.
+ *
+ * If this process paused after `openSync('wx')` long enough for another process to
+ * classify the unpopulated or partial file as stale and atomically replace it (with a new inode),
+ * this function guarantees that the competitor's active replacement lock is NEVER deleted.
+ *
+ * Must be invoked BEFORE closing `fd` so `fs.fstatSync(fd)` is valid.
+ */
+export function unlinkIfSameInode(
+  filePath: string,
+  fd: number | null,
+  expectedOwnerId?: string
+): boolean {
+  if (fd === null || typeof fd !== 'number') return false;
+  try {
+    const fdStat = fs.fstatSync(fd);
+    // If nlink is 0, the file was already unlinked or replaced in the directory
+    if (typeof fdStat.nlink === 'number' && fdStat.nlink === 0) {
+      return false;
+    }
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+    const pathStat = fs.statSync(filePath);
+    // Inode/device fencing: strictly verify the directory entry is the exact file created by fd
+    if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
+      return false;
+    }
+    // Ownership fencing: if expectedOwnerId is provided and disk file contains readable metadata,
+    // verify that ownerId matches
+    if (expectedOwnerId) {
+      try {
+        const content = fs.readFileSync(filePath, 'utf8').trim();
+        if (content.length > 0) {
+          const meta = JSON.parse(content);
+          if (meta?.ownerId && meta.ownerId !== expectedOwnerId) {
+            return false;
+          }
+        }
+      } catch {}
+    }
+    fs.unlinkSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Atomically acquires exclusive reclamation rights for a stale lock file.
  * Uses a stable monotonic sequence with atomic OS-level sequence reservation (openSync 'wx')
  * and an exclusive winner token lease.
@@ -152,9 +218,9 @@ export function acquireStaleReclaimMutex(
           mySeq = candidate;
           myTicketPath = ticketPath;
         } catch (writeErr) {
+          unlinkIfSameInode(ticketPath, myTicketFd, ownerId);
           try { fs.closeSync(myTicketFd); } catch {}
           myTicketFd = null;
-          try { if (fs.existsSync(ticketPath)) fs.unlinkSync(ticketPath); } catch {}
           throw writeErr;
         }
       } catch (err: any) {
@@ -272,9 +338,9 @@ export function acquireStaleReclaimMutex(
               'utf8'
             );
           } catch (writeErr) {
+            unlinkIfSameInode(winnerTokenPath, winnerFd, ownerId);
             try { fs.closeSync(winnerFd); } catch {}
             winnerFd = null;
-            try { if (fs.existsSync(winnerTokenPath)) fs.unlinkSync(winnerTokenPath); } catch {}
             throw writeErr;
           }
         } catch {
@@ -295,8 +361,8 @@ export function acquireStaleReclaimMutex(
                     fs.renameSync(newWPath, winnerTokenPath);
                     winnerFd = nWfd;
                   } catch (wErr) {
+                    unlinkIfSameInode(newWPath, nWfd, ownerId);
                     try { fs.closeSync(nWfd); } catch {}
-                    try { if (fs.existsSync(newWPath)) fs.unlinkSync(newWPath); } catch {}
                   }
                 } catch {
                   try { if (fs.existsSync(newWPath)) fs.unlinkSync(newWPath); } catch {}
@@ -309,16 +375,19 @@ export function acquireStaleReclaimMutex(
         if (winnerFd !== null) {
           const finalCleanup = () => {
             if (winnerFd !== null) {
+              unlinkIfSameInode(winnerTokenPath, winnerFd, ownerId);
               try { fs.closeSync(winnerFd); } catch {}
               winnerFd = null;
             }
             try {
               if (fs.existsSync(winnerTokenPath)) {
                 const content = fs.readFileSync(winnerTokenPath, 'utf8');
-                const meta = JSON.parse(content);
-                if (meta?.ownerId === ownerId) {
-                  fs.unlinkSync(winnerTokenPath);
-                }
+                try {
+                  const meta = JSON.parse(content);
+                  if (meta?.ownerId === ownerId) {
+                    fs.unlinkSync(winnerTokenPath);
+                  }
+                } catch {}
               }
             } catch {}
             cleanup();
@@ -373,9 +442,9 @@ export function atomicTakeoverStaleLock(
           'utf8'
         );
       } catch (writeErr) {
+        unlinkIfSameInode(takeoverLockPath, takeoverFd, takeoverOwnerId);
         try { fs.closeSync(takeoverFd); } catch {}
         takeoverFd = null;
-        try { if (fs.existsSync(takeoverLockPath)) fs.unlinkSync(takeoverLockPath); } catch {}
         throw writeErr;
       }
     } catch (err: any) {
@@ -497,29 +566,36 @@ export function atomicTakeoverStaleLock(
     return false;
   } finally {
     if (takeoverFd !== null) {
+      unlinkIfSameInode(takeoverLockPath, takeoverFd, takeoverOwnerId);
       try { fs.closeSync(takeoverFd); } catch {}
-      // Guarded release: ONLY unlink if WE still own the takeover lock file on disk
-      try {
-        if (fs.existsSync(takeoverLockPath)) {
-          const content = fs.readFileSync(takeoverLockPath, 'utf8');
-          try {
-            const meta = JSON.parse(content);
-            if (meta?.ownerId === takeoverOwnerId && meta?.pid === process.pid) {
-              fs.unlinkSync(takeoverLockPath);
-            }
-          } catch {
+      takeoverFd = null;
+    }
+    // Guarded release: ONLY unlink if WE still own the takeover lock file on disk
+    try {
+      if (fs.existsSync(takeoverLockPath)) {
+        const content = fs.readFileSync(takeoverLockPath, 'utf8');
+        try {
+          const meta = JSON.parse(content);
+          if (meta?.ownerId === takeoverOwnerId && meta?.pid === process.pid) {
             fs.unlinkSync(takeoverLockPath);
           }
-        }
-      } catch {}
-    }
+        } catch {}
+      }
+    } catch {}
   }
 }
 
 /**
- * Cross-Process File-Backed Atomic Admission Store.
- * Shares the global admission window and per-IP admission tracking across
- * independent Node worker processes/threads and serverless instances using atomic file locking.
+ * Single-Host Cross-Process File-Backed Atomic Admission Store.
+ * Coordinates local pre-RPC admission tracking and abuse throttling across worker
+ * processes and threads on a single persistent host or container environment via atomic file locking.
+ *
+ * SCOPE & SERVERLESS ARCHITECTURE NOTICE:
+ * On serverless platforms such as Vercel Functions or AWS Lambda, `os.tmpdir()` is instance-local
+ * rather than distributed across function instances. In such environments, this store acts as a
+ * per-instance pre-RPC flood gate. Authoritative global distributed admission control and multi-instance
+ * rate limiting across all running serverless instances is enforced downstream by the centralized
+ * database RPC (`consume_contact_rate_limit`) in Supabase.
  */
 export class CrossProcessAdmissionStore {
   readonly filePath: string;
@@ -556,9 +632,9 @@ export class CrossProcessAdmissionStore {
             'utf8'
           );
         } catch (writeErr) {
+          unlinkIfSameInode(this.lockFilePath, fd, ownerId);
           try { fs.closeSync(fd); } catch {}
           fd = null;
-          try { if (fs.existsSync(this.lockFilePath)) fs.unlinkSync(this.lockFilePath); } catch {}
           throw writeErr;
         }
       } catch (err: any) {
@@ -663,7 +739,9 @@ export class CrossProcessAdmissionStore {
       return fn(ownerId, fd);
     } finally {
       if (fd !== null) {
+        unlinkIfSameInode(this.lockFilePath, fd, ownerId);
         try { fs.closeSync(fd); } catch {}
+        fd = null;
       }
       // Guarded release: only unlink if WE still own the lock on disk
       try {
@@ -674,9 +752,7 @@ export class CrossProcessAdmissionStore {
             if (meta?.ownerId === ownerId) {
               fs.unlinkSync(this.lockFilePath);
             }
-          } catch {
-            fs.unlinkSync(this.lockFilePath);
-          }
+          } catch {}
         }
       } catch {}
     }
@@ -734,9 +810,9 @@ export class CrossProcessAdmissionStore {
             'utf8'
           );
         } catch (writeErr) {
+          unlinkIfSameInode(commitMutexPath, commitFd, commitOwnerId);
           try { fs.closeSync(commitFd); } catch {}
           commitFd = null;
-          try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
           throw writeErr;
         }
       } catch (err: any) {
@@ -862,21 +938,21 @@ export class CrossProcessAdmissionStore {
     } finally {
       try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
       if (commitFd !== null) {
+        unlinkIfSameInode(commitMutexPath, commitFd, commitOwnerId);
         try { fs.closeSync(commitFd); } catch {}
-        try {
-          if (fs.existsSync(commitMutexPath)) {
-            const content = fs.readFileSync(commitMutexPath, 'utf8');
-            try {
-              const meta = JSON.parse(content);
-              if (meta?.ownerId === commitOwnerId) {
-                fs.unlinkSync(commitMutexPath);
-              }
-            } catch {
+        commitFd = null;
+      }
+      try {
+        if (fs.existsSync(commitMutexPath)) {
+          const content = fs.readFileSync(commitMutexPath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId === commitOwnerId) {
               fs.unlinkSync(commitMutexPath);
             }
-          }
-        } catch {}
-      }
+          } catch {}
+        }
+      } catch {}
     }
   }
 
@@ -1066,9 +1142,13 @@ if (typeof setInterval !== 'undefined') {
 }
 
 /**
- * Independent abuse/WAF admission limit at the application boundary.
- * Throttles rapid bursts from a single source connection as well as global volumetric floods
- * before inquiry persistence, backed by shared atomic cross-process state.
+ * Pre-RPC abuse/WAF admission limit at the application boundary.
+ * Throttles rapid bursts from a single source connection as well as volumetric floods
+ * before calling database RPCs.
+ *
+ * Scoped to worker processes on a single persistent host via `CrossProcessAdmissionStore`.
+ * In multi-instance serverless deployments (Vercel Functions), global distributed admission control
+ * across instances is enforced by the downstream Supabase RPC (`consume_contact_rate_limit`).
  */
 export function checkAdmissionLimit(
   { ip, maxWaitMs }: { ip?: string; maxWaitMs?: number },
@@ -1439,9 +1519,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             'utf8'
           );
         } catch (writeErr) {
+          unlinkIfSameInode(this.lockFilePath, fd, ownerId);
           try { fs.closeSync(fd); } catch {}
           fd = null;
-          try { if (fs.existsSync(this.lockFilePath)) fs.unlinkSync(this.lockFilePath); } catch {}
           throw writeErr;
         }
       } catch (err: any) {
@@ -1545,7 +1625,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
       return fn(ownerId, fd);
     } finally {
       if (fd !== null) {
+        unlinkIfSameInode(this.lockFilePath, fd, ownerId);
         try { fs.closeSync(fd); } catch {}
+        fd = null;
       }
       // Guarded release: only unlink if WE still own the lock on disk
       try {
@@ -1556,9 +1638,7 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             if (meta?.ownerId === ownerId) {
               fs.unlinkSync(this.lockFilePath);
             }
-          } catch {
-            fs.unlinkSync(this.lockFilePath);
-          }
+          } catch {}
         }
       } catch {}
     }
@@ -1595,9 +1675,9 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
             'utf8'
           );
         } catch (writeErr) {
+          unlinkIfSameInode(commitMutexPath, commitFd, commitOwnerId);
           try { fs.closeSync(commitFd); } catch {}
           commitFd = null;
-          try { if (fs.existsSync(commitMutexPath)) fs.unlinkSync(commitMutexPath); } catch {}
           throw writeErr;
         }
       } catch (err: any) {
@@ -1723,21 +1803,21 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
     } finally {
       try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch {}
       if (commitFd !== null) {
+        unlinkIfSameInode(commitMutexPath, commitFd, commitOwnerId);
         try { fs.closeSync(commitFd); } catch {}
-        try {
-          if (fs.existsSync(commitMutexPath)) {
-            const content = fs.readFileSync(commitMutexPath, 'utf8');
-            try {
-              const meta = JSON.parse(content);
-              if (meta?.ownerId === commitOwnerId) {
-                fs.unlinkSync(commitMutexPath);
-              }
-            } catch {
+        commitFd = null;
+      }
+      try {
+        if (fs.existsSync(commitMutexPath)) {
+          const content = fs.readFileSync(commitMutexPath, 'utf8');
+          try {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId === commitOwnerId) {
               fs.unlinkSync(commitMutexPath);
             }
-          }
-        } catch {}
-      }
+          } catch {}
+        }
+      } catch {}
     }
   }
 

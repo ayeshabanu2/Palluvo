@@ -80,7 +80,10 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
       return { success: false, error: `Message cannot exceed ${CONTACT_FIELD_LIMITS.MESSAGE_MAX} characters.` };
     }
 
-    // 2. Independent Abuse/WAF Admission Limit & Rate Limiting
+    // 2. Pre-RPC Abuse/WAF Admission Limit & Distributed Rate Limiting
+    // Single-host pre-RPC gate protects against local burst floods before hitting the database.
+    // In multi-instance serverless environments (Vercel), distributed admission is authoritatively
+    // enforced downstream across all instances by the Supabase rate limit RPC.
     const clientIp = await getClientIp();
     const admissionCheck = checkAdmissionLimit({ ip: clientIp });
     if (!admissionCheck.allowed) {
