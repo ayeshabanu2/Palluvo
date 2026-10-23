@@ -2416,6 +2416,273 @@ process.on('message', (msg) => {
       fs.rmSync(testDir, { recursive: true, force: true });
     } catch {}
   });
+
+  test('REGRESSION [P2]: multiprocess regression: swapping lock path between comparison and unlink does NOT delete replacement lock', async () => {
+    const testDir = path.join(os.tmpdir(), `swap_unlink_mp_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'test.lock');
+    const swappedFlagPath = path.join(testDir, 'swapped.flag');
+
+    // 1. Process 1 (Parent) opens lockPath and writes its metadata
+    const proc1OwnerId = `proc1-owner-${crypto.randomUUID()}`;
+    const fd1 = fs.openSync(lockPath, 'wx');
+    fs.writeFileSync(
+      fd1,
+      JSON.stringify({ pid: process.pid, ownerId: proc1OwnerId, createdAt: Date.now() }),
+      'utf8'
+    );
+    const originalFd1Stat = fs.fstatSync(fd1);
+
+    // 2. Child process script that will swap lockPath with a new replacement lock
+    const childOwnerId = `child-reclaimer-${crypto.randomUUID()}`;
+    const childScript = path.join(testDir, 'child_swapper.mjs');
+    fs.writeFileSync(
+      childScript,
+      `
+import fs from 'node:fs';
+
+process.on('message', (msg) => {
+  if (msg.type === 'SWAP_LOCK') {
+    const { lockPath, childOwnerId, swappedFlagPath } = msg;
+    try {
+      // Delete old file and create brand-new replacement file with a fresh inode
+      fs.unlinkSync(lockPath);
+      const fd2 = fs.openSync(lockPath, 'wx');
+      fs.writeFileSync(
+        fd2,
+        JSON.stringify({ pid: process.pid, ownerId: childOwnerId, createdAt: Date.now() }),
+        'utf8'
+      );
+      fs.closeSync(fd2);
+      fs.writeFileSync(swappedFlagPath, 'ready', 'utf8');
+      process.send({ type: 'SWAP_DONE' });
+    } catch (err) {
+      process.send({ type: 'SWAP_ERROR', error: err.message });
+    }
+  }
+});
+`,
+      'utf8'
+    );
+
+    const child = fork(childScript);
+    try {
+      const childDonePromise = new Promise((resolve) => {
+        child.on('message', (msg) => {
+          if (msg.type === 'SWAP_DONE') resolve(true);
+        });
+      });
+
+      let hookExecuted = false;
+      // 3. Process 1 invokes unlinkIfSameInode with an onBeforeUnlink hook
+      const unlinked = unlinkIfSameInode(lockPath, fd1, proc1OwnerId, () => {
+        hookExecuted = true;
+        // Trigger child process to swap the path while Process 1 is between comparison and unlink
+        child.send({
+          type: 'SWAP_LOCK',
+          lockPath,
+          childOwnerId,
+          swappedFlagPath,
+        });
+
+        // Wait synchronously for child to complete the path swap
+        const startWait = Date.now();
+        while (!fs.existsSync(swappedFlagPath) && Date.now() - startWait < 5000) {
+          const pause = Date.now() + 5;
+          while (Date.now() < pause) {}
+        }
+      });
+
+      await childDonePromise;
+      assert.equal(hookExecuted, true, 'onBeforeUnlink hook must have executed');
+
+      // 4. CRITICAL ASSERTION: unlinkIfSameInode must return false because the directory entry
+      // was swapped to a different inode before unlink, and MUST NOT delete the replacement lock!
+      assert.equal(unlinked, false, 'unlinkIfSameInode must return false when file was replaced before unlink');
+      assert.equal(fs.existsSync(lockPath), true, 'Replacement lock on disk must NOT be deleted');
+
+      const onDiskStat = fs.statSync(lockPath);
+      assert.notEqual(onDiskStat.ino, originalFd1Stat.ino, 'On-disk file must have replacement inode');
+      const onDiskContent = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+      assert.equal(onDiskContent.ownerId, childOwnerId, 'On-disk file must still belong to child reclaimer');
+      assert.equal(onDiskContent.pid, child.pid, 'On-disk file must still record child process PID');
+    } finally {
+      try { fs.closeSync(fd1); } catch {}
+      try { child.kill('SIGKILL'); } catch {}
+      try { fs.unlinkSync(lockPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: repeated already-throttled requests count toward shared global flood budget in database RPC', async () => {
+    // Simulated database RPC engine matching PostgreSQL function consume_contact_rate_limit:
+    // Tracks global admission tracker c_global_admission_key and per-key rows
+    const c_global_admission_key = 'digest:sha256:0000000000000000000000000000000000000000000000000000000000000000';
+    const c_max_global_requests = 120;
+    const c_global_window_ms = 60000;
+    const c_cooldown_ms = 5000;
+    const c_max_requests = 5;
+
+    const dbTable = new Map();
+    let advisoryLock = Promise.resolve();
+
+    const mockSupabase = {
+      rpc: async (funcName, params) => {
+        assert.equal(funcName, 'consume_contact_rate_limit');
+        const keys = params.p_keys;
+        const now = Date.now();
+
+        // Transactional advisory lock
+        const prevLock = advisoryLock;
+        let releaseLock;
+        advisoryLock = new Promise((resolve) => { releaseLock = resolve; });
+        await prevLock;
+
+        try {
+          // 5b. Shared global admission check
+          let globalRec = dbTable.get(c_global_admission_key);
+          let globalTs = globalRec
+            ? globalRec.timestamps.filter((ts) => ts > now - c_global_window_ms)
+            : [];
+
+          if (globalTs.length >= c_max_global_requests) {
+            const retryAfter = Math.ceil((globalTs[0] + c_global_window_ms - now) / 1000);
+            return {
+              data: {
+                allowed: false,
+                retryAfterSeconds: retryAfter,
+                error: 'Inquiry service is receiving unusually high traffic. Please wait a moment or contact our atelier directly via phone or WhatsApp.',
+              },
+              error: null,
+            };
+          }
+
+          // Count every attempt entering the RPC against global flood admission window
+          globalTs.push(now);
+          dbTable.set(c_global_admission_key, {
+            timestamps: globalTs,
+            lastUpdated: now,
+          });
+
+          // 7. Check per-key limits under row locks
+          for (const key of keys) {
+            const rec = dbTable.get(key);
+            if (rec) {
+              const filteredTs = rec.timestamps.filter((ts) => ts > now - c_global_window_ms);
+              if (filteredTs.length > 0) {
+                const lastTs = filteredTs[filteredTs.length - 1];
+                if (now - lastTs < c_cooldown_ms) {
+                  const retryAfter = Math.ceil((c_cooldown_ms - (now - lastTs)) / 1000);
+                  return {
+                    data: {
+                      allowed: false,
+                      retryAfterSeconds: retryAfter,
+                      error: 'Please wait a moment before sending another message.',
+                    },
+                    error: null,
+                  };
+                }
+
+                if (filteredTs.length >= c_max_requests) {
+                  const retryAfter = Math.ceil((filteredTs[0] + c_global_window_ms - now) / 1000);
+                  return {
+                    data: {
+                      allowed: false,
+                      retryAfterSeconds: retryAfter,
+                      error: 'Too many inquiries submitted. Please wait a few minutes before trying again or reach out to our concierge directly.',
+                    },
+                    error: null,
+                  };
+                }
+              }
+            }
+          }
+
+          // 9. Commit client keys
+          for (const key of keys) {
+            let rec = dbTable.get(key);
+            if (rec) {
+              rec.timestamps = rec.timestamps.filter((ts) => ts > now - c_global_window_ms);
+              rec.timestamps.push(now);
+              rec.lastUpdated = now;
+            } else {
+              dbTable.set(key, { timestamps: [now], lastUpdated: now });
+            }
+          }
+
+          return { data: { allowed: true }, error: null };
+        } finally {
+          releaseLock();
+        }
+      },
+    };
+
+    const clientStore = new DatabaseRpcRateLimitStore(async () => mockSupabase);
+
+    // 1. Initial request from client succeeds
+    const firstRes = await clientStore.consumeKeys(['ip:198.51.100.42']);
+    assert.equal(firstRes.allowed, true, 'First request should be allowed');
+
+    // 2. Second immediate request from same client is throttled by burst cooldown
+    const throttledRes = await clientStore.consumeKeys(['ip:198.51.100.42']);
+    assert.equal(throttledRes.allowed, false, 'Immediate second request should be throttled by cooldown');
+    assert.match(throttledRes.error, /wait a moment/i);
+
+    // 3. Client continues sending repeated rejected requests while already throttled.
+    // Each rejected retry enters the RPC and MUST count toward c_global_admission_key!
+    for (let i = 0; i < 118; i++) {
+      const rejectedRetry = await clientStore.consumeKeys(['ip:198.51.100.42']);
+      assert.equal(rejectedRetry.allowed, false, `Retry ${i + 1} must be rejected while in cooldown`);
+    }
+
+    // Verify c_global_admission_key accumulated all 120 attempts (1 allowed + 1 throttled + 118 retries)
+    const globalEntry = dbTable.get(c_global_admission_key);
+    assert.ok(globalEntry, 'Global admission tracker must exist in database table');
+    assert.equal(globalEntry.timestamps.length, 120, 'All 120 rejected and allowed attempts must be counted in global window');
+
+    // 4. 121st request: Even from a brand-new IP, the RPC now triggers the global flood gate
+    const floodRes = await clientStore.consumeKeys(['ip:203.0.113.88']);
+    assert.equal(floodRes.allowed, false, '121st attempt must be blocked by shared global flood limit');
+    assert.match(floodRes.error, /unusually high traffic/i);
+  });
+
+  test('REGRESSION [P2]: repeated already-throttled requests count toward global admission window in CrossProcessAdmissionStore', () => {
+    const testDir = path.join(os.tmpdir(), `admission_throttled_global_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const store = new CrossProcessAdmissionStore(testDir);
+    const now = 700000;
+
+    try {
+      // 1. Fill per-IP quota for 192.0.2.1 up to MAX_ADMISSIONS_PER_IP (15)
+      for (let i = 0; i < ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP; i++) {
+        const res = store.checkAdmission({ ip: '192.0.2.1' }, now + i * 10);
+        assert.equal(res.allowed, true);
+      }
+
+      // 2. 16th submission from 192.0.2.1 is throttled
+      const throttled16 = store.checkAdmission({ ip: '192.0.2.1' }, now + 200);
+      assert.equal(throttled16.allowed, false);
+      assert.match(throttled16.error, /too many inquiries/i);
+
+      // Verify that the rejected 16th attempt WAS counted into globalTimestamps (total 16)
+      assert.equal(store.getGlobalCount(), 16, 'Rejected throttled attempt must be counted in global admission tracker');
+
+      // 3. Send remaining 104 rejected requests from the throttled IP up to MAX_GLOBAL_ADMISSIONS (120)
+      for (let i = 0; i < 104; i++) {
+        const rejected = store.checkAdmission({ ip: '192.0.2.1' }, now + 300 + i * 5);
+        assert.equal(rejected.allowed, false);
+      }
+      assert.equal(store.getGlobalCount(), 120, 'All rejected retries must accumulate in global tracker');
+
+      // 4. 121st request from a new IP is now blocked by the global flood limit
+      const floodBlocked = store.checkAdmission({ ip: '198.51.100.99' }, now + 1000);
+      assert.equal(floodBlocked.allowed, false);
+      assert.match(floodBlocked.error, /unusually high traffic/i);
+    } finally {
+      store.clear();
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
 });
 
 

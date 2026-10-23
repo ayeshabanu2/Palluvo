@@ -125,16 +125,21 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
  * matches the exact inode and device of the open file descriptor `fd` created by this call,
  * and (if metadata was written) matches `expectedOwnerId`.
  *
- * If this process paused after `openSync('wx')` long enough for another process to
- * classify the unpopulated or partial file as stale and atomically replace it (with a new inode),
- * this function guarantees that the competitor's active replacement lock is NEVER deleted.
+ * Runs under the takeover/reclaim serialization protocol (`${filePath}.takeover`) to ensure
+ * that the inode verification and the unlink are completely serialized with respect to any
+ * concurrent reclaimer attempting `atomicTakeoverStaleLock`.
+ *
+ * Re-verifies directory entry inode immediately before calling `unlinkSync` so that the pathname
+ * unlink is strictly conditional on the verified inode. If a competitor or test interleaving
+ * replaces the file after initial comparison, the replacement lock is NEVER deleted.
  *
  * Must be invoked BEFORE closing `fd` so `fs.fstatSync(fd)` is valid.
  */
 export function unlinkIfSameInode(
   filePath: string,
   fd: number | null,
-  expectedOwnerId?: string
+  expectedOwnerId?: string,
+  onBeforeUnlink?: () => void
 ): boolean {
   if (fd === null || typeof fd !== 'number') return false;
   try {
@@ -146,26 +151,120 @@ export function unlinkIfSameInode(
     if (!fs.existsSync(filePath)) {
       return false;
     }
-    const pathStat = fs.statSync(filePath);
-    // Inode/device fencing: strictly verify the directory entry is the exact file created by fd
-    if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
-      return false;
-    }
-    // Ownership fencing: if expectedOwnerId is provided and disk file contains readable metadata,
-    // verify that ownerId matches
-    if (expectedOwnerId) {
-      try {
-        const content = fs.readFileSync(filePath, 'utf8').trim();
-        if (content.length > 0) {
-          const meta = JSON.parse(content);
-          if (meta?.ownerId && meta.ownerId !== expectedOwnerId) {
-            return false;
+
+    const isTakeoverProtected =
+      !filePath.endsWith('.takeover') && !filePath.includes('.reclaim_dir');
+    const takeoverMutexPath = `${filePath}.takeover`;
+    const cleanupTakeoverId = expectedOwnerId || crypto.randomUUID();
+    let takeoverFd: number | null = null;
+
+    if (isTakeoverProtected) {
+      const startAcquire = Date.now();
+      while (takeoverFd === null && Date.now() - startAcquire < 2000) {
+        try {
+          takeoverFd = fs.openSync(takeoverMutexPath, 'wx');
+          try {
+            fs.writeFileSync(
+              takeoverFd,
+              JSON.stringify({ pid: process.pid, ownerId: cleanupTakeoverId, createdAt: Date.now() }),
+              'utf8'
+            );
+          } catch (wErr) {
+            try { fs.closeSync(takeoverFd); } catch {}
+            try { fs.unlinkSync(takeoverMutexPath); } catch {}
+            takeoverFd = null;
+            throw wErr;
+          }
+        } catch (err: any) {
+          if (err && (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY')) {
+            try {
+              if (fs.existsSync(takeoverMutexPath)) {
+                const tStat = fs.statSync(takeoverMutexPath);
+                if (Date.now() - tStat.mtimeMs > 2000 && !isLockOwnerAlive(takeoverMutexPath)) {
+                  const reclaim = acquireStaleReclaimMutex(takeoverMutexPath, cleanupTakeoverId);
+                  if (reclaim.won) {
+                    try {
+                      if (fs.existsSync(takeoverMutexPath) && !isLockOwnerAlive(takeoverMutexPath)) {
+                        fs.unlinkSync(takeoverMutexPath);
+                      }
+                    } finally {
+                      reclaim.cleanup();
+                    }
+                  }
+                }
+              }
+            } catch {}
+            const pause = Date.now() + 5;
+            while (Date.now() < pause) {}
+          } else {
+            break;
           }
         }
-      } catch {}
+      }
+
+      if (takeoverFd === null) {
+        // Active takeover is held by another live process; do not unlink target lock
+        return false;
+      }
     }
-    fs.unlinkSync(filePath);
-    return true;
+
+    try {
+      if (!fs.existsSync(filePath)) {
+        return false;
+      }
+      const pathStat = fs.statSync(filePath);
+      // Inode/device fencing: strictly verify the directory entry is the exact file created by fd
+      if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
+        return false;
+      }
+      // Ownership fencing: if expectedOwnerId is provided and disk file contains readable metadata,
+      // verify that ownerId matches
+      if (expectedOwnerId) {
+        try {
+          const content = fs.readFileSync(filePath, 'utf8').trim();
+          if (content.length > 0) {
+            const meta = JSON.parse(content);
+            if (meta?.ownerId && meta.ownerId !== expectedOwnerId) {
+              return false;
+            }
+          }
+        } catch {}
+      }
+
+      // Optional hook for multiprocess test interleaving / pause simulation
+      if (onBeforeUnlink) {
+        onBeforeUnlink();
+      }
+
+      // Pre-unlink re-verification: strictly ensure that directory entry still points
+      // to the exact verified descriptor inode before invoking pathname unlink
+      if (!fs.existsSync(filePath)) {
+        return false;
+      }
+      const preUnlinkStat = fs.statSync(filePath);
+      if (fdStat.ino !== preUnlinkStat.ino || fdStat.dev !== preUnlinkStat.dev) {
+        return false;
+      }
+
+      fs.unlinkSync(filePath);
+      return true;
+    } finally {
+      if (takeoverFd !== null) {
+        try { fs.closeSync(takeoverFd); } catch {}
+        try {
+          if (fs.existsSync(takeoverMutexPath)) {
+            const content = fs.readFileSync(takeoverMutexPath, 'utf8').trim();
+            if (content.length > 0) {
+              const meta = JSON.parse(content);
+              if (meta?.ownerId === cleanupTakeoverId) {
+                fs.unlinkSync(takeoverMutexPath);
+              }
+            }
+          }
+        } catch {}
+        takeoverFd = null;
+      }
+    }
   } catch {
     return false;
   }
@@ -570,18 +669,6 @@ export function atomicTakeoverStaleLock(
       try { fs.closeSync(takeoverFd); } catch {}
       takeoverFd = null;
     }
-    // Guarded release: ONLY unlink if WE still own the takeover lock file on disk
-    try {
-      if (fs.existsSync(takeoverLockPath)) {
-        const content = fs.readFileSync(takeoverLockPath, 'utf8');
-        try {
-          const meta = JSON.parse(content);
-          if (meta?.ownerId === takeoverOwnerId && meta?.pid === process.pid) {
-            fs.unlinkSync(takeoverLockPath);
-          }
-        } catch {}
-      }
-    } catch {}
   }
 }
 
@@ -743,18 +830,6 @@ export class CrossProcessAdmissionStore {
         try { fs.closeSync(fd); } catch {}
         fd = null;
       }
-      // Guarded release: only unlink if WE still own the lock on disk
-      try {
-        if (fs.existsSync(this.lockFilePath)) {
-          const content = fs.readFileSync(this.lockFilePath, 'utf8');
-          try {
-            const meta = JSON.parse(content);
-            if (meta?.ownerId === ownerId) {
-              fs.unlinkSync(this.lockFilePath);
-            }
-          } catch {}
-        }
-      } catch {}
     }
   }
 
@@ -942,17 +1017,6 @@ export class CrossProcessAdmissionStore {
         try { fs.closeSync(commitFd); } catch {}
         commitFd = null;
       }
-      try {
-        if (fs.existsSync(commitMutexPath)) {
-          const content = fs.readFileSync(commitMutexPath, 'utf8');
-          try {
-            const meta = JSON.parse(content);
-            if (meta?.ownerId === commitOwnerId) {
-              fs.unlinkSync(commitMutexPath);
-            }
-          } catch {}
-        }
-      } catch {}
     }
   }
 
@@ -1024,6 +1088,8 @@ export class CrossProcessAdmissionStore {
         if (record && record.timestamps.length >= ADMISSION_LIMIT_CONFIG.MAX_ADMISSIONS_PER_IP) {
           const oldest = record.timestamps[0];
           const retryAfter = Math.ceil((oldest + ADMISSION_LIMIT_CONFIG.WINDOW_MS - now) / 1000);
+          data.globalTimestamps.push(now);
+          this.writeData(data, epoch, fencingToken, lockFd);
           return {
             allowed: false,
             retryAfterSeconds: retryAfter,
@@ -1629,18 +1695,6 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
         try { fs.closeSync(fd); } catch {}
         fd = null;
       }
-      // Guarded release: only unlink if WE still own the lock on disk
-      try {
-        if (fs.existsSync(this.lockFilePath)) {
-          const content = fs.readFileSync(this.lockFilePath, 'utf8');
-          try {
-            const meta = JSON.parse(content);
-            if (meta?.ownerId === ownerId) {
-              fs.unlinkSync(this.lockFilePath);
-            }
-          } catch {}
-        }
-      } catch {}
     }
   }
 
@@ -1807,17 +1861,6 @@ export class CrossProcessRateLimitStore implements RateLimitStore {
         try { fs.closeSync(commitFd); } catch {}
         commitFd = null;
       }
-      try {
-        if (fs.existsSync(commitMutexPath)) {
-          const content = fs.readFileSync(commitMutexPath, 'utf8');
-          try {
-            const meta = JSON.parse(content);
-            if (meta?.ownerId === commitOwnerId) {
-              fs.unlinkSync(commitMutexPath);
-            }
-          } catch {}
-        }
-      } catch {}
     }
   }
 

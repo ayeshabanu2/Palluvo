@@ -175,6 +175,27 @@ BEGIN
     v_global_ts := '{}'::BIGINT[];
   END IF;
 
+  -- Count every attempt entering the RPC against the global flood admission window
+  -- (regardless of whether subsequent per-key checks or capacity limits reject the attempt).
+  -- This prevents throttled callers from hammering the database with rejected requests
+  -- without consuming the global admission budget.
+  v_global_ts := array_append(v_global_ts, v_now);
+  IF v_global_rec.key IS NOT NULL THEN
+    UPDATE public.contact_rate_limits
+    SET timestamps = v_global_ts,
+        last_updated = v_now,
+        expires_at = to_timestamp((v_now + c_global_window_ms) / 1000.0)
+    WHERE key = c_global_admission_key;
+  ELSE
+    INSERT INTO public.contact_rate_limits (key, timestamps, last_updated, expires_at)
+    VALUES (
+      c_global_admission_key,
+      v_global_ts,
+      v_now,
+      to_timestamp((v_now + c_global_window_ms) / 1000.0)
+    );
+  END IF;
+
   -- 6. Count current active client entries in the store (excluding global admission tracker)
   SELECT COUNT(*) INTO v_total_keys FROM public.contact_rate_limits WHERE key != c_global_admission_key;
 
@@ -253,24 +274,7 @@ BEGIN
     END IF;
   END IF;
 
-  -- 9. All checks passed: commit updated timestamps atomically for global tracker and all keys
-  v_global_ts := array_append(v_global_ts, v_now);
-  IF v_global_rec.key IS NOT NULL THEN
-    UPDATE public.contact_rate_limits
-    SET timestamps = v_global_ts,
-        last_updated = v_now,
-        expires_at = to_timestamp((v_now + c_global_window_ms) / 1000.0)
-    WHERE key = c_global_admission_key;
-  ELSE
-    INSERT INTO public.contact_rate_limits (key, timestamps, last_updated, expires_at)
-    VALUES (
-      c_global_admission_key,
-      v_global_ts,
-      v_now,
-      to_timestamp((v_now + c_global_window_ms) / 1000.0)
-    );
-  END IF;
-
+  -- 9. All checks passed: commit updated timestamps atomically for client keys
   FOREACH v_key IN ARRAY v_sorted_keys LOOP
     SELECT * INTO v_rec
     FROM public.contact_rate_limits
