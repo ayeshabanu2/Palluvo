@@ -34,6 +34,7 @@ import {
   hasOpenFileDescriptor,
   isProcessAlive,
   isLockOwnerAlive,
+  isTakeoverFenceValid,
   isEmailConfirmationEnforced,
   isMailboxVerified,
   acquireStaleReclaimMutex,
@@ -2680,6 +2681,171 @@ process.on('message', (msg) => {
       assert.match(floodBlocked.error, /unusually high traffic/i);
     } finally {
       store.clear();
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: isLockOwnerAlive safely guards create-to-metadata gap for recently created empty lock file', () => {
+    const testDir = path.join(os.tmpdir(), `gap_guard_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const emptyLockPath = path.join(testDir, 'gap_test.lock');
+
+    try {
+      // 1. Create a 0-byte lock file simulating process paused between openSync('wx') and writeFileSync
+      const fd = fs.openSync(emptyLockPath, 'wx');
+      fs.closeSync(fd);
+      assert.equal(fs.existsSync(emptyLockPath), true);
+      assert.equal(fs.statSync(emptyLockPath).size, 0);
+
+      // 2. In create-to-metadata window (< 2000ms), isLockOwnerAlive MUST return true so competitors do not steal
+      assert.equal(
+        isLockOwnerAlive(emptyLockPath),
+        true,
+        'isLockOwnerAlive must return true for newly created 0-byte file in create-to-metadata window'
+      );
+
+      // 3. Artificially age the 0-byte file past the 2000ms threshold
+      const pastTime = (Date.now() - 5000) / 1000;
+      fs.utimesSync(emptyLockPath, pastTime, pastTime);
+
+      // 4. Once aged past 2000ms without metadata, it MUST be recognized as abandoned/stale (false)
+      assert.equal(
+        isLockOwnerAlive(emptyLockPath),
+        false,
+        'isLockOwnerAlive must return false for aged 0-byte file'
+      );
+    } finally {
+      try { fs.unlinkSync(emptyLockPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: multiprocess regression: pausing immediately after openSync aborts cleanup and preserves competitor lock when competitor reclaims takeover mutex', async () => {
+    const testDir = path.join(os.tmpdir(), `takeover_gap_mp_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'target.lock');
+    const takeoverMutexPath = `${lockPath}.takeover`;
+    const readyFlagPath = path.join(testDir, 'reclaimed.flag');
+
+    // 1. Process 1 (Parent) opens lockPath and records initial metadata
+    const proc1OwnerId = `proc1-cleaner-${crypto.randomUUID()}`;
+    const fd1 = fs.openSync(lockPath, 'wx');
+    fs.writeFileSync(
+      fd1,
+      JSON.stringify({ pid: process.pid, ownerId: proc1OwnerId, createdAt: Date.now() }),
+      'utf8'
+    );
+    const fd1Stat = fs.fstatSync(fd1);
+
+    // 2. Child worker script: reclaims takeoverMutexPath and replaces target lockPath
+    const childTakeoverId = `child-takeover-${crypto.randomUUID()}`;
+    const childLockOwnerId = `child-lock-${crypto.randomUUID()}`;
+    const childScript = path.join(testDir, 'child_reclaimer.mjs');
+
+    fs.writeFileSync(
+      childScript,
+      `
+import fs from 'node:fs';
+
+process.on('message', (msg) => {
+  if (msg.type === 'RECLAIM_TAKEOVER') {
+    const { lockPath, takeoverMutexPath, childTakeoverId, childLockOwnerId, readyFlagPath } = msg;
+    try {
+      // Artificially age parent's empty takeover mutex past 2000ms
+      const pastTime = (Date.now() - 5000) / 1000;
+      fs.utimesSync(takeoverMutexPath, pastTime, pastTime);
+
+      // Reclaim the takeover mutex (unlink and recreate with child's descriptor & metadata)
+      fs.unlinkSync(takeoverMutexPath);
+      const childTakeoverFd = fs.openSync(takeoverMutexPath, 'wx');
+      fs.writeFileSync(
+        childTakeoverFd,
+        JSON.stringify({ pid: process.pid, ownerId: childTakeoverId, createdAt: Date.now() }),
+        'utf8'
+      );
+      fs.closeSync(childTakeoverFd);
+
+      // Replace target lock with child's own active lock
+      fs.unlinkSync(lockPath);
+      const childLockFd = fs.openSync(lockPath, 'wx');
+      fs.writeFileSync(
+        childLockFd,
+        JSON.stringify({ pid: process.pid, ownerId: childLockOwnerId, createdAt: Date.now() }),
+        'utf8'
+      );
+      fs.closeSync(childLockFd);
+
+      fs.writeFileSync(readyFlagPath, 'done', 'utf8');
+      process.send({ type: 'RECLAIM_DONE' });
+    } catch (err) {
+      process.send({ type: 'RECLAIM_ERROR', error: err.message });
+    }
+  }
+});
+`,
+      'utf8'
+    );
+
+    const child = fork(childScript);
+    try {
+      const childDonePromise = new Promise((resolve) => {
+        child.on('message', (msg) => {
+          if (msg.type === 'RECLAIM_DONE') resolve(true);
+        });
+      });
+
+      let hookExecuted = false;
+      // 3. Process 1 calls unlinkIfSameInode with onAfterTakeoverOpen hook
+      // This pauses Process 1 immediately after openSync(takeoverMutexPath, 'wx') before writeFileSync!
+      const unlinked = unlinkIfSameInode(
+        lockPath,
+        fd1,
+        proc1OwnerId,
+        undefined, // onBeforeUnlink
+        () => {
+          hookExecuted = true;
+          // Trigger child to take over takeoverMutexPath and swap lockPath while parent is paused
+          child.send({
+            type: 'RECLAIM_TAKEOVER',
+            lockPath,
+            takeoverMutexPath,
+            childTakeoverId,
+            childLockOwnerId,
+            readyFlagPath,
+          });
+
+          // Wait synchronously for child to finish takeover and lock replacement
+          const startWait = Date.now();
+          while (!fs.existsSync(readyFlagPath) && Date.now() - startWait < 5000) {
+            const pause = Date.now() + 5;
+            while (Date.now() < pause) {}
+          }
+        }
+      );
+
+      await childDonePromise;
+      assert.equal(hookExecuted, true, 'onAfterTakeoverOpen hook must have executed');
+
+      // 4. CRITICAL ASSERTION: unlinkIfSameInode MUST detect the lost takeover mutex via descriptor/link/owner fencing,
+      // return false, and MUST NOT delete the competitor's replacement lock or takeover lock!
+      assert.equal(unlinked, false, 'unlinkIfSameInode must return false when takeover mutex was reclaimed during open-to-write pause');
+      assert.equal(fs.existsSync(lockPath), true, 'Competitor replacement lock must NOT be deleted');
+
+      const currentLockStat = fs.statSync(lockPath);
+      assert.notEqual(currentLockStat.ino, fd1Stat.ino, 'On-disk lock must have replacement inode');
+      const currentLockContent = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
+      assert.equal(currentLockContent.ownerId, childLockOwnerId, 'Target lock must still belong to competitor');
+      assert.equal(currentLockContent.pid, child.pid, 'Target lock must still record competitor PID');
+
+      // Verify competitor's takeover mutex is also intact
+      assert.equal(fs.existsSync(takeoverMutexPath), true, 'Competitor takeover mutex must NOT be unlinked by parent');
+      const currentTakeoverContent = JSON.parse(fs.readFileSync(takeoverMutexPath, 'utf8'));
+      assert.equal(currentTakeoverContent.ownerId, childTakeoverId, 'Takeover mutex must belong to competitor');
+    } finally {
+      try { fs.closeSync(fd1); } catch {}
+      try { child.kill('SIGKILL'); } catch {}
+      try { fs.unlinkSync(lockPath); } catch {}
+      try { fs.unlinkSync(takeoverMutexPath); } catch {}
       try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
     }
   });

@@ -101,6 +101,7 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
   }
   try {
     if (fs.existsSync(lockFilePath)) {
+      const stat = fs.statSync(lockFilePath);
       const content = fs.readFileSync(lockFilePath, 'utf8').trim();
       if (content.length > 0) {
         let pid: number | null = null;
@@ -114,10 +115,61 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
         if (pid !== null && isProcessAlive(pid)) {
           return true;
         }
+        // If pid is not yet parseable but file was modified within the recent create-to-metadata gap (< 2000ms)
+        if (pid === null && Date.now() - stat.mtimeMs < 2000) {
+          return true;
+        }
+      } else {
+        // Safe create-to-metadata gap:
+        // A newly created (0-byte) lock file whose mtime is recent (within 2000ms) indicates
+        // that another process is actively between openSync('wx') and writeFileSync.
+        // It must NOT be treated as dead/abandoned while within this window.
+        if (Date.now() - stat.mtimeMs < 2000) {
+          return true;
+        }
       }
     }
   } catch {}
   return false;
+}
+
+/**
+ * Strictly fences a held takeover lock descriptor:
+ * 1. Verifies that the file descriptor `takeoverFd` is still linked to the filesystem (nlink > 0).
+ * 2. Verifies that `takeoverMutexPath` exists on disk.
+ * 3. Inode/device fencing: verifies that the pathname on disk points to the exact inode and device created by takeoverFd.
+ * 4. Ownership fencing: verifies that on-disk metadata matches `expectedOwnerId` and the current process PID.
+ */
+export function isTakeoverFenceValid(
+  takeoverFd: number | null,
+  takeoverMutexPath: string,
+  expectedOwnerId: string
+): boolean {
+  if (takeoverFd === null || typeof takeoverFd !== 'number') return false;
+  try {
+    const tFdStat = fs.fstatSync(takeoverFd);
+    if (typeof tFdStat.nlink === 'number' && tFdStat.nlink === 0) {
+      return false;
+    }
+    if (!fs.existsSync(takeoverMutexPath)) {
+      return false;
+    }
+    const tPathStat = fs.statSync(takeoverMutexPath);
+    if (tFdStat.ino !== tPathStat.ino || tFdStat.dev !== tPathStat.dev) {
+      return false;
+    }
+    const content = fs.readFileSync(takeoverMutexPath, 'utf8').trim();
+    if (content.length === 0) {
+      return false;
+    }
+    const meta = JSON.parse(content);
+    if (meta?.ownerId !== expectedOwnerId || meta?.pid !== process.pid) {
+      return false;
+    }
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -129,9 +181,10 @@ export function isLockOwnerAlive(lockFilePath: string): boolean {
  * that the inode verification and the unlink are completely serialized with respect to any
  * concurrent reclaimer attempting `atomicTakeoverStaleLock`.
  *
- * Re-verifies directory entry inode immediately before calling `unlinkSync` so that the pathname
- * unlink is strictly conditional on the verified inode. If a competitor or test interleaving
- * replaces the file after initial comparison, the replacement lock is NEVER deleted.
+ * Strictly fences the takeover descriptor before touching `filePath` and re-verifies directory
+ * entry inode immediately before calling `unlinkSync` so that the pathname unlink is strictly
+ * conditional on the verified inode. If a competitor or test interleaving replaces the file,
+ * the replacement lock is NEVER deleted.
  *
  * Must be invoked BEFORE closing `fd` so `fs.fstatSync(fd)` is valid.
  */
@@ -139,7 +192,8 @@ export function unlinkIfSameInode(
   filePath: string,
   fd: number | null,
   expectedOwnerId?: string,
-  onBeforeUnlink?: () => void
+  onBeforeUnlink?: () => void,
+  onAfterTakeoverOpen?: () => void
 ): boolean {
   if (fd === null || typeof fd !== 'number') return false;
   try {
@@ -163,6 +217,9 @@ export function unlinkIfSameInode(
       while (takeoverFd === null && Date.now() - startAcquire < 2000) {
         try {
           takeoverFd = fs.openSync(takeoverMutexPath, 'wx');
+          if (onAfterTakeoverOpen) {
+            try { onAfterTakeoverOpen(); } catch {}
+          }
           try {
             fs.writeFileSync(
               takeoverFd,
@@ -171,9 +228,22 @@ export function unlinkIfSameInode(
             );
           } catch (wErr) {
             try { fs.closeSync(takeoverFd); } catch {}
-            try { fs.unlinkSync(takeoverMutexPath); } catch {}
+            try {
+              if (isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
+                fs.unlinkSync(takeoverMutexPath);
+              }
+            } catch {}
             takeoverFd = null;
             throw wErr;
+          }
+
+          // Strict descriptor/link/owner fencing check immediately after write
+          if (!isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
+            try { fs.closeSync(takeoverFd); } catch {}
+            takeoverFd = null;
+            // Active takeover was reclaimed or lost across the create-to-metadata gap;
+            // abort immediately without touching target lock file
+            return false;
           }
         } catch (err: any) {
           if (err && (err.code === 'EEXIST' || err.code === 'EPERM' || err.code === 'EBUSY')) {
@@ -209,6 +279,11 @@ export function unlinkIfSameInode(
     }
 
     try {
+      // Strict takeover fencing: verify takeover mutex descriptor and on-disk ownership before touching filePath
+      if (isTakeoverProtected && !isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
+        return false;
+      }
+
       if (!fs.existsSync(filePath)) {
         return false;
       }
@@ -246,22 +321,21 @@ export function unlinkIfSameInode(
         return false;
       }
 
+      // Re-verify takeover fence immediately before calling unlink
+      if (isTakeoverProtected && !isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
+        return false;
+      }
+
       fs.unlinkSync(filePath);
       return true;
     } finally {
       if (takeoverFd !== null) {
-        try { fs.closeSync(takeoverFd); } catch {}
         try {
-          if (fs.existsSync(takeoverMutexPath)) {
-            const content = fs.readFileSync(takeoverMutexPath, 'utf8').trim();
-            if (content.length > 0) {
-              const meta = JSON.parse(content);
-              if (meta?.ownerId === cleanupTakeoverId) {
-                fs.unlinkSync(takeoverMutexPath);
-              }
-            }
+          if (isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
+            fs.unlinkSync(takeoverMutexPath);
           }
         } catch {}
+        try { fs.closeSync(takeoverFd); } catch {}
         takeoverFd = null;
       }
     }
@@ -522,7 +596,8 @@ export function atomicTakeoverStaleLock(
   newFd: number,
   newLockPath: string,
   expectedDeadOwnerId?: string,
-  onTakeoverAcquired?: () => void
+  onTakeoverAcquired?: () => void,
+  onAfterTakeoverOpen?: () => void
 ): boolean {
   const takeoverLockPath = `${lockFilePath}.takeover`;
   let takeoverFd: number | null = null;
@@ -532,6 +607,9 @@ export function atomicTakeoverStaleLock(
   while (takeoverFd === null && Date.now() - startWait < 3000) {
     try {
       takeoverFd = fs.openSync(takeoverLockPath, 'wx');
+      if (onAfterTakeoverOpen) {
+        try { onAfterTakeoverOpen(); } catch {}
+      }
       // CRITICAL: Write owner and PID metadata immediately so that other processes
       // checking isLockOwnerAlive do not treat an active held takeover mutex as stale
       try {
@@ -545,6 +623,13 @@ export function atomicTakeoverStaleLock(
         try { fs.closeSync(takeoverFd); } catch {}
         takeoverFd = null;
         throw writeErr;
+      }
+
+      // Descriptor/link/owner fencing check immediately after write
+      if (!isTakeoverFenceValid(takeoverFd, takeoverLockPath, takeoverOwnerId)) {
+        try { fs.closeSync(takeoverFd); } catch {}
+        takeoverFd = null;
+        return false;
       }
     } catch (err: any) {
       try {
@@ -604,20 +689,7 @@ export function atomicTakeoverStaleLock(
 
     // Owner-fenced check: Verify that our takeover mutex descriptor is still valid
     // and that our takeover ownership is recorded on disk before touching lockFilePath
-    try {
-      const tFdStat = fs.fstatSync(takeoverFd);
-      if (tFdStat.nlink === 0) {
-        return false;
-      }
-      if (!fs.existsSync(takeoverLockPath)) {
-        return false;
-      }
-      const curContent = fs.readFileSync(takeoverLockPath, 'utf8');
-      const curMeta = JSON.parse(curContent);
-      if (curMeta?.ownerId !== takeoverOwnerId || curMeta?.pid !== process.pid) {
-        return false;
-      }
-    } catch {
+    if (!isTakeoverFenceValid(takeoverFd, takeoverLockPath, takeoverOwnerId)) {
       return false;
     }
 
@@ -646,15 +718,7 @@ export function atomicTakeoverStaleLock(
 
     // Final fence check before modifying target lock file:
     // Ensure our takeoverFd is still linked and we are still the takeover owner
-    try {
-      const tFdStat = fs.fstatSync(takeoverFd);
-      if (tFdStat.nlink === 0) return false;
-      const curContent = fs.readFileSync(takeoverLockPath, 'utf8');
-      const curMeta = JSON.parse(curContent);
-      if (curMeta?.ownerId !== takeoverOwnerId || curMeta?.pid !== process.pid) {
-        return false;
-      }
-    } catch {
+    if (!isTakeoverFenceValid(takeoverFd, takeoverLockPath, takeoverOwnerId)) {
       return false;
     }
 
