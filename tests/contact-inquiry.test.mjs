@@ -2990,6 +2990,100 @@ process.on('message', (msg) => {
       try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
     }
   });
+
+  test('REGRESSION [P2]: unlinkDescriptorInode revalidates inode at unlink time and does NOT delete replacement mutex swapped between stat and unlink', () => {
+    const testDir = path.join(os.tmpdir(), `desc_unlink_swap_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const mutexPath = path.join(testDir, 'reclaimed.takeover');
+
+    // 1. Creator opens the initial mutex descriptor
+    const creatorFd = fs.openSync(mutexPath, 'wx');
+    fs.writeFileSync(creatorFd, 'initial-creator-content', 'utf8');
+    const creatorStat = fs.fstatSync(creatorFd);
+
+    let competitorSwapped = false;
+    let replacementStat = null;
+
+    try {
+      // 2. Call unlinkDescriptorInode with an onBeforeUnlink hook
+      // This hook fires AFTER the initial stat check but BEFORE the pre-unlink verification and unlinkSync!
+      const unlinked = unlinkDescriptorInode(mutexPath, creatorFd, () => {
+        competitorSwapped = true;
+        // Competitor simulates reclaiming the stale mutex after creator paused:
+        // unlinks old mutex and replaces it with a new file descriptor (different inode)
+        fs.unlinkSync(mutexPath);
+        const repFd = fs.openSync(mutexPath, 'wx');
+        fs.writeFileSync(repFd, JSON.stringify({ pid: process.pid, ownerId: 'competitor-reclaimer', createdAt: Date.now() }), 'utf8');
+        replacementStat = fs.fstatSync(repFd);
+        fs.closeSync(repFd);
+      });
+
+      assert.equal(competitorSwapped, true, 'Competitor swap hook must have executed');
+
+      // 3. CRITICAL ASSERTIONS:
+      // unlinkDescriptorInode MUST revalidate the inode at unlink time, detect that the file on disk
+      // now has a different inode (replacementStat.ino !== creatorStat.ino), return false, and MUST NOT
+      // delete the replacement mutex!
+      assert.equal(unlinked, false, 'unlinkDescriptorInode must return false when file was replaced before unlink');
+      assert.equal(fs.existsSync(mutexPath), true, 'Replacement mutex must NOT be deleted');
+
+      const onDiskStat = fs.statSync(mutexPath);
+      assert.equal(onDiskStat.ino, replacementStat.ino, 'On-disk file must retain replacement inode');
+      const onDiskContent = JSON.parse(fs.readFileSync(mutexPath, 'utf8'));
+      assert.equal(onDiskContent.ownerId, 'competitor-reclaimer', 'Replacement mutex must retain competitor ownership');
+    } finally {
+      try { fs.closeSync(creatorFd); } catch {}
+      try { fs.unlinkSync(mutexPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: atomicTakeoverStaleLock closes nTfd descriptor and cleans up temporary .new file on reclaim failure', () => {
+    const testDir = path.join(os.tmpdir(), `takeover_fail_fd_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'target.lock');
+    const takeoverLockPath = `${lockPath}.takeover`;
+
+    // 1. Create a stale takeover lock (> 2000ms old with dead process PID)
+    fs.writeFileSync(
+      takeoverLockPath,
+      JSON.stringify({ pid: 99999999, ownerId: 'dead-process', createdAt: Date.now() - 5000 }),
+      'utf8'
+    );
+    const past = (Date.now() - 5000) / 1000;
+    fs.utimesSync(takeoverLockPath, past, past);
+
+    const newTargetFd = fs.openSync(path.join(testDir, 'new.lock'), 'wx');
+    const origRenameSync = fs.renameSync;
+    let renameAttempted = false;
+
+    try {
+      // Simulate renameSync throwing an error during stale takeover reclamation
+      fs.renameSync = function (oldPath, newPath) {
+        if (typeof oldPath === 'string' && oldPath.endsWith('.new')) {
+          renameAttempted = true;
+          throw new Error('EIO: simulated I/O error during takeover renameSync');
+        }
+        return origRenameSync.apply(fs, arguments);
+      };
+
+      // Call atomicTakeoverStaleLock: will attempt to reclaim stale takeoverLockPath using a .new file
+      const result = atomicTakeoverStaleLock(lockPath, newTargetFd, path.join(testDir, 'new.lock'), 'dead-process');
+      assert.equal(result, false, 'atomicTakeoverStaleLock must return false when rename fails');
+      assert.equal(renameAttempted, true, 'Simulated rename error must have been encountered');
+
+      // Verify that no orphaned .new file remains on disk
+      const files = fs.readdirSync(testDir);
+      const leakedNewFiles = files.filter((f) => f.includes('.new'));
+      assert.equal(leakedNewFiles.length, 0, 'Temporary .new file must be cleaned up on failure');
+    } finally {
+      fs.renameSync = origRenameSync;
+      try { fs.closeSync(newTargetFd); } catch {}
+      try { fs.unlinkSync(lockPath); } catch {}
+      try { fs.unlinkSync(takeoverLockPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
 });
 
 

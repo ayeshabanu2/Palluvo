@@ -177,9 +177,19 @@ export function isTakeoverFenceValid(
  * of the open descriptor `fd`, and the descriptor has not already been unlinked (`nlink > 0`).
  * Does not inspect or require valid JSON metadata, allowing safe cleanup of partially-written
  * or corrupted files without leaving abandoned mutexes on disk.
+ *
+ * Employs a serialized/atomic cleanup strategy under `acquireStaleReclaimMutex` to guarantee
+ * mutual exclusion against competing stale-mutex reclaimers, and strictly revalidates directory
+ * entry inode equality at unlink time immediately prior to calling `unlinkSync`.
+ * If a competing reclaimer or test interleaving replaces the file, the replacement is preserved.
+ *
  * Must be executed before closing `fd`.
  */
-export function unlinkDescriptorInode(filePath: string, fd: number | null): boolean {
+export function unlinkDescriptorInode(
+  filePath: string,
+  fd: number | null,
+  onBeforeUnlink?: () => void
+): boolean {
   if (fd === null || typeof fd !== 'number') return false;
   try {
     const fdStat = fs.fstatSync(fd);
@@ -189,12 +199,42 @@ export function unlinkDescriptorInode(filePath: string, fd: number | null): bool
     if (!fs.existsSync(filePath)) {
       return false;
     }
-    const pathStat = fs.statSync(filePath);
-    if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
+
+    const cleanupReclaimId = crypto.randomUUID();
+    const reclaim = acquireStaleReclaimMutex(filePath, cleanupReclaimId);
+    if (!reclaim.won) {
       return false;
     }
-    fs.unlinkSync(filePath);
-    return true;
+
+    try {
+      if (!fs.existsSync(filePath)) {
+        return false;
+      }
+      const pathStat = fs.statSync(filePath);
+      if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
+        return false;
+      }
+
+      // Optional hook for test interleaving / pause simulation immediately before unlink
+      if (onBeforeUnlink) {
+        try { onBeforeUnlink(); } catch {}
+      }
+
+      // Pre-unlink re-verification: strictly revalidate that directory entry matches
+      // the verified descriptor inode at unlink time
+      if (!fs.existsSync(filePath)) {
+        return false;
+      }
+      const preUnlinkStat = fs.statSync(filePath);
+      if (fdStat.ino !== preUnlinkStat.ino || fdStat.dev !== preUnlinkStat.dev) {
+        return false;
+      }
+
+      fs.unlinkSync(filePath);
+      return true;
+    } finally {
+      reclaim.cleanup();
+    }
   } catch {
     return false;
   }
@@ -673,8 +713,9 @@ export function atomicTakeoverStaleLock(
                   const curTStat = fs.statSync(takeoverLockPath);
                   if (Date.now() - curTStat.mtimeMs > 2000 && !isLockOwnerAlive(takeoverLockPath)) {
                     const newTakeoverPath = `${takeoverLockPath}.${takeoverOwnerId}.new`;
+                    let nTfd: number | null = null;
                     try {
-                      const nTfd = fs.openSync(newTakeoverPath, 'wx');
+                      nTfd = fs.openSync(newTakeoverPath, 'wx');
                       fs.writeFileSync(
                         nTfd,
                         JSON.stringify({ pid: process.pid, ownerId: takeoverOwnerId, createdAt: Date.now() }),
@@ -683,11 +724,17 @@ export function atomicTakeoverStaleLock(
                       if (!isLockOwnerAlive(takeoverLockPath)) {
                         fs.renameSync(newTakeoverPath, takeoverLockPath);
                         takeoverFd = nTfd;
+                        nTfd = null;
                       } else {
                         try { fs.closeSync(nTfd); } catch {}
+                        nTfd = null;
                         try { if (fs.existsSync(newTakeoverPath)) fs.unlinkSync(newTakeoverPath); } catch {}
                       }
                     } catch {
+                      if (nTfd !== null) {
+                        try { fs.closeSync(nTfd); } catch {}
+                        nTfd = null;
+                      }
                       try { if (fs.existsSync(newTakeoverPath)) fs.unlinkSync(newTakeoverPath); } catch {}
                     }
                   }
