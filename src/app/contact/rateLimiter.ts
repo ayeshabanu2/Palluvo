@@ -173,6 +173,34 @@ export function isTakeoverFenceValid(
 }
 
 /**
+ * Unlinks a file ONLY if the directory entry at `filePath` matches the exact inode and device
+ * of the open descriptor `fd`, and the descriptor has not already been unlinked (`nlink > 0`).
+ * Does not inspect or require valid JSON metadata, allowing safe cleanup of partially-written
+ * or corrupted files without leaving abandoned mutexes on disk.
+ * Must be executed before closing `fd`.
+ */
+export function unlinkDescriptorInode(filePath: string, fd: number | null): boolean {
+  if (fd === null || typeof fd !== 'number') return false;
+  try {
+    const fdStat = fs.fstatSync(fd);
+    if (typeof fdStat.nlink === 'number' && fdStat.nlink === 0) {
+      return false;
+    }
+    if (!fs.existsSync(filePath)) {
+      return false;
+    }
+    const pathStat = fs.statSync(filePath);
+    if (fdStat.ino !== pathStat.ino || fdStat.dev !== pathStat.dev) {
+      return false;
+    }
+    fs.unlinkSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Safely unlinks a lock or mutex file ONLY if the file currently on disk at `filePath`
  * matches the exact inode and device of the open file descriptor `fd` created by this call,
  * and (if metadata was written) matches `expectedOwnerId`.
@@ -227,12 +255,10 @@ export function unlinkIfSameInode(
               'utf8'
             );
           } catch (wErr) {
-            try { fs.closeSync(takeoverFd); } catch {}
             try {
-              if (isTakeoverFenceValid(takeoverFd, takeoverMutexPath, cleanupTakeoverId)) {
-                fs.unlinkSync(takeoverMutexPath);
-              }
+              unlinkDescriptorInode(takeoverMutexPath, takeoverFd);
             } catch {}
+            try { fs.closeSync(takeoverFd); } catch {}
             takeoverFd = null;
             throw wErr;
           }
@@ -619,7 +645,9 @@ export function atomicTakeoverStaleLock(
           'utf8'
         );
       } catch (writeErr) {
-        unlinkIfSameInode(takeoverLockPath, takeoverFd, takeoverOwnerId);
+        try {
+          unlinkDescriptorInode(takeoverLockPath, takeoverFd);
+        } catch {}
         try { fs.closeSync(takeoverFd); } catch {}
         takeoverFd = null;
         throw writeErr;

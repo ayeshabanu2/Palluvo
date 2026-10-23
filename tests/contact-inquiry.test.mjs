@@ -39,6 +39,7 @@ import {
   isMailboxVerified,
   acquireStaleReclaimMutex,
   atomicTakeoverStaleLock,
+  unlinkDescriptorInode,
   unlinkIfSameInode,
 } from '../src/app/contact/rateLimiter.ts';
 
@@ -2787,10 +2788,44 @@ process.on('message', (msg) => {
     );
 
     const child = fork(childScript);
+    let childTimer = null;
+    let childSettled = false;
     try {
-      const childDonePromise = new Promise((resolve) => {
+      const childDonePromise = new Promise((resolve, reject) => {
+        childTimer = setTimeout(() => {
+          if (!childSettled) {
+            childSettled = true;
+            reject(new Error('Timed out waiting for child worker to report reclaim completion (10s limit)'));
+          }
+        }, 10000);
+
         child.on('message', (msg) => {
-          if (msg.type === 'RECLAIM_DONE') resolve(true);
+          if (childSettled) return;
+          if (msg.type === 'RECLAIM_DONE') {
+            childSettled = true;
+            if (childTimer) clearTimeout(childTimer);
+            resolve(true);
+          } else if (msg.type === 'RECLAIM_ERROR') {
+            childSettled = true;
+            if (childTimer) clearTimeout(childTimer);
+            reject(new Error(`Child worker failed during takeover reclaim: ${msg.error}`));
+          }
+        });
+
+        child.on('error', (err) => {
+          if (!childSettled) {
+            childSettled = true;
+            if (childTimer) clearTimeout(childTimer);
+            reject(new Error(`Child process emitted error: ${err.message}`));
+          }
+        });
+
+        child.on('exit', (code, signal) => {
+          if (!childSettled) {
+            childSettled = true;
+            if (childTimer) clearTimeout(childTimer);
+            reject(new Error(`Child process exited unexpectedly before RECLAIM_DONE with code ${code} (signal: ${signal})`));
+          }
         });
       });
 
@@ -2842,10 +2877,116 @@ process.on('message', (msg) => {
       const currentTakeoverContent = JSON.parse(fs.readFileSync(takeoverMutexPath, 'utf8'));
       assert.equal(currentTakeoverContent.ownerId, childTakeoverId, 'Takeover mutex must belong to competitor');
     } finally {
+      if (childTimer) clearTimeout(childTimer);
       try { fs.closeSync(fd1); } catch {}
       try { child.kill('SIGKILL'); } catch {}
       try { fs.unlinkSync(lockPath); } catch {}
       try { fs.unlinkSync(takeoverMutexPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: writeFileSync failure during takeover mutex creation unlinks mutex via descriptor inode fencing before closing FD, preventing poisoned PID staleness', () => {
+    const testDir = path.join(os.tmpdir(), `takeover_write_fail_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const lockPath = path.join(testDir, 'target.lock');
+    const takeoverMutexPath = `${lockPath}.takeover`;
+
+    const ownerId = `owner-${crypto.randomUUID()}`;
+    const fd = fs.openSync(lockPath, 'wx');
+    fs.writeFileSync(
+      fd,
+      JSON.stringify({ pid: process.pid, ownerId, createdAt: Date.now() }),
+      'utf8'
+    );
+
+    const origWriteFileSync = fs.writeFileSync;
+    let simulatedWriteFailed = false;
+
+    try {
+      // Intercept writeFileSync: when writing metadata to takeoverMutexPath, write a partial malformed record
+      // containing this process's PID and then throw an I/O error (e.g. ENOSPC / EIO)
+      fs.writeFileSync = function (targetFd, data, options) {
+        if (typeof targetFd === 'number' && !simulatedWriteFailed) {
+          try {
+            const stat = fs.fstatSync(targetFd);
+            if (fs.existsSync(takeoverMutexPath)) {
+              const tStat = fs.statSync(takeoverMutexPath);
+              if (stat.ino === tStat.ino && stat.dev === tStat.dev) {
+                simulatedWriteFailed = true;
+                // Partially write malformed record containing current process PID
+                origWriteFileSync(targetFd, `{"pid":${process.pid},"ownerId":`, 'utf8');
+                throw new Error('ENOSPC: no space left on device (simulated partial write failure)');
+              }
+            }
+          } catch (inspectErr) {
+            if (inspectErr.message && inspectErr.message.includes('simulated partial write failure')) {
+              throw inspectErr;
+            }
+          }
+        }
+        return origWriteFileSync.apply(fs, arguments);
+      };
+
+      // Attempt unlinkIfSameInode: during takeoverMutexPath metadata write, writeFileSync fails.
+      // unlinkIfSameInode MUST catch the write error and unlink takeoverMutexPath via descriptor/inode
+      // fencing BEFORE closing the descriptor.
+      const unlinked = unlinkIfSameInode(lockPath, fd, ownerId);
+      assert.equal(unlinked, false, 'unlinkIfSameInode must return false when takeover mutex write fails');
+      assert.equal(simulatedWriteFailed, true, 'Simulated partial write failure must have been triggered');
+
+      // CRITICAL ASSERTION: The partial/malformed takeover mutex file MUST NOT remain on disk.
+      // If left on disk, isLockOwnerAlive regex would extract process.pid and treat it as permanently live,
+      // poisoning subsequent cleanup/takeover attempts.
+      assert.equal(
+        fs.existsSync(takeoverMutexPath),
+        false,
+        'takeoverMutexPath MUST be unlinked before FD close to prevent abandoned poisoned mutex'
+      );
+      assert.equal(
+        isLockOwnerAlive(takeoverMutexPath),
+        false,
+        'isLockOwnerAlive must return false because abandoned takeover mutex was cleanly unlinked'
+      );
+
+      // Now restore fs.writeFileSync and verify that a subsequent retry of unlinkIfSameInode succeeds immediately
+      // without getting stuck against a poisoned takeover mutex!
+      fs.writeFileSync = origWriteFileSync;
+
+      const retryUnlinked = unlinkIfSameInode(lockPath, fd, ownerId);
+      assert.equal(retryUnlinked, true, 'Subsequent unlinkIfSameInode retry must succeed without timing out');
+      assert.equal(fs.existsSync(lockPath), false, 'Target lock must be cleanly deleted on retry');
+    } finally {
+      fs.writeFileSync = origWriteFileSync;
+      try { fs.closeSync(fd); } catch {}
+      try { fs.unlinkSync(lockPath); } catch {}
+      try { fs.unlinkSync(takeoverMutexPath); } catch {}
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P2]: unlinkDescriptorInode unlinks matching open descriptor inode without requiring valid JSON metadata', () => {
+    const testDir = path.join(os.tmpdir(), `desc_unlink_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    const filePath = path.join(testDir, 'raw.lock');
+
+    try {
+      assert.equal(unlinkDescriptorInode(filePath, null), false);
+
+      const fd = fs.openSync(filePath, 'wx');
+      // Write non-JSON garbage / partial data
+      fs.writeFileSync(fd, 'malformed-non-json-content', 'utf8');
+
+      // Unlink before closing fd
+      const unlinked = unlinkDescriptorInode(filePath, fd);
+      assert.equal(unlinked, true, 'Must unlink file matching open descriptor inode');
+      assert.equal(fs.existsSync(filePath), false, 'File must be removed from disk');
+
+      fs.closeSync(fd);
+
+      // Calling again on closed fd must safely return false
+      assert.equal(unlinkDescriptorInode(filePath, fd), false);
+    } finally {
       try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
     }
   });
