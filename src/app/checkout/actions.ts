@@ -15,6 +15,7 @@ import {
   CHECKOUT_FIELD_LIMITS,
   ORDER_RATE_LIMIT_CONFIG,
   computeOrderFingerprint,
+  isCanonicalItemMultisetEqual,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   validateCustomerDetails,
@@ -344,10 +345,18 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       if (recentDbOrders && recentDbOrders.length > 0) {
         const matchingDbOrder = recentDbOrders.find((dbo) => {
           if (Number(dbo.grand_total) !== trustedGrandTotal) return false;
-          if (!Array.isArray(dbo.items) || dbo.items.length !== canonicalItems.length) return false;
-          return canonicalItems.every((ci) =>
-            dbo.items.some((di: any) => di.productId === ci.productId && di.qty === ci.qty)
-          );
+          if (dbo.payment_method && dbo.payment_method !== paymentMethod) return false;
+          if (!isCanonicalItemMultisetEqual(canonicalItems, dbo.items)) return false;
+          if (dbo.customer) {
+            const dboFp = computeOrderFingerprint(
+              dbo.customer,
+              Array.isArray(dbo.items) ? dbo.items : [],
+              Number(dbo.grand_total),
+              dbo.payment_method || 'cod'
+            );
+            if (dboFp !== fingerprint) return false;
+          }
+          return true;
         });
 
         if (matchingDbOrder) {

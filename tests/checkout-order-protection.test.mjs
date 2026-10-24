@@ -13,6 +13,9 @@ import {
   hashOrderRateIdentifier,
   DatabaseRpcOrderRateLimitStore,
   CrossProcessOrderRateLimitStore,
+  MisconfiguredOrderRateLimitStore,
+  createProductionOrderRateLimitStore,
+  isCanonicalItemMultisetEqual,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
@@ -652,3 +655,167 @@ describe('Checkout Reservation Ownership & Idempotency Protection [P1 & P2]', ()
     assert.deepEqual(thirdReplay.existingOrder, mockOrder);
   });
 });
+
+describe('Canonical Item Variant Multiset & Variant Deduplication Tests [P2]', () => {
+  test('isCanonicalItemMultisetEqual matches identical single-item orders', () => {
+    const itemsA = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Crimson Red', blouseOptionId: 'unstitched' }];
+    const itemsB = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'crimson red', blouseOptionId: 'unstitched' }];
+    assert.equal(isCanonicalItemMultisetEqual(itemsA, itemsB), true);
+  });
+
+  test('isCanonicalItemMultisetEqual matches multi-item orders regardless of array ordering', () => {
+    const itemsA = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+      { productId: 'kanjivaram-silk', qty: 2, selectedColor: 'Gold', blouseOptionId: 'stitched' },
+    ];
+    const itemsB = [
+      { productId: 'kanjivaram-silk', qty: 2, selectedColor: 'gold', blouseOptionId: 'stitched' },
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'red', blouseOptionId: 'unstitched' },
+    ];
+    assert.equal(isCanonicalItemMultisetEqual(itemsA, itemsB), true);
+  });
+
+  test('isCanonicalItemMultisetEqual rejects orders with different saree colors', () => {
+    const itemsA = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Crimson Red', blouseOptionId: 'unstitched' }];
+    const itemsB = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Emerald Green', blouseOptionId: 'unstitched' }];
+    assert.equal(isCanonicalItemMultisetEqual(itemsA, itemsB), false);
+  });
+
+  test('isCanonicalItemMultisetEqual rejects orders with different tailored blouse options', () => {
+    const itemsA = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Crimson Red', blouseOptionId: 'unstitched' }];
+    const itemsB = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Crimson Red', blouseOptionId: 'custom-tailored' }];
+    assert.equal(isCanonicalItemMultisetEqual(itemsA, itemsB), false);
+  });
+
+  test('isCanonicalItemMultisetEqual consumes matches strictly to prevent false duplicate matching', () => {
+    const itemsA = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+    ];
+    const itemsB = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Blue', blouseOptionId: 'unstitched' },
+    ];
+    assert.equal(isCanonicalItemMultisetEqual(itemsA, itemsB), false);
+  });
+
+  test('isCanonicalItemMultisetEqual safely handles non-array and mismatched-length inputs', () => {
+    assert.equal(isCanonicalItemMultisetEqual(null, []), false);
+    assert.equal(isCanonicalItemMultisetEqual([], undefined), false);
+    assert.equal(isCanonicalItemMultisetEqual([{ productId: 'a', qty: 1 }], []), false);
+  });
+
+  test('computeOrderFingerprint differentiates orders with same product and price but different color or blouse option', () => {
+    const customer = {
+      firstName: 'Ananya',
+      email: 'ananya@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      pincode: '600001',
+    };
+
+    const orderUnstitched = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Ruby Red', blouseOptionId: 'unstitched' },
+    ];
+    const orderCustomTailored = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Ruby Red', blouseOptionId: 'custom-tailored' },
+    ];
+    const orderGreen = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Emerald Green', blouseOptionId: 'unstitched' },
+    ];
+
+    const fp1 = computeOrderFingerprint(customer, orderUnstitched, 9999, 'cod');
+    const fp2 = computeOrderFingerprint(customer, orderCustomTailored, 9999, 'cod');
+    const fp3 = computeOrderFingerprint(customer, orderGreen, 9999, 'cod');
+
+    assert.notEqual(fp1, fp2, 'Different blouse option must have distinct fingerprint');
+    assert.notEqual(fp1, fp3, 'Different color must have distinct fingerprint');
+    assert.notEqual(fp2, fp3, 'Different variant combinations must have distinct fingerprints');
+  });
+
+  test('computeOrderFingerprint produces identical hash regardless of item input order', () => {
+    const customer = {
+      firstName: 'Ananya',
+      email: 'ananya@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      pincode: '600001',
+    };
+
+    const items1 = [
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+      { productId: 'kanjivaram', qty: 1, selectedColor: 'Gold', blouseOptionId: 'stitched' },
+    ];
+    const items2 = [
+      { productId: 'kanjivaram', qty: 1, selectedColor: 'Gold', blouseOptionId: 'stitched' },
+      { productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' },
+    ];
+
+    const fp1 = computeOrderFingerprint(customer, items1, 15000, 'cod');
+    const fp2 = computeOrderFingerprint(customer, items2, 15000, 'cod');
+    assert.equal(fp1, fp2, 'Permuted item lists must produce identical canonical fingerprint');
+  });
+});
+
+describe('Production Fail-Closed Store Security Tests [P1]', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  test('MisconfiguredOrderRateLimitStore fails closed and denies slot acquisition', async () => {
+    const misconfigured = new MisconfiguredOrderRateLimitStore('Missing database credentials');
+    const res = await misconfigured.checkAndAcquire();
+    assert.equal(res.allowed, false);
+    assert.equal(res.slotAcquired, false);
+    assert.match(res.error, /temporarily unavailable due to a server configuration issue/);
+  });
+
+  test('createProductionOrderRateLimitStore fails closed in production when service role key is missing', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-test.supabase.co';
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionOrderRateLimitStore();
+    assert.equal(store instanceof MisconfiguredOrderRateLimitStore, true);
+    assert.equal(store instanceof CrossProcessOrderRateLimitStore, false);
+  });
+
+  test('createProductionOrderRateLimitStore fails closed in production when Supabase URL is missing', () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionOrderRateLimitStore();
+    assert.equal(store instanceof MisconfiguredOrderRateLimitStore, true);
+    assert.equal(store instanceof CrossProcessOrderRateLimitStore, false);
+  });
+
+  test('createProductionOrderRateLimitStore allows CrossProcessOrderRateLimitStore only in non-production offline dev', () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionOrderRateLimitStore();
+    assert.equal(store instanceof CrossProcessOrderRateLimitStore, true);
+  });
+
+  test('createProductionOrderRateLimitStore fails closed in dev if Supabase is configured but service role key is missing', () => {
+    process.env.NODE_ENV = 'development';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-test.supabase.co';
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionOrderRateLimitStore();
+    assert.equal(store instanceof MisconfiguredOrderRateLimitStore, true);
+  });
+});
+

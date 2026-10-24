@@ -332,8 +332,44 @@ export function validateCouponCode(
 }
 
 /**
+ * Compares two lists of cart/order items as multisets of normalized variant tuples.
+ * Compares productId, qty, selectedColor, and blouseOptionId, strictly consuming matches.
+ */
+export function isCanonicalItemMultisetEqual(
+  itemsA: unknown,
+  itemsB: unknown
+): boolean {
+  if (!Array.isArray(itemsA) || !Array.isArray(itemsB) || itemsA.length !== itemsB.length) {
+    return false;
+  }
+
+  const formatItem = (item: any) =>
+    `${(item?.productId || '').trim()}::${Number(item?.qty) || 0}::${(item?.selectedColor || '').trim().toLowerCase()}::${(item?.blouseOptionId || '').trim().toLowerCase()}`;
+
+  const counts = new Map<string, number>();
+  for (const item of itemsA) {
+    const key = formatItem(item);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  }
+
+  for (const item of itemsB) {
+    const key = formatItem(item);
+    const count = counts.get(key);
+    if (!count) return false;
+    if (count === 1) {
+      counts.delete(key);
+    } else {
+      counts.set(key, count - 1);
+    }
+  }
+
+  return counts.size === 0;
+}
+
+/**
  * Computes a deterministic SHA-256 fingerprint for an order.
  * Used for idempotency validation and duplicate-request deduplication.
+ * Canonicalizes customer fields and sorts items by full variant tuple (productId, color, blouse option, qty).
  */
 export function computeOrderFingerprint(
   customer: OrderCustomerRateLimitDetails,
@@ -341,14 +377,18 @@ export function computeOrderFingerprint(
   grandTotal: number,
   paymentMethod: string = 'cod'
 ): string {
-  const canonicalEmail = (customer.email || '').toLowerCase().trim();
-  const canonicalPhone = (customer.phone || '').trim();
-  const canonicalAddress = (customer.address || '').trim().toLowerCase();
-  const canonicalPincode = (customer.pincode || '').trim();
+  const canonicalEmail = (customer?.email || '').toLowerCase().trim();
+  const canonicalPhone = (customer?.phone || '').trim();
+  const canonicalAddress = (customer?.address || '').trim().toLowerCase();
+  const canonicalPincode = (customer?.pincode || '').trim();
 
-  const sortedItems = [...items].sort((a, b) => a.productId.localeCompare(b.productId));
+  const sortedItems = [...items].sort((a, b) => {
+    const keyA = `${a.productId}::${(a.selectedColor || '').toLowerCase()}::${(a.blouseOptionId || '').toLowerCase()}::${a.qty}`;
+    const keyB = `${b.productId}::${(b.selectedColor || '').toLowerCase()}::${(b.blouseOptionId || '').toLowerCase()}::${b.qty}`;
+    return keyA.localeCompare(keyB);
+  });
   const itemsDigest = sortedItems
-    .map((i) => `${i.productId}:${i.qty}:${i.selectedColor || ''}:${i.blouseOptionId || ''}`)
+    .map((i) => `${i.productId}:${i.qty}:${(i.selectedColor || '').toLowerCase()}:${(i.blouseOptionId || '').toLowerCase()}`)
     .join(';');
 
   const raw = `${canonicalEmail}|${canonicalPhone}|${canonicalAddress}|${canonicalPincode}|${itemsDigest}|${grandTotal}|${paymentMethod}`;
@@ -752,20 +792,71 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
   }
 }
 
-function checkSupabaseConfigured(): boolean {
+/**
+ * Fail-closed store used when production environment is misconfigured
+ * (e.g., in production without Supabase service-role credentials, or when credentials are missing).
+ * Strictly prevents instance-local file fallback in production serverless environments.
+ */
+export class MisconfiguredOrderRateLimitStore implements OrderRateLimitStore {
+  readonly reason: string;
+
+  constructor(reason: string = 'Service role credentials missing in production environment.') {
+    this.reason = reason;
+  }
+
+  async checkAndAcquire(): Promise<OrderThrottleResult> {
+    console.error(
+      `[OrderRateLimiter] Configuration error: ${this.reason}. Failing closed to prevent distributed rate limit bypass.`
+    );
+    return {
+      allowed: false,
+      slotAcquired: false,
+      error: 'Order processing service is temporarily unavailable due to a server configuration issue. Please contact customer support.',
+    };
+  }
+
+  async finalize(): Promise<void> {}
+  async clear(): Promise<void> {}
+  async pruneExpiredEntries(): Promise<number> {
+    return 0;
+  }
+}
+
+export function checkSupabaseConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL;
   return Boolean(url && !url.includes('placeholder'));
 }
 
-function checkSupabaseServiceRoleConfigured(): boolean {
+export function checkSupabaseServiceRoleConfigured(): boolean {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY;
   return Boolean(key && !key.includes('placeholder'));
 }
 
 export function createProductionOrderRateLimitStore(): OrderRateLimitStore {
-  if (checkSupabaseConfigured() && checkSupabaseServiceRoleConfigured()) {
+  const isSupabase = checkSupabaseConfigured();
+  const hasServiceRole = checkSupabaseServiceRoleConfigured();
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction) {
+    if (!isSupabase || !hasServiceRole) {
+      return new MisconfiguredOrderRateLimitStore(
+        'Database RPC store is required in production environment, but Supabase credentials or service-role key are missing'
+      );
+    }
     return new DatabaseRpcOrderRateLimitStore();
   }
+
+  // Non-production (development / test)
+  if (isSupabase) {
+    if (!hasServiceRole) {
+      return new MisconfiguredOrderRateLimitStore(
+        'Supabase is configured in test/dev but service-role key is missing'
+      );
+    }
+    return new DatabaseRpcOrderRateLimitStore();
+  }
+
+  // Local development / test fallback only when Supabase is completely unconfigured
   return new CrossProcessOrderRateLimitStore();
 }
 
