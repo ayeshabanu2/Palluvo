@@ -239,11 +239,14 @@ export function validateCustomerDetails(
 
 export type CatalogProductRef = {
   id: string;
-  blouseOptions?: Array<{ id: string }>;
+  color?: string;
+  swatches?: Array<{ name: string; hex?: string; inStock?: boolean }>;
+  blouseOptions?: Array<{ id: string; name?: string; price?: number }>;
 };
 
 /**
- * Validates checkout items shape, bounds, integer quantities, and catalog references.
+ * Validates checkout items shape, bounds, integer quantities, catalog references,
+ * and ensures selectedColor is an available swatch from the canonical product catalog.
  */
 export function validateCheckoutItems(
   items: unknown,
@@ -289,23 +292,33 @@ export function validateCheckoutItems(
     }
     const safeQty = item.qty;
 
-    if (item.selectedColor !== undefined && item.selectedColor !== null) {
-      if (typeof item.selectedColor !== 'string' || item.selectedColor.length > CHECKOUT_FIELD_LIMITS.COLOR_MAX) {
-        return { valid: false, error: `Invalid color selection for item ${item.productId}.` };
-      }
+    const rawColor =
+      item.selectedColor !== undefined && item.selectedColor !== null
+        ? String(item.selectedColor).trim()
+        : '';
+    if (rawColor && rawColor.length > CHECKOUT_FIELD_LIMITS.COLOR_MAX) {
+      return { valid: false, error: `Invalid color selection for item ${item.productId}.` };
     }
 
-    if (item.blouseOptionId !== undefined && item.blouseOptionId !== null) {
-      if (typeof item.blouseOptionId !== 'string' || item.blouseOptionId.length > CHECKOUT_FIELD_LIMITS.BLOUSE_OPTION_ID_MAX) {
-        return { valid: false, error: `Invalid blouse option ID for item ${item.productId}.` };
-      }
+    const rawBlouseId =
+      item.blouseOptionId !== undefined && item.blouseOptionId !== null
+        ? String(item.blouseOptionId).trim()
+        : '';
+    if (rawBlouseId && rawBlouseId.length > CHECKOUT_FIELD_LIMITS.BLOUSE_OPTION_ID_MAX) {
+      return { valid: false, error: `Invalid blouse option ID for item ${item.productId}.` };
     }
 
-    if (item.blouseOptionName !== undefined && item.blouseOptionName !== null) {
-      if (typeof item.blouseOptionName !== 'string' || item.blouseOptionName.length > CHECKOUT_FIELD_LIMITS.BLOUSE_OPTION_NAME_MAX) {
-        return { valid: false, error: `Invalid blouse option name for item ${item.productId}.` };
-      }
+    const rawBlouseName =
+      item.blouseOptionName !== undefined && item.blouseOptionName !== null
+        ? String(item.blouseOptionName).trim()
+        : '';
+    if (rawBlouseName && rawBlouseName.length > CHECKOUT_FIELD_LIMITS.BLOUSE_OPTION_NAME_MAX) {
+      return { valid: false, error: `Invalid blouse option name for item ${item.productId}.` };
     }
+
+    let canonicalColor: string | undefined = undefined;
+    let canonicalBlouseId: string | undefined = undefined;
+    let canonicalBlouseName: string | undefined = undefined;
 
     // Catalog verification if catalog provided
     if (catalog) {
@@ -314,31 +327,100 @@ export function validateCheckoutItems(
           if (!(catalog as string[]).includes(item.productId)) {
             return { valid: false, error: `Invalid product reference: ${item.productId}` };
           }
+          canonicalColor = rawColor || undefined;
+          canonicalBlouseId = rawBlouseId || undefined;
+          canonicalBlouseName = rawBlouseName || undefined;
         } else {
           const product = (catalog as CatalogProductRef[]).find((p) => p.id === item.productId);
           if (!product) {
             return { valid: false, error: `Invalid product reference: ${item.productId}` };
           }
-          if (item.blouseOptionId && product.blouseOptions) {
-            const option = product.blouseOptions.find((b) => b.id === item.blouseOptionId);
-            if (!option) {
-              return { valid: false, error: `Invalid blouse option ${item.blouseOptionId} for saree ${item.productId}` };
+
+          // 1. Swatch & Color Validation
+          const swatches =
+            product.swatches && Array.isArray(product.swatches) && product.swatches.length > 0
+              ? product.swatches
+              : undefined;
+
+          if (rawColor) {
+            if (swatches) {
+              const matchedSwatch = swatches.find(
+                (s) => (s?.name || '').trim().toLowerCase() === rawColor.toLowerCase()
+              );
+              if (!matchedSwatch) {
+                const availableNames = swatches.map((s) => s.name).join(', ');
+                return {
+                  valid: false,
+                  error: `Invalid color "${rawColor}" for saree ${item.productId}. Available colors: ${availableNames}.`,
+                };
+              }
+              if (matchedSwatch.inStock === false) {
+                return {
+                  valid: false,
+                  error: `Color "${matchedSwatch.name}" is currently out of stock for saree ${item.productId}.`,
+                };
+              }
+              canonicalColor = matchedSwatch.name;
+            } else if (product.color) {
+              if (rawColor.toLowerCase() !== product.color.trim().toLowerCase()) {
+                return {
+                  valid: false,
+                  error: `Invalid color "${rawColor}" for saree ${item.productId}. Available color: ${product.color}.`,
+                };
+              }
+              canonicalColor = product.color;
+            } else {
+              canonicalColor = rawColor;
             }
+          } else {
+            // Define canonical default when selectedColor is omitted
+            if (swatches) {
+              const availableSwatch = swatches.find((s) => s.inStock !== false);
+              if (!availableSwatch) {
+                return {
+                  valid: false,
+                  error: `All color options for saree ${item.productId} are currently out of stock.`,
+                };
+              }
+              canonicalColor = availableSwatch.name;
+            } else if (product.color) {
+              canonicalColor = product.color;
+            }
+          }
+
+          // 2. Blouse Option Validation
+          if (rawBlouseId && product.blouseOptions) {
+            const option = product.blouseOptions.find((b) => b.id === rawBlouseId);
+            if (!option) {
+              return { valid: false, error: `Invalid blouse option ${rawBlouseId} for saree ${item.productId}` };
+            }
+            canonicalBlouseId = option.id;
+            canonicalBlouseName = option.name || rawBlouseName || undefined;
+          } else {
+            canonicalBlouseId = rawBlouseId || undefined;
+            canonicalBlouseName = rawBlouseName || undefined;
           }
         }
       } else if (catalog instanceof Set) {
         if (!catalog.has(item.productId)) {
           return { valid: false, error: `Invalid product reference: ${item.productId}` };
         }
+        canonicalColor = rawColor || undefined;
+        canonicalBlouseId = rawBlouseId || undefined;
+        canonicalBlouseName = rawBlouseName || undefined;
       }
+    } else {
+      canonicalColor = rawColor || undefined;
+      canonicalBlouseId = rawBlouseId || undefined;
+      canonicalBlouseName = rawBlouseName || undefined;
     }
 
     validatedItems.push({
       productId: item.productId.trim(),
       qty: safeQty,
-      selectedColor: item.selectedColor ? String(item.selectedColor).trim() : undefined,
-      blouseOptionId: item.blouseOptionId ? String(item.blouseOptionId).trim() : undefined,
-      blouseOptionName: item.blouseOptionName ? String(item.blouseOptionName).trim() : undefined,
+      selectedColor: canonicalColor,
+      blouseOptionId: canonicalBlouseId,
+      blouseOptionName: canonicalBlouseName,
     });
   }
 
@@ -385,7 +467,12 @@ export function isCanonicalItemMultisetEqual(
   }
 
   const formatItem = (item: any) =>
-    `${(item?.productId || '').trim()}::${Number(item?.qty) || 0}::${(item?.selectedColor || '').trim().toLowerCase()}::${(item?.blouseOptionId || '').trim().toLowerCase()}`;
+    JSON.stringify([
+      (item?.productId || '').trim(),
+      Number(item?.qty) || 0,
+      (item?.selectedColor || '').trim().toLowerCase(),
+      (item?.blouseOptionId || '').trim().toLowerCase(),
+    ]);
 
   const counts = new Map<string, number>();
   for (const item of itemsA) {
@@ -408,9 +495,10 @@ export function isCanonicalItemMultisetEqual(
 }
 
 /**
- * Computes a deterministic SHA-256 fingerprint for an order.
+ * Computes an unambiguous deterministic SHA-256 fingerprint for an order.
  * Used for idempotency validation and duplicate-request deduplication.
- * Canonicalizes customer fields and sorts items by full variant tuple (productId, color, blouse option, qty).
+ * Canonicalizes customer fields and items into a fixed-shape structured JSON payload
+ * to eliminate delimiter-injection collisions across caller-controlled fields.
  */
 export function computeOrderFingerprint(
   customer: OrderCustomerRateLimitDetails,
@@ -418,25 +506,38 @@ export function computeOrderFingerprint(
   grandTotal: number,
   paymentMethod: string = 'cod'
 ): string {
-  const canonicalFirstName = (customer?.firstName || '').trim().toLowerCase();
-  const canonicalLastName = (customer?.lastName || '').trim().toLowerCase();
-  const canonicalEmail = (customer?.email || '').trim().toLowerCase();
-  const canonicalPhone = (customer?.phone || '').trim();
-  const canonicalAddress = (customer?.address || '').trim().toLowerCase();
-  const canonicalCity = (customer?.city || '').trim().toLowerCase();
-  const canonicalState = (customer?.state || '').trim().toLowerCase();
-  const canonicalPincode = (customer?.pincode || '').trim();
+  const canonicalCustomer = {
+    firstName: (customer?.firstName || '').trim().toLowerCase(),
+    lastName: (customer?.lastName || '').trim().toLowerCase(),
+    email: (customer?.email || '').trim().toLowerCase(),
+    phone: (customer?.phone || '').trim(),
+    address: (customer?.address || '').trim().toLowerCase(),
+    city: (customer?.city || '').trim().toLowerCase(),
+    state: (customer?.state || '').trim().toLowerCase(),
+    pincode: (customer?.pincode || '').trim(),
+  };
 
-  const sortedItems = [...items].sort((a, b) => {
-    const keyA = `${a.productId}::${(a.selectedColor || '').toLowerCase()}::${(a.blouseOptionId || '').toLowerCase()}::${a.qty}`;
-    const keyB = `${b.productId}::${(b.selectedColor || '').toLowerCase()}::${(b.blouseOptionId || '').toLowerCase()}::${b.qty}`;
-    return keyA.localeCompare(keyB);
-  });
-  const itemsDigest = sortedItems
-    .map((i) => `${i.productId}:${i.qty}:${(i.selectedColor || '').toLowerCase()}:${(i.blouseOptionId || '').toLowerCase()}`)
-    .join(';');
+  const canonicalItems = [...items]
+    .map((item) => ({
+      productId: (item?.productId || '').trim(),
+      qty: Number(item?.qty) || 0,
+      selectedColor: (item?.selectedColor || '').trim().toLowerCase(),
+      blouseOptionId: (item?.blouseOptionId || '').trim().toLowerCase(),
+    }))
+    .sort((a, b) => {
+      const keyA = JSON.stringify([a.productId, a.selectedColor, a.blouseOptionId, a.qty]);
+      const keyB = JSON.stringify([b.productId, b.selectedColor, b.blouseOptionId, b.qty]);
+      return keyA.localeCompare(keyB);
+    });
 
-  const raw = `${canonicalFirstName}|${canonicalLastName}|${canonicalEmail}|${canonicalPhone}|${canonicalAddress}|${canonicalCity}|${canonicalState}|${canonicalPincode}|${itemsDigest}|${grandTotal}|${paymentMethod}`;
+  const canonicalPayload = {
+    customer: canonicalCustomer,
+    items: canonicalItems,
+    grandTotal: Number(grandTotal) || 0,
+    paymentMethod: (paymentMethod || 'cod').trim().toLowerCase(),
+  };
+
+  const raw = JSON.stringify(canonicalPayload);
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 

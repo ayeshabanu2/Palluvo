@@ -26,6 +26,13 @@ import {
 const mockCatalog = [
   {
     id: 'royal-banarasi-silk-saree',
+    color: 'Crimson Vermilion',
+    swatches: [
+      { name: 'Crimson Vermilion', inStock: true },
+      { name: 'Deep Crimson', inStock: true },
+      { name: 'Emerald Green', inStock: true },
+      { name: 'Royal Purple', inStock: false },
+    ],
     blouseOptions: [
       { id: 'unstitched-blouse' },
       { id: 'custom-stitched-blouse' },
@@ -33,6 +40,11 @@ const mockCatalog = [
   },
   {
     id: 'kanjivaram-heritage-silk-saree',
+    color: 'Golden Mustard',
+    swatches: [
+      { name: 'Golden Mustard', inStock: true },
+      { name: 'Ruby Red', inStock: true },
+    ],
     blouseOptions: [
       { id: 'unstitched-blouse' },
     ],
@@ -119,6 +131,43 @@ describe('Checkout Payload Bounds & Validation [P2]', () => {
     );
     assert.equal(invalidBlouseResult.valid, false);
     assert.match(invalidBlouseResult.error, /Invalid blouse option/);
+  });
+
+  test('REGRESSION [P2]: rejects unknown color not in product swatches', () => {
+    const unknownColorResult = validateCheckoutItems(
+      [{ productId: 'royal-banarasi-silk-saree', qty: 1, selectedColor: 'Neon Bubblegum Pink' }],
+      mockCatalog
+    );
+    assert.equal(unknownColorResult.valid, false);
+    assert.match(unknownColorResult.error, /Invalid color "Neon Bubblegum Pink" for saree royal-banarasi-silk-saree/);
+    assert.match(unknownColorResult.error, /Available colors:/);
+  });
+
+  test('REGRESSION [P2]: rejects out-of-stock color swatch', () => {
+    const outOfStockResult = validateCheckoutItems(
+      [{ productId: 'royal-banarasi-silk-saree', qty: 1, selectedColor: 'Royal Purple' }],
+      mockCatalog
+    );
+    assert.equal(outOfStockResult.valid, false);
+    assert.match(outOfStockResult.error, /Color "Royal Purple" is currently out of stock/);
+  });
+
+  test('REGRESSION [P2]: accepts valid in-stock color swatch and canonicalizes casing', () => {
+    const validResult = validateCheckoutItems(
+      [{ productId: 'royal-banarasi-silk-saree', qty: 1, selectedColor: '  emerald green  ' }],
+      mockCatalog
+    );
+    assert.equal(validResult.valid, true);
+    assert.equal(validResult.items[0].selectedColor, 'Emerald Green');
+  });
+
+  test('REGRESSION [P2]: assigns canonical in-stock default swatch when selectedColor is omitted', () => {
+    const defaultResult = validateCheckoutItems(
+      [{ productId: 'royal-banarasi-silk-saree', qty: 1 }],
+      mockCatalog
+    );
+    assert.equal(defaultResult.valid, true);
+    assert.equal(defaultResult.items[0].selectedColor, 'Crimson Vermilion');
   });
 
   test('rejects oversized product IDs, color options, and blouse options', () => {
@@ -881,6 +930,35 @@ describe('Canonical Item Variant Multiset & Variant Deduplication Tests [P2]', (
     assert.equal(slot2.allowed, true);
     assert.equal(slot2.isDuplicate, false);
     assert.equal(slot2.slotAcquired, true);
+  });
+
+  test('REGRESSION [P2]: unambiguous fingerprint encoding prevents delimiter collision across customer fields', () => {
+    const customer1 = {
+      firstName: 'A|B',
+      lastName: 'C',
+      email: 'shopper@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600001',
+    };
+    const customer2 = {
+      firstName: 'A',
+      lastName: 'B|C',
+      email: 'shopper@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600001',
+    };
+    const items = [{ productId: 'royal-banarasi', qty: 1, selectedColor: 'Red', blouseOptionId: 'unstitched' }];
+
+    const fp1 = computeOrderFingerprint(customer1, items, 9999, 'cod');
+    const fp2 = computeOrderFingerprint(customer2, items, 9999, 'cod');
+
+    assert.notEqual(fp1, fp2, 'Unambiguous structured serialization must prevent delimiter-injection collisions');
   });
 });
 
