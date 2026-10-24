@@ -38,7 +38,7 @@ export default function BestSellersMarquee({ trendingSarees }: BestSellersMarque
                 src={`/${(saree.images && saree.images.length > 0 ? saree.images[0] : 'images/hero_saree_art.jpg')}`}
                 alt={saree.name}
                 fill
-                sizes="(max-width: 640px) 144px, (max-width: 1024px) 176px, 192px"
+                sizes="(max-width: 640px) 256px, (max-width: 1024px) 320px, 272px"
                 className="object-cover"
               />
             </Link>

@@ -107,6 +107,13 @@ describe('Hero Marquee Accessibility & Sitemap Freshness Regression Tests', () =
       /focus-within:pause-marquee/,
       'Marquee container must include focus-within:pause-marquee for keyboard traversal'
     );
+
+    // Responsive image sizes matching rendered card widths (256px, 320px, 272px)
+    assert.match(
+      componentContent,
+      /sizes=['"]\(max-width:\s*640px\)\s*256px,\s*\(max-width:\s*1024px\)\s*320px,\s*272px['"]/,
+      'Marquee image sizes must match rendered card widths 256px (w-64), 320px (sm:w-80), and 272px (lg:w-[17rem])'
+    );
   });
 
   test('page.tsx imports and integrates BestSellersMarquee', () => {
@@ -123,4 +130,20 @@ describe('Hero Marquee Accessibility & Sitemap Freshness Regression Tests', () =
       'page.tsx must render BestSellersMarquee with trendingSarees prop'
     );
   });
+
+  test('package.json and lockfile resolve patched Next.js release >= 16.4.1', () => {
+    const pkg = JSON.parse(fs.readFileSync(path.join(rootDir, 'package.json'), 'utf-8'));
+    const nextDep = pkg.dependencies?.next;
+    assert.ok(nextDep, 'Next.js must be a production dependency');
+    
+    // Check semver string is >= 16.4.1
+    const cleanVersion = nextDep.replace(/[\^~>=]/g, '');
+    const [major, minor, patch] = cleanVersion.split('.').map(Number);
+    const isPatched = major > 16 || (major === 16 && (minor > 4 || (minor === 4 && patch >= 1)));
+    assert.ok(
+      isPatched,
+      `Next.js version (${nextDep}) must be >= 16.4.1 to resolve GHSA-p3m5-59mp-jv5r, GHSA-2464-fhr4-w9xw, and GHSA-673q-mjm6-r5xr`
+    );
+  });
 });
+
