@@ -134,6 +134,13 @@ header nav[aria-label="Saree Collections"] a {
   html {
     scroll-behavior: auto;
   }
+  .animate-marquee {
+    animation: none !important;
+  }
+  .mask-image-fade {
+    overflow-x: auto !important;
+    scrollbar-width: thin;
+  }
 }
 
 #signature-models {
@@ -153,6 +160,11 @@ header nav[aria-label="Saree Collections"] a {
 .animate-marquee {
   animation: marquee 30s linear infinite;
 }
-.hover\:pause-marquee:hover {
+.hover\:pause-marquee:hover,
+.focus-within\:pause-marquee:focus-within {
   animation-play-state: paused;
 }
+.pause-marquee {
+  animation-play-state: paused !important;
+}
+

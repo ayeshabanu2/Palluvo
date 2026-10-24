@@ -5,8 +5,8 @@ import { SAREE_PRODUCTS } from '@/data/products';
 // Google Search Central advises that lastmod must reflect the page's actual
 // last significant update and should be omitted when no reliable timestamp exists.
 const STATIC_ROUTE_LAST_MODIFIED: Record<string, string> = {
-  root: '2026-10-07',
-  sarees: '2026-10-07',
+  root: '2026-10-10',
+  sarees: '2026-10-09',
   about: '2026-10-07',
   contact: '2026-10-07',
 };

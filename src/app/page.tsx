@@ -7,6 +7,7 @@ import {
   SAREE_PRODUCTS 
 } from '@/data/products';
 import ProductCard from '@/components/ProductCard';
+import BestSellersMarquee from '@/components/BestSellersMarquee';
 import { Sparkles, ArrowRight, ShieldCheck, HeartHandshake, Scissors } from 'lucide-react';
 import { Metadata } from 'next';
 import { SareeProduct } from '@/types';
@@ -72,38 +73,7 @@ export default function HomePage(): React.JSX.Element {
                 <span className="font-serif italic font-normal text-[#D6B878]">a little magic.</span>
               </h2>
 
-              <div className="w-full mt-2">
-                <div className="relative w-full overflow-hidden flex items-center group mask-image-fade">
-                  {/* Fading edges for the marquee */}
-                  <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
-                  <div className="absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#2B211D] to-transparent z-10 pointer-events-none"></div>
-                  
-                  <div className="flex gap-4 sm:gap-6 animate-marquee hover:pause-marquee w-max py-2 px-4">
-                    {/* Double the array for seamless infinite scrolling */}
-                    {[...trendingSarees, ...trendingSarees].map((saree, i) => (
-                      <Link 
-                        href={`/product/${saree.id}`} 
-                        key={`${saree.id}-${i}`}
-                        className="relative w-64 h-[28rem] sm:w-80 sm:h-[34rem] lg:w-[17rem] lg:h-[26rem] rounded-2xl overflow-hidden border border-white/10 shrink-0 shadow-2xl hover:border-[#D6B878]/80 transition-all duration-300 hover:-translate-y-2"
-                        aria-label={`Shop ${saree.name}`}
-                      >
-                        <Image
-                          src={`/${(saree.images && saree.images.length > 0 ? saree.images[0] : 'images/hero_saree_art.jpg')}`}
-                          alt={saree.name}
-                          fill
-                          sizes="(max-width: 640px) 144px, (max-width: 1024px) 176px, 192px"
-                          className="object-cover"
-                        />
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center gap-4 mt-4 lg:mt-3">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#D6B878] uppercase tracking-[0.15em] text-center w-full">Best Sellers</h1>
-                </div>
-
-              </div>
+              <BestSellersMarquee trendingSarees={trendingSarees} />
 
             </div>
 
