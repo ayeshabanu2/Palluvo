@@ -16,6 +16,7 @@ import {
   ORDER_RATE_LIMIT_CONFIG,
   computeOrderFingerprint,
   isCanonicalItemMultisetEqual,
+  isMailboxVerified,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   validateCustomerDetails,
@@ -244,13 +245,27 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     const { canonicalItems, trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
       calculateTrustedOrderTotals(validatedItems, couponCode);
 
-    // 6. Server-side Rate Limiting & Duplicate Request Idempotency Guard (especially for public COD creation)
+    // 6. Check authenticated user status to gate email quota against unverified guest spoofing
+    let user: any = null;
+    let isEmailVerified = false;
+    let supabaseClient: any = null;
+    try {
+      supabaseClient = await createClient();
+      const authResponse = await supabaseClient.auth.getUser();
+      user = authResponse?.data?.user || null;
+      isEmailVerified = isMailboxVerified(user, validatedCustomer.email);
+    } catch {
+      // In offline/test environments without Supabase client, user remains null (unverified)
+    }
+
+    // 7. Server-side Rate Limiting & Duplicate Request Idempotency Guard (especially for public COD creation)
     const clientIp = await getClientIp();
     fingerprint = computeOrderFingerprint(validatedCustomer, validatedItems, trustedGrandTotal, paymentMethod);
 
     const throttleResult = await checkAndAcquireOrderSlot({
       ip: clientIp,
       email: validatedCustomer.email,
+      isEmailVerified,
       fingerprint,
     });
 
@@ -327,10 +342,11 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
     // 8. Persist to Supabase orders table with RLS and duplicate protection
     try {
-      const supabase = await createClient();
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const supabase = supabaseClient || (await createClient());
+      if (!user) {
+        const authData = await supabase.auth.getUser();
+        user = authData?.data?.user || null;
+      }
 
       // Check for recent duplicate order in Supabase within the deduplication window
       const dedupeWindowAgo = new Date(Date.now() - ORDER_RATE_LIMIT_CONFIG.IDEMPOTENCY_WINDOW_MS).toISOString();
@@ -343,7 +359,7 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         .limit(3);
 
       if (recentDbOrders && recentDbOrders.length > 0) {
-        const matchingDbOrder = recentDbOrders.find((dbo) => {
+        const matchingDbOrder = recentDbOrders.find((dbo: any) => {
           if (Number(dbo.grand_total) !== trustedGrandTotal) return false;
           if (dbo.payment_method && dbo.payment_method !== paymentMethod) return false;
           if (!isCanonicalItemMultisetEqual(canonicalItems, dbo.items)) return false;

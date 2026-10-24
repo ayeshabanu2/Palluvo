@@ -16,6 +16,7 @@ import {
   MisconfiguredOrderRateLimitStore,
   createProductionOrderRateLimitStore,
   isCanonicalItemMultisetEqual,
+  isMailboxVerified,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
@@ -326,7 +327,7 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
     assert.match(exceededRes.error, /Too many orders have been placed from your connection/);
   });
 
-  test('enforces maximum orders per 10-minute sliding window per Email', async () => {
+  test('enforces maximum orders per 10-minute sliding window per verified Email', async () => {
     const baseNow = Date.now();
     const testEmail = 'shopper.family@example.com';
 
@@ -334,6 +335,7 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
       const res = await checkAndAcquireOrderSlot({
         ip: `198.51.100.${10 + i}`,
         email: testEmail,
+        isEmailVerified: true,
         now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
       });
       assert.equal(res.allowed, true, `Email order ${i + 1} should be allowed`);
@@ -343,11 +345,39 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
     const exceededRes = await checkAndAcquireOrderSlot({
       ip: '198.51.100.99',
       email: testEmail,
+      isEmailVerified: true,
       now: baseNow + ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
     });
     assert.equal(exceededRes.allowed, false);
     assert.equal(exceededRes.slotAcquired, false);
     assert.match(exceededRes.error, /Maximum order placement attempts reached for this email/);
+  });
+
+  test('REGRESSION [P2]: unverified guest email cannot poison or exhaust another customer quota across separate IPs', async () => {
+    const baseNow = Date.now();
+    const victimEmail = 'victim.shopper@example.com';
+
+    // 1. Attacker submits 5 guest checkout attempts using victim's email across different IPs
+    for (let i = 0; i < 5; i++) {
+      const attackerRes = await checkAndAcquireOrderSlot({
+        ip: `198.51.100.${20 + i}`,
+        email: victimEmail,
+        isEmailVerified: false, // guest checkout: unverified email
+        now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+      });
+      assert.equal(attackerRes.allowed, true, `Attacker guest attempt ${i + 1} succeeded on separate IP`);
+    }
+
+    // 2. Legitimate victim places an order from their own IP
+    // Because unverified guest email is not used as a shared quota principal, victim is NOT locked out!
+    const victimRes = await checkAndAcquireOrderSlot({
+      ip: '203.0.113.88',
+      email: victimEmail,
+      isEmailVerified: true,
+      now: baseNow + 6 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+    assert.equal(victimRes.allowed, true, 'Legitimate customer must not be blocked by prior unverified guest orders');
+    assert.equal(victimRes.slotAcquired, true);
   });
 
   test('enforces global distributed burst throttle against automated flood attacks', async () => {
@@ -756,6 +786,101 @@ describe('Canonical Item Variant Multiset & Variant Deduplication Tests [P2]', (
     const fp1 = computeOrderFingerprint(customer, items1, 15000, 'cod');
     const fp2 = computeOrderFingerprint(customer, items2, 15000, 'cod');
     assert.equal(fp1, fp2, 'Permuted item lists must produce identical canonical fingerprint');
+  });
+
+  test('REGRESSION [P2]: computeOrderFingerprint differentiates changes in recipient name (firstName, lastName)', () => {
+    const baseCustomer = {
+      firstName: 'Priya',
+      lastName: 'Sundaram',
+      email: 'priya@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600001',
+    };
+    const correctedRecipient = { ...baseCustomer, firstName: 'Ananya' };
+    const correctedLastName = { ...baseCustomer, lastName: 'Sharma' };
+    const items = [{ productId: 'royal-banarasi', qty: 1 }];
+
+    const fpBase = computeOrderFingerprint(baseCustomer, items, 9999, 'cod');
+    const fpCorrectedFirst = computeOrderFingerprint(correctedRecipient, items, 9999, 'cod');
+    const fpCorrectedLast = computeOrderFingerprint(correctedLastName, items, 9999, 'cod');
+
+    assert.notEqual(fpBase, fpCorrectedFirst, 'Changed firstName must produce distinct fingerprint');
+    assert.notEqual(fpBase, fpCorrectedLast, 'Changed lastName must produce distinct fingerprint');
+  });
+
+  test('REGRESSION [P2]: computeOrderFingerprint differentiates changes in locality (city, state)', () => {
+    const baseCustomer = {
+      firstName: 'Priya',
+      lastName: 'Sundaram',
+      email: 'priya@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600001',
+    };
+    const correctedCity = { ...baseCustomer, city: 'Coimbatore' };
+    const correctedState = { ...baseCustomer, state: 'Karnataka' };
+    const items = [{ productId: 'royal-banarasi', qty: 1 }];
+
+    const fpBase = computeOrderFingerprint(baseCustomer, items, 9999, 'cod');
+    const fpCorrectedCity = computeOrderFingerprint(correctedCity, items, 9999, 'cod');
+    const fpCorrectedState = computeOrderFingerprint(correctedState, items, 9999, 'cod');
+
+    assert.notEqual(fpBase, fpCorrectedCity, 'Changed city must produce distinct fingerprint');
+    assert.notEqual(fpBase, fpCorrectedState, 'Changed state must produce distinct fingerprint');
+  });
+
+  test('REGRESSION [P2]: correcting recipient/locality allows placing order without idempotency collision with earlier cached order', async () => {
+    const baseNow = Date.now();
+    const customerInitial = {
+      firstName: 'Priya',
+      lastName: 'Sundaram',
+      email: 'priya@example.com',
+      phone: '9876543210',
+      address: '12 Temple Street',
+      city: 'Chennai',
+      state: 'Tamil Nadu',
+      pincode: '600001',
+    };
+    const items = [{ productId: 'royal-banarasi', qty: 1 }];
+    const fpInitial = computeOrderFingerprint(customerInitial, items, 9999, 'cod');
+
+    await resetOrderRateLimiter();
+    const testIp = '198.51.100.123';
+
+    // 1. Initial order placed and finalized
+    const slot1 = await checkAndAcquireOrderSlot({
+      ip: testIp,
+      email: customerInitial.email,
+      isEmailVerified: true,
+      fingerprint: fpInitial,
+      now: baseNow,
+    });
+    assert.equal(slot1.allowed, true, `Initial slot acquisition failed: ${slot1.error}`);
+    await finalizeOrderSlot(fpInitial, { id: 'PLV-001', customer: customerInitial }, baseNow);
+
+    // 2. Customer realizes city was wrong and corrects to Madurai within 60-second window
+    const customerCorrected = { ...customerInitial, city: 'Madurai' };
+    const fpCorrected = computeOrderFingerprint(customerCorrected, items, 9999, 'cod');
+
+    assert.notEqual(fpInitial, fpCorrected);
+
+    const slot2 = await checkAndAcquireOrderSlot({
+      ip: testIp,
+      email: customerCorrected.email,
+      isEmailVerified: true,
+      fingerprint: fpCorrected,
+      now: baseNow + (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+
+    // Must be allowed as a new order, NOT returned as duplicate of initial order!
+    assert.equal(slot2.allowed, true);
+    assert.equal(slot2.isDuplicate, false);
+    assert.equal(slot2.slotAcquired, true);
   });
 });
 

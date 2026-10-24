@@ -2,6 +2,47 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+/**
+ * Checks whether the deployment requires and enforces confirmed email verification in Supabase Auth.
+ * Supabase allows projects to have "Confirm email" disabled, where any caller can register an address
+ * and immediately receive a session without proving mailbox access.
+ * To prevent quota poisoning on public forms, shared email rate limits are strictly gated behind this deployment requirement.
+ */
+export function isEmailConfirmationEnforced(): boolean {
+  const env =
+    process.env.REQUIRE_EMAIL_CONFIRMATION ||
+    process.env.SUPABASE_AUTH_CONFIRM_EMAIL;
+  if (!env) return false;
+  const val = env.trim().toLowerCase();
+  return val === 'true' || val === '1';
+}
+
+/**
+ * Strict mailbox verification requires:
+ * 1. Confirmed-email configuration is enforced as a deployment requirement (`isEmailConfirmationEnforced() === true`).
+ * 2. Authenticated user object exists with a valid email.
+ * 3. The user's `email_confirmed_at` timestamp is present and verified.
+ * 4. The user's email matches the submitted email.
+ */
+export function isMailboxVerified(
+  user: { email?: string; email_confirmed_at?: string | null } | null | undefined,
+  submittedEmail: string
+): boolean {
+  if (!isEmailConfirmationEnforced()) {
+    return false;
+  }
+  if (!user || !user.email) {
+    return false;
+  }
+  if (
+    !user.email_confirmed_at ||
+    typeof user.email_confirmed_at !== 'string' ||
+    user.email_confirmed_at.trim().length === 0
+  ) {
+    return false;
+  }
+  return (user.email || '').toLowerCase().trim() === (submittedEmail || '').toLowerCase().trim();
+}
 
 export const CHECKOUT_FIELD_LIMITS = {
   MAX_ITEMS: 20,
@@ -377,9 +418,13 @@ export function computeOrderFingerprint(
   grandTotal: number,
   paymentMethod: string = 'cod'
 ): string {
-  const canonicalEmail = (customer?.email || '').toLowerCase().trim();
+  const canonicalFirstName = (customer?.firstName || '').trim().toLowerCase();
+  const canonicalLastName = (customer?.lastName || '').trim().toLowerCase();
+  const canonicalEmail = (customer?.email || '').trim().toLowerCase();
   const canonicalPhone = (customer?.phone || '').trim();
   const canonicalAddress = (customer?.address || '').trim().toLowerCase();
+  const canonicalCity = (customer?.city || '').trim().toLowerCase();
+  const canonicalState = (customer?.state || '').trim().toLowerCase();
   const canonicalPincode = (customer?.pincode || '').trim();
 
   const sortedItems = [...items].sort((a, b) => {
@@ -391,7 +436,7 @@ export function computeOrderFingerprint(
     .map((i) => `${i.productId}:${i.qty}:${(i.selectedColor || '').toLowerCase()}:${(i.blouseOptionId || '').toLowerCase()}`)
     .join(';');
 
-  const raw = `${canonicalEmail}|${canonicalPhone}|${canonicalAddress}|${canonicalPincode}|${itemsDigest}|${grandTotal}|${paymentMethod}`;
+  const raw = `${canonicalFirstName}|${canonicalLastName}|${canonicalEmail}|${canonicalPhone}|${canonicalAddress}|${canonicalCity}|${canonicalState}|${canonicalPincode}|${itemsDigest}|${grandTotal}|${paymentMethod}`;
   return crypto.createHash('sha256').update(raw).digest('hex');
 }
 
@@ -410,7 +455,8 @@ export function hashOrderRateIdentifier(identifier: string): string {
 export interface OrderRateLimitStore {
   checkAndAcquire(params: {
     ip: string;
-    email: string;
+    email?: string;
+    isEmailVerified?: boolean;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult>;
@@ -447,7 +493,8 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
 
   async checkAndAcquire(params: {
     ip: string;
-    email: string;
+    email?: string;
+    isEmailVerified?: boolean;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult> {
@@ -461,7 +508,10 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
       }
 
       const ipKey = params.ip && params.ip !== 'unknown' ? hashOrderRateIdentifier(`ip:${params.ip}`) : '';
-      const emailKey = params.email ? hashOrderRateIdentifier(`email:${params.email}`) : '';
+      // Only enforce shared hard rate-limiting on email if ownership is verified.
+      // Prevents unverified public/guest submissions from poisoning a victim's email quota.
+      const emailKey =
+        params.email && params.isEmailVerified ? hashOrderRateIdentifier(`email:${params.email}`) : '';
 
       const { data, error } = await supabase.rpc('acquire_order_slot', {
         p_ip_key: ipKey,
@@ -636,12 +686,12 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
 
   async checkAndAcquire(params: {
     ip: string;
-    email: string;
+    email?: string;
+    isEmailVerified?: boolean;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult> {
     const now = params.now || Date.now();
-
     return this.withLock(() => {
       const state = this.readState();
 
@@ -706,7 +756,10 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
       }
 
       // 4. Email Rate Limit & Cooldown Check
-      const cleanEmail = (params.email || '').toLowerCase().trim();
+      // Only enforce shared hard rate-limiting on email if ownership is verified.
+      // Prevents unverified public/guest submissions from poisoning a victim's email quota.
+      const cleanEmail =
+        params.email && params.isEmailVerified ? params.email.toLowerCase().trim() : '';
       if (cleanEmail) {
         const emailRecord = state.emailRecords[cleanEmail];
         if (emailRecord) {
@@ -879,7 +932,8 @@ export function setProductionOrderStore(store: OrderRateLimitStore | null): void
  */
 export async function checkAndAcquireOrderSlot(params: {
   ip: string;
-  email: string;
+  email?: string;
+  isEmailVerified?: boolean;
   fingerprint?: string;
   now?: number;
 }): Promise<OrderThrottleResult> {

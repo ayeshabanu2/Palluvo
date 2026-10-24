@@ -31,3 +31,31 @@ export function isEmailConfirmationEnforced(): boolean {
   return val === 'true' || val === '1';
 }
 
+/**
+ * Strict mailbox verification requires:
+ * 1. Confirmed-email configuration is enforced as a deployment requirement (`isEmailConfirmationEnforced() === true`).
+ * 2. Authenticated user object exists with a valid email.
+ * 3. The user's `email_confirmed_at` timestamp is present and verified.
+ * 4. The user's email matches the submitted email.
+ */
+export function isMailboxVerified(
+  user: { email?: string; email_confirmed_at?: string | null } | null | undefined,
+  submittedEmail: string
+): boolean {
+  if (!isEmailConfirmationEnforced()) {
+    return false;
+  }
+  if (!user || !user.email) {
+    return false;
+  }
+  if (
+    !user.email_confirmed_at ||
+    typeof user.email_confirmed_at !== 'string' ||
+    user.email_confirmed_at.trim().length === 0
+  ) {
+    return false;
+  }
+  return (user.email || '').toLowerCase().trim() === (submittedEmail || '').toLowerCase().trim();
+}
+
+
