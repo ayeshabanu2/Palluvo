@@ -205,6 +205,7 @@ export async function initiatePaymentSession(
 export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<PlaceOrderServerResult> {
   let fingerprint: string | null = null;
   let orderCreated: PlacedOrder | undefined = undefined;
+  let slotAcquired = false;
 
   try {
     if (!input || typeof input !== 'object') {
@@ -228,10 +229,9 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     const validatedItems = itemsValidation.items;
 
     // 3. Validate coupon code
-    if (couponCode !== undefined) {
-      if (typeof couponCode !== 'string' || couponCode.length > CHECKOUT_FIELD_LIMITS.COUPON_MAX) {
-        return { success: false, error: 'Invalid coupon code format.' };
-      }
+    const couponValidation = validateCouponCode(couponCode);
+    if (!couponValidation.valid) {
+      return { success: false, error: couponValidation.error };
     }
 
     // 4. Validate payment method
@@ -247,7 +247,7 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     const clientIp = await getClientIp();
     fingerprint = computeOrderFingerprint(validatedCustomer, validatedItems, trustedGrandTotal, paymentMethod);
 
-    const throttleResult = checkAndAcquireOrderSlot({
+    const throttleResult = await checkAndAcquireOrderSlot({
       ip: clientIp,
       email: validatedCustomer.email,
       fingerprint,
@@ -261,6 +261,9 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     if (throttleResult.isDuplicate && throttleResult.existingOrder) {
       return { success: true, order: throttleResult.existingOrder };
     }
+
+    // Track reservation ownership: only true if THIS invocation genuinely reserved the slot
+    slotAcquired = Boolean(throttleResult.slotAcquired ?? true);
 
     // 7. Payment verification & status assignment
     let orderStatus: PlacedOrder['status'] = 'Confirmed';
@@ -414,8 +417,8 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       error: err instanceof Error ? err.message : 'An unexpected server error occurred. Please try again.',
     };
   } finally {
-    if (fingerprint) {
-      finalizeOrderSlot(fingerprint, orderCreated);
+    if (slotAcquired && fingerprint) {
+      await finalizeOrderSlot(fingerprint, orderCreated);
     }
   }
 }

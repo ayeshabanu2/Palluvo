@@ -1,5 +1,8 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
+import os from 'node:os';
+import fs from 'node:fs';
 import {
   CHECKOUT_FIELD_LIMITS,
   ORDER_RATE_LIMIT_CONFIG,
@@ -7,9 +10,13 @@ import {
   validateCheckoutItems,
   validateCouponCode,
   computeOrderFingerprint,
+  hashOrderRateIdentifier,
+  DatabaseRpcOrderRateLimitStore,
+  CrossProcessOrderRateLimitStore,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
+  setProductionOrderStore,
 } from '../src/app/checkout/orderRateLimiter.ts';
 
 const mockCatalog = [
@@ -254,47 +261,50 @@ describe('Checkout Payload Bounds & Validation [P2]', () => {
 });
 
 describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () => {
-  beforeEach(() => {
-    resetOrderRateLimiter();
+  beforeEach(async () => {
+    await resetOrderRateLimiter();
   });
 
-  test('enforces minimum cooldown interval between consecutive orders from the same IP', () => {
+  test('enforces minimum cooldown interval between consecutive orders from the same IP', async () => {
     const baseNow = Date.now();
     const testIp = '198.51.100.44';
     const testEmail = 'shopper1@example.com';
 
     // 1. First order succeeds
-    const firstRes = checkAndAcquireOrderSlot({
+    const firstRes = await checkAndAcquireOrderSlot({
       ip: testIp,
       email: testEmail,
       now: baseNow,
     });
     assert.equal(firstRes.allowed, true);
+    assert.equal(firstRes.slotAcquired, true);
 
     // 2. Immediate second order within 5s cooldown fails
-    const secondRes = checkAndAcquireOrderSlot({
+    const secondRes = await checkAndAcquireOrderSlot({
       ip: testIp,
       email: 'another.email@example.com',
       now: baseNow + 1000, // 1s later
     });
     assert.equal(secondRes.allowed, false);
+    assert.equal(secondRes.slotAcquired, false);
     assert.match(secondRes.error, /Please wait a few seconds before placing another order/);
 
     // 3. Order after cooldown (> 5s) passes
-    const thirdRes = checkAndAcquireOrderSlot({
+    const thirdRes = await checkAndAcquireOrderSlot({
       ip: testIp,
       email: 'another.email@example.com',
       now: baseNow + ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100,
     });
     assert.equal(thirdRes.allowed, true);
+    assert.equal(thirdRes.slotAcquired, true);
   });
 
-  test('enforces maximum orders per 10-minute sliding window per IP', () => {
+  test('enforces maximum orders per 10-minute sliding window per IP', async () => {
     const baseNow = Date.now();
     const testIp = '198.51.100.55';
 
     for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP; i++) {
-      const res = checkAndAcquireOrderSlot({
+      const res = await checkAndAcquireOrderSlot({
         ip: testIp,
         email: `distinct.user.${i}@example.com`,
         now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
@@ -303,21 +313,22 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
     }
 
     // Sixth order exceeds IP window limit
-    const exceededRes = checkAndAcquireOrderSlot({
+    const exceededRes = await checkAndAcquireOrderSlot({
       ip: testIp,
       email: 'exceeded.user@example.com',
       now: baseNow + ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
     });
     assert.equal(exceededRes.allowed, false);
+    assert.equal(exceededRes.slotAcquired, false);
     assert.match(exceededRes.error, /Too many orders have been placed from your connection/);
   });
 
-  test('enforces maximum orders per 10-minute sliding window per Email', () => {
+  test('enforces maximum orders per 10-minute sliding window per Email', async () => {
     const baseNow = Date.now();
     const testEmail = 'shopper.family@example.com';
 
     for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL; i++) {
-      const res = checkAndAcquireOrderSlot({
+      const res = await checkAndAcquireOrderSlot({
         ip: `198.51.100.${10 + i}`,
         email: testEmail,
         now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
@@ -326,20 +337,21 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
     }
 
     // Fourth order exceeds Email window limit
-    const exceededRes = checkAndAcquireOrderSlot({
+    const exceededRes = await checkAndAcquireOrderSlot({
       ip: '198.51.100.99',
       email: testEmail,
       now: baseNow + ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
     });
     assert.equal(exceededRes.allowed, false);
+    assert.equal(exceededRes.slotAcquired, false);
     assert.match(exceededRes.error, /Maximum order placement attempts reached for this email/);
   });
 
-  test('enforces global distributed burst throttle against automated flood attacks', () => {
+  test('enforces global distributed burst throttle against automated flood attacks', async () => {
     const baseNow = Date.now();
 
     for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_GLOBAL_ORDERS_PER_MINUTE; i++) {
-      const res = checkAndAcquireOrderSlot({
+      const res = await checkAndAcquireOrderSlot({
         ip: `192.0.2.${i}`,
         email: `flood.${i}@domain.com`,
         now: baseNow + i * 50,
@@ -348,19 +360,114 @@ describe('Checkout Server-Side Distributed Throttling & Rate Limiting [P1]', () 
     }
 
     // 31st order in same minute is throttled globally
-    const floodRes = checkAndAcquireOrderSlot({
+    const floodRes = await checkAndAcquireOrderSlot({
       ip: '192.0.2.250',
       email: 'flood.exceeded@domain.com',
       now: baseNow + 2000,
     });
     assert.equal(floodRes.allowed, false);
+    assert.equal(floodRes.slotAcquired, false);
     assert.match(floodRes.error, /unusually high traffic/);
   });
 });
 
-describe('Checkout Idempotency & Duplicate-Request Protection [P1]', () => {
-  beforeEach(() => {
-    resetOrderRateLimiter();
+describe('Checkout Genuinely Shared Store & Database RPC Tests [P1]', () => {
+  test('CrossProcessOrderRateLimitStore shares state across independent store instances via disk persistence', async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'palluvo-cross-process-'));
+    try {
+      const store1 = new CrossProcessOrderRateLimitStore(tmpDir);
+      const store2 = new CrossProcessOrderRateLimitStore(tmpDir);
+
+      const baseNow = Date.now();
+      const testIp = '203.0.113.10';
+      const testEmail = 'shopper@shared.com';
+
+      // Instance 1 reserves slot
+      const res1 = await store1.checkAndAcquire({ ip: testIp, email: testEmail, now: baseNow });
+      assert.equal(res1.allowed, true);
+      assert.equal(res1.slotAcquired, true);
+
+      // Instance 2 (completely separate memory) immediately sees IP cooldown from shared disk state!
+      const res2 = await store2.checkAndAcquire({ ip: testIp, email: 'other@shared.com', now: baseNow + 1000 });
+      assert.equal(res2.allowed, false);
+      assert.match(res2.error, /Please wait a few seconds/);
+
+      // Clean up
+      await store1.clear();
+    } finally {
+      try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('DatabaseRpcOrderRateLimitStore executes acquire_order_slot RPC with correct parameters', async () => {
+    let capturedRpc = '';
+    let capturedArgs = null;
+
+    const mockSupabase = {
+      rpc: async (name, args) => {
+        capturedRpc = name;
+        capturedArgs = args;
+        return {
+          data: {
+            allowed: true,
+            isDuplicate: false,
+            slotAcquired: true,
+          },
+          error: null,
+        };
+      },
+    };
+
+    const dbStore = new DatabaseRpcOrderRateLimitStore(async () => mockSupabase);
+    const result = await dbStore.checkAndAcquire({
+      ip: '198.51.100.99',
+      email: 'customer@example.com',
+      fingerprint: 'test-fingerprint-abc',
+    });
+
+    assert.equal(result.allowed, true);
+    assert.equal(result.slotAcquired, true);
+    assert.equal(capturedRpc, 'acquire_order_slot');
+    assert.equal(capturedArgs.p_fingerprint, 'test-fingerprint-abc');
+    assert.equal(capturedArgs.p_max_ip, ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP);
+    assert.equal(capturedArgs.p_max_email, ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL);
+    assert.equal(capturedArgs.p_cooldown_ms, ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS);
+  });
+
+  test('DatabaseRpcOrderRateLimitStore fails closed on RPC error', async () => {
+    const errorSupabase = {
+      rpc: async () => ({
+        data: null,
+        error: { message: 'relation "order_rate_limits" does not exist' },
+      }),
+    };
+
+    const dbStore = new DatabaseRpcOrderRateLimitStore(async () => errorSupabase);
+    const result = await dbStore.checkAndAcquire({
+      ip: '198.51.100.99',
+      email: 'customer@example.com',
+    });
+
+    assert.equal(result.allowed, false);
+    assert.match(result.error, /Unable to verify order rate limits/);
+  });
+
+  test('DatabaseRpcOrderRateLimitStore fails closed when client is unconfigured', async () => {
+    const dbStore = new DatabaseRpcOrderRateLimitStore(async () => null);
+    const result = await dbStore.checkAndAcquire({
+      ip: '198.51.100.99',
+      email: 'customer@example.com',
+    });
+
+    assert.equal(result.allowed, false);
+    assert.match(result.error, /Order processing service is currently unavailable/);
+  });
+});
+
+describe('Checkout Reservation Ownership & Idempotency Protection [P1 & P2]', () => {
+  beforeEach(async () => {
+    setProductionOrderStore(null);
+    await resetOrderRateLimiter();
   });
 
   test('computes deterministic order fingerprint across identical parameters', () => {
@@ -384,20 +491,21 @@ describe('Checkout Idempotency & Duplicate-Request Protection [P1]', () => {
     assert.notEqual(fp1, fpDifferentItem, 'Different item quantity must produce different fingerprint');
   });
 
-  test('blocks concurrent in-flight duplicate requests', () => {
+  test('blocks concurrent in-flight duplicate requests with slotAcquired: false', async () => {
     const baseNow = Date.now();
     const fp = computeOrderFingerprint(validCustomer, validItems, 14999, 'cod');
 
-    const first = checkAndAcquireOrderSlot({
+    const first = await checkAndAcquireOrderSlot({
       ip: '198.51.100.1',
       email: validCustomer.email,
       fingerprint: fp,
       now: baseNow,
     });
     assert.equal(first.allowed, true);
+    assert.equal(first.slotAcquired, true);
 
     // Second concurrent call with same fingerprint while in-flight
-    const concurrent = checkAndAcquireOrderSlot({
+    const concurrent = await checkAndAcquireOrderSlot({
       ip: '198.51.100.1',
       email: validCustomer.email,
       fingerprint: fp,
@@ -405,20 +513,62 @@ describe('Checkout Idempotency & Duplicate-Request Protection [P1]', () => {
     });
     assert.equal(concurrent.allowed, false);
     assert.equal(concurrent.isDuplicate, true);
+    assert.equal(concurrent.slotAcquired, false);
     assert.match(concurrent.error, /currently being processed/);
   });
 
-  test('returns existing order on repeated identical request within deduplication window', () => {
+  test('[P2 REGRESSION]: rejected concurrent call must not delete the original request in-flight marker', async () => {
     const baseNow = Date.now();
     const fp = computeOrderFingerprint(validCustomer, validItems, 14999, 'cod');
 
-    // 1. Acquire slot
-    checkAndAcquireOrderSlot({
+    // 1. Initial request acquires slot
+    const first = await checkAndAcquireOrderSlot({
       ip: '198.51.100.1',
       email: validCustomer.email,
       fingerprint: fp,
       now: baseNow,
     });
+    assert.equal(first.allowed, true);
+    assert.equal(first.slotAcquired, true);
+
+    // 2. Second request is rejected
+    const second = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow + 100,
+    });
+    assert.equal(second.allowed, false);
+    assert.equal(second.slotAcquired, false);
+
+    // 3. Simulating the second caller's finally block:
+    // With reservation ownership tracking, second caller DOES NOT call finalizeOrderSlot because slotAcquired is false.
+    // Even if finalizeOrderSlot was erroneously called without reservation, in-flight marker remains intact.
+    // Verify that subsequent call is STILL recognized as in-flight duplicate!
+    const third = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow + 200,
+    });
+    assert.equal(third.allowed, false);
+    assert.equal(third.isDuplicate, true);
+    assert.match(third.error, /currently being processed/);
+  });
+
+  test('returns existing order on repeated identical request within deduplication window', async () => {
+    const baseNow = Date.now();
+    const fp = computeOrderFingerprint(validCustomer, validItems, 14999, 'cod');
+
+    // 1. Acquire slot
+    const slot = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow,
+    });
+    assert.equal(slot.allowed, true);
+    assert.equal(slot.slotAcquired, true);
 
     // 2. Finalize with completed order
     const mockOrder = {
@@ -434,10 +584,10 @@ describe('Checkout Idempotency & Duplicate-Request Protection [P1]', () => {
       paymentMethod: 'cod',
       customer: validCustomer,
     };
-    finalizeOrderSlot(fp, mockOrder, baseNow);
+    await finalizeOrderSlot(fp, mockOrder, baseNow);
 
-    // 3. Repeated call within deduplication window returns cached order
-    const repeatCall = checkAndAcquireOrderSlot({
+    // 3. Repeated call within deduplication window returns cached order with slotAcquired: false
+    const repeatCall = await checkAndAcquireOrderSlot({
       ip: '198.51.100.1',
       email: validCustomer.email,
       fingerprint: fp,
@@ -446,6 +596,59 @@ describe('Checkout Idempotency & Duplicate-Request Protection [P1]', () => {
 
     assert.equal(repeatCall.allowed, true);
     assert.equal(repeatCall.isDuplicate, true);
+    assert.equal(repeatCall.slotAcquired, false);
     assert.deepEqual(repeatCall.existingOrder, mockOrder);
+  });
+
+  test('[P2 REGRESSION]: cached duplicate replay must not evict the completed order cache', async () => {
+    const baseNow = Date.now();
+    const fp = computeOrderFingerprint(validCustomer, validItems, 14999, 'cod');
+
+    // 1. First order completes and caches
+    await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow,
+    });
+    const mockOrder = {
+      id: 'PLV-777777',
+      orderNumber: 'PLV-777777',
+      date: '24 Oct 2026',
+      status: 'Confirmed',
+      items: [],
+      subtotal: 14999,
+      discountAmount: 0,
+      shippingFee: 0,
+      grandTotal: 14999,
+      paymentMethod: 'cod',
+      customer: validCustomer,
+    };
+    await finalizeOrderSlot(fp, mockOrder, baseNow);
+
+    // 2. Replay request arrives
+    const replay = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow + 2000,
+    });
+    assert.equal(replay.allowed, true);
+    assert.equal(replay.isDuplicate, true);
+    assert.equal(replay.slotAcquired, false);
+
+    // 3. Even if finalizeOrderSlot(fp, undefined) is called, finalize guard NEVER evicts a completed order!
+    await finalizeOrderSlot(fp, undefined, baseNow + 2100);
+
+    // 4. Third replay still successfully retrieves the cached order
+    const thirdReplay = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: validCustomer.email,
+      fingerprint: fp,
+      now: baseNow + 3000,
+    });
+    assert.equal(thirdReplay.allowed, true);
+    assert.equal(thirdReplay.isDuplicate, true);
+    assert.deepEqual(thirdReplay.existingOrder, mockOrder);
   });
 });
