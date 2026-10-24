@@ -1,5 +1,6 @@
 'use server';
 
+import { headers } from 'next/headers';
 import { SAREE_PRODUCTS } from '@/data/products';
 import { createClient } from '@/utils/supabase/server';
 import { CartItem, OrderCustomerDetails, PlacedOrder } from '@/types';
@@ -10,6 +11,18 @@ import {
   PaymentSession,
 } from '@/utils/payment/provider';
 import { normalizeEmail } from '@/utils/format';
+import {
+  CHECKOUT_FIELD_LIMITS,
+  ORDER_RATE_LIMIT_CONFIG,
+  computeOrderFingerprint,
+  checkAndAcquireOrderSlot,
+  finalizeOrderSlot,
+  validateCustomerDetails,
+  validateCheckoutItems as validateCheckoutItemsBase,
+  validateCouponCode,
+} from './orderRateLimiter';
+
+export { CHECKOUT_FIELD_LIMITS };
 
 export interface CheckoutItemInput {
   productId: string;
@@ -48,6 +61,32 @@ export interface PaymentSessionResult {
   shippingFee?: number;
   grandTotal?: number;
   error?: string;
+}
+
+async function getClientIp(): Promise<string> {
+  try {
+    const headerList = await headers();
+    const forwardedFor = headerList.get('x-forwarded-for');
+    if (forwardedFor) {
+      return forwardedFor.split(',')[0].trim();
+    }
+    const realIp = headerList.get('x-real-ip') || headerList.get('cf-connecting-ip');
+    if (realIp) {
+      return realIp.trim();
+    }
+  } catch {
+    // headers() might not be available in non-request contexts or mock tests
+  }
+  return '127.0.0.1';
+}
+
+/**
+ * Validates checkout items shape, bounds, and catalog existence before calculation.
+ */
+function validateCheckoutItems(items: unknown): { valid: true; items: CheckoutItemInput[] } | { valid: false; error: string } {
+  return validateCheckoutItemsBase(items, SAREE_PRODUCTS) as
+    | { valid: true; items: CheckoutItemInput[] }
+    | { valid: false; error: string };
 }
 
 /**
@@ -122,12 +161,19 @@ export async function initiatePaymentSession(
   couponCode?: string
 ): Promise<PaymentSessionResult> {
   try {
-    if (!items || items.length === 0) {
-      return { success: false, isGatewayConfigured: false, error: 'Shopping bag is empty.' };
+    const itemsValidation = validateCheckoutItems(items);
+    if (!itemsValidation.valid) {
+      return { success: false, isGatewayConfigured: false, error: itemsValidation.error };
+    }
+
+    if (couponCode !== undefined) {
+      if (typeof couponCode !== 'string' || couponCode.length > CHECKOUT_FIELD_LIMITS.COUPON_MAX) {
+        return { success: false, isGatewayConfigured: false, error: 'Invalid coupon code format.' };
+      }
     }
 
     const { trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
-      calculateTrustedOrderTotals(items, couponCode);
+      calculateTrustedOrderTotals(itemsValidation.items, couponCode);
 
     const isConfigured = isPaymentGatewayConfigured();
     const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR') : undefined;
@@ -154,44 +200,73 @@ export async function initiatePaymentSession(
  * Server-side verified order placement action.
  * Computes canonical amounts from trusted catalog data and verifies database persistence.
  * Normalizes email casing for reliable guest-order claiming and retrieval.
+ * Enforces server-side distributed rate limiting, duplicate request idempotency, and payload length limits.
  */
 export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<PlaceOrderServerResult> {
+  let fingerprint: string | null = null;
+  let orderCreated: PlacedOrder | undefined = undefined;
+
   try {
+    if (!input || typeof input !== 'object') {
+      return { success: false, error: 'Invalid order input data.' };
+    }
+
     const { items, couponCode, paymentMethod, paymentVerification, customer } = input;
 
-    // 1. Validate customer details
-    if (
-      !customer ||
-      !customer.firstName?.trim() ||
-      !customer.email?.trim() ||
-      !customer.phone?.trim() ||
-      !customer.address?.trim() ||
-      !customer.city?.trim() ||
-      !customer.pincode?.trim()
-    ) {
-      return { success: false, error: 'Mandatory shipping and contact details are required.' };
+    // 1. Validate customer details with length bounds BEFORE calculating or persisting
+    const customerValidation = validateCustomerDetails(customer);
+    if (!customerValidation.valid) {
+      return { success: false, error: customerValidation.error };
+    }
+    const validatedCustomer = customerValidation.customer;
+
+    // 2. Validate items with count bounds and shape validation BEFORE calculating or persisting
+    const itemsValidation = validateCheckoutItems(items);
+    if (!itemsValidation.valid) {
+      return { success: false, error: itemsValidation.error };
+    }
+    const validatedItems = itemsValidation.items;
+
+    // 3. Validate coupon code
+    if (couponCode !== undefined) {
+      if (typeof couponCode !== 'string' || couponCode.length > CHECKOUT_FIELD_LIMITS.COUPON_MAX) {
+        return { success: false, error: 'Invalid coupon code format.' };
+      }
     }
 
-    const normalizedEmail = normalizeEmail(customer.email);
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(normalizedEmail)) {
-      return { success: false, error: 'Invalid customer email address.' };
+    // 4. Validate payment method
+    if (paymentMethod !== 'cod' && paymentMethod !== 'upi' && paymentMethod !== 'card') {
+      return { success: false, error: 'Unsupported payment method.' };
     }
 
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return { success: false, error: 'Your shopping bag is empty.' };
-    }
-
-    // 2. Compute trusted totals from canonical catalog
+    // 5. Compute trusted totals from canonical catalog
     const { canonicalItems, trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
-      calculateTrustedOrderTotals(items, couponCode);
+      calculateTrustedOrderTotals(validatedItems, couponCode);
 
-    // 3. Payment verification & status assignment
+    // 6. Server-side Rate Limiting & Duplicate Request Idempotency Guard (especially for public COD creation)
+    const clientIp = await getClientIp();
+    fingerprint = computeOrderFingerprint(validatedCustomer, validatedItems, trustedGrandTotal, paymentMethod);
+
+    const throttleResult = checkAndAcquireOrderSlot({
+      ip: clientIp,
+      email: validatedCustomer.email,
+      fingerprint,
+    });
+
+    if (!throttleResult.allowed) {
+      return { success: false, error: throttleResult.error };
+    }
+
+    // If duplicate identical request within idempotency window, return existing order
+    if (throttleResult.isDuplicate && throttleResult.existingOrder) {
+      return { success: true, order: throttleResult.existingOrder };
+    }
+
+    // 7. Payment verification & status assignment
     let orderStatus: PlacedOrder['status'] = 'Confirmed';
     let paymentStatus = 'Unpaid';
 
     if (paymentMethod === 'cod') {
-      // Cash on Delivery is confirmed for dispatch with doorstep collection
       orderStatus = 'Confirmed';
       paymentStatus = 'Pending COD Collection';
     } else if (paymentMethod === 'upi' || paymentMethod === 'card') {
@@ -201,7 +276,6 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         paymentVerification.sessionId &&
         paymentVerification.signature
       ) {
-        // Attempt strict cryptographic verification against payment provider
         const verificationResult = verifyPaymentProviderServer({
           paymentId: paymentVerification.paymentId,
           sessionId: paymentVerification.sessionId,
@@ -216,18 +290,18 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         } else {
           return {
             success: false,
-            error: verificationResult.error || 'Payment provider verification failed: invalid signature or transaction mismatch.',
+            error:
+              verificationResult.error ||
+              'Payment provider verification failed: invalid signature or transaction mismatch.',
           };
         }
       } else {
-        // Online payments without an active provider completion flow are disabled
         return {
           success: false,
-          error: 'Online payment gateway integration is currently in progress. Please select Cash on Delivery for instant order confirmation.',
+          error:
+            'Online payment gateway integration is currently in progress. Please select Cash on Delivery for instant order confirmation.',
         };
       }
-    } else {
-      return { success: false, error: 'Unsupported payment method.' };
     }
 
     const orderNumber = 'PLV-' + Math.floor(100000 + Math.random() * 900000);
@@ -244,24 +318,53 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       shippingFee: trustedShipping,
       grandTotal: trustedGrandTotal,
       paymentMethod,
-      customer: {
-        firstName: customer.firstName.trim(),
-        lastName: (customer.lastName || '').trim(),
-        email: normalizedEmail,
-        phone: customer.phone.trim(),
-        address: customer.address.trim(),
-        city: customer.city.trim(),
-        state: (customer.state || '').trim(),
-        pincode: customer.pincode.trim(),
-      },
+      customer: validatedCustomer,
     };
 
-    // 4. Persist to Supabase orders table with RLS and strictly verify database result
+    // 8. Persist to Supabase orders table with RLS and duplicate protection
     try {
       const supabase = await createClient();
       const {
         data: { user },
       } = await supabase.auth.getUser();
+
+      // Check for recent duplicate order in Supabase within the deduplication window
+      const dedupeWindowAgo = new Date(Date.now() - ORDER_RATE_LIMIT_CONFIG.IDEMPOTENCY_WINDOW_MS).toISOString();
+      const { data: recentDbOrders } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('customer->>email', validatedCustomer.email)
+        .gte('created_at', dedupeWindowAgo)
+        .order('created_at', { ascending: false })
+        .limit(3);
+
+      if (recentDbOrders && recentDbOrders.length > 0) {
+        const matchingDbOrder = recentDbOrders.find((dbo) => {
+          if (Number(dbo.grand_total) !== trustedGrandTotal) return false;
+          if (!Array.isArray(dbo.items) || dbo.items.length !== canonicalItems.length) return false;
+          return canonicalItems.every((ci) =>
+            dbo.items.some((di: any) => di.productId === ci.productId && di.qty === ci.qty)
+          );
+        });
+
+        if (matchingDbOrder) {
+          const duplicateOrder: PlacedOrder = {
+            id: matchingDbOrder.id,
+            orderNumber: matchingDbOrder.order_number || matchingDbOrder.id,
+            date: verifiedOrder.date,
+            status: matchingDbOrder.status || 'Confirmed',
+            items: matchingDbOrder.items || canonicalItems,
+            subtotal: matchingDbOrder.subtotal || trustedSubtotal,
+            discountAmount: matchingDbOrder.discount_amount || trustedDiscount,
+            shippingFee: matchingDbOrder.shipping_fee || trustedShipping,
+            grandTotal: matchingDbOrder.grand_total || trustedGrandTotal,
+            paymentMethod: matchingDbOrder.payment_method || paymentMethod,
+            customer: matchingDbOrder.customer || validatedCustomer,
+          };
+          orderCreated = duplicateOrder;
+          return { success: true, order: duplicateOrder };
+        }
+      }
 
       const { error: insertError } = await supabase.from('orders').insert([
         {
@@ -292,11 +395,14 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       console.error('Supabase client exception during order insertion:', dbException);
       return {
         success: false,
-        error: dbException instanceof Error ? dbException.message : 'Database connection error during order placement. Please try again.',
+        error:
+          dbException instanceof Error
+            ? dbException.message
+            : 'Database connection error during order placement. Please try again.',
       };
     }
 
-    // Return success strictly after database insertion succeeds
+    orderCreated = verifiedOrder;
     return {
       success: true,
       order: verifiedOrder,
@@ -307,5 +413,9 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       success: false,
       error: err instanceof Error ? err.message : 'An unexpected server error occurred. Please try again.',
     };
+  } finally {
+    if (fingerprint) {
+      finalizeOrderSlot(fingerprint, orderCreated);
+    }
   }
 }
