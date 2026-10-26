@@ -20,6 +20,7 @@ import {
   getConfirmedUserEmail,
   resolveClientIp,
   ipMatchesProxyEntry,
+  parseIpValues,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
@@ -1158,12 +1159,85 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
       ['x-forwarded-for', '198.51.100.80, 192.168.1.1'],
     ]);
     const resolvedPrivate = resolveClientIp(headersPrivate, {
-      trustedProxies: ['private'],
+      trustedProxies: ['192.168.1.0/24'],
     });
     assert.equal(
       resolvedPrivate,
       '198.51.100.80',
-      'Must match and skip proxies in RFC 1918 subnets using "private" alias'
+      'Must match and skip proxy in configured proxy subnet 192.168.1.0/24'
+    );
+  });
+
+  test('REGRESSION [P2]: normalizes IPv4-mapped IPv6 before matching private alias and proxy CIDRs', () => {
+    // 1. Upstream proxy emits its private IPv4 peer in mapped IPv6 form (::ffff:10.0.1.5).
+    // Chain: authentic client (203.0.113.80), upstream proxy (::ffff:10.0.1.5).
+    // When proxy subnet 10.0.1.0/24 (or private alias) is configured, the mapped IPv6 proxy MUST match and be skipped,
+    // resolving the authentic client IP rather than mistaking the proxy for the client and exhausting its shared quota.
+    const headersMappedProxy = new Map([
+      ['x-forwarded-for', '203.0.113.80, ::ffff:10.0.1.5'],
+    ]);
+    const resolvedMappedSubnet = resolveClientIp(headersMappedProxy, {
+      trustedProxies: ['10.0.1.0/24'],
+    });
+    assert.equal(
+      resolvedMappedSubnet,
+      '203.0.113.80',
+      'Must match and skip IPv4-mapped IPv6 proxy within configured proxy subnet'
+    );
+
+    const resolvedMappedPrivate = resolveClientIp(headersMappedProxy, {
+      trustedProxies: ['private'],
+    });
+    assert.equal(
+      resolvedMappedPrivate,
+      '203.0.113.80',
+      'Must normalize IPv4-mapped IPv6 before matching private alias'
+    );
+
+    // 2. Direct unit validations for IPv4-mapped IPv6 normalization across RFC 1918 blocks
+    assert.equal(ipMatchesProxyEntry('::ffff:10.1.2.3', 'private'), true, 'Mapped 10.0.0.0/8 must match private');
+    assert.equal(ipMatchesProxyEntry('::ffff:172.16.5.1', 'private'), true, 'Mapped 172.16.0.0/12 must match private');
+    assert.equal(ipMatchesProxyEntry('::ffff:192.168.1.100', 'private'), true, 'Mapped 192.168.0.0/16 must match private');
+    assert.equal(ipMatchesProxyEntry('::ffff:8.8.8.8', 'private'), false, 'Mapped public IP must not match private');
+    assert.equal(ipMatchesProxyEntry('fc00::1', 'private'), true, 'Pure IPv6 ULA must match private');
+
+    // 3. Exact IP match with IPv4-mapped IPv6 normalization
+    assert.equal(ipMatchesProxyEntry('::ffff:10.0.1.5', '10.0.1.5'), true, 'Mapped IPv6 must match exact IPv4');
+    assert.equal(ipMatchesProxyEntry('10.0.1.5', '::ffff:10.0.1.5'), true, 'Exact IPv4 must match mapped IPv6');
+  });
+
+  test('REGRESSION [P2]: does not treat private client address as trusted proxy when proxy subnet is restricted', () => {
+    // Threat Model:
+    // An internal / VPN client with private IP 10.5.0.21 connects to an ingress load balancer (e.g. AWS ALB at 10.0.1.8).
+    // ALB in default append mode appends the connecting client IP (10.5.0.21) to incoming XFF.
+    // The attacker client sends a spoofed header 'X-Forwarded-For: 203.0.113.99' in an attempt to rotate identities.
+    // Resulting XFF chain: '203.0.113.99, 10.5.0.21'
+    const headers = new Map([
+      ['x-forwarded-for', '203.0.113.99, 10.5.0.21'],
+    ]);
+
+    // 1. When configured with specific proxy subnet (10.0.1.0/24):
+    // 10.5.0.21 is NOT in 10.0.1.0/24, so it is correctly identified as the authentic client IP and NOT skipped.
+    const resolvedSecure = resolveClientIp(headers, {
+      trustedProxies: ['10.0.1.0/24'],
+    });
+    assert.equal(
+      resolvedSecure,
+      '10.5.0.21',
+      'Must identify 10.5.0.21 as client IP and not skip it to take spoofed public IP'
+    );
+
+    // 2. Attacker rotating spoofed prefix with distinct public IPs still resolves to authentic client IP
+    const headersRotated = new Map([
+      ['x-forwarded-for', '198.51.100.1, 10.5.0.21'],
+    ]);
+    const resolvedRotated = resolveClientIp(headersRotated, {
+      trustedProxies: ['10.0.1.0/24'],
+    });
+    assert.equal(
+      resolvedRotated,
+      '10.5.0.21',
+      'Rotated spoofed public IP must be ignored, pinning rate limits to authentic private client IP'
     );
   });
 
@@ -1206,6 +1280,12 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
   });
 
   test('ipMatchesProxyEntry helper accurately validates CIDR ranges, aliases, and exact IPs', () => {
+    // parseIpValues helper
+    const parsedV4 = parseIpValues('10.0.1.5');
+    assert.notEqual(parsedV4.v4, null);
+    const parsedMapped = parseIpValues('::ffff:10.0.1.5');
+    assert.equal(parsedMapped.v4, parsedV4.v4, 'parseIpValues must extract matching 32-bit v4 for mapped IPv6');
+
     // IPv4 CIDRs
     assert.equal(ipMatchesProxyEntry('10.42.0.8', '10.0.0.0/8'), true);
     assert.equal(ipMatchesProxyEntry('11.0.0.1', '10.0.0.0/8'), false);
@@ -1222,9 +1302,13 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     assert.equal(ipMatchesProxyEntry('127.0.0.1', 'loopback'), true);
     assert.equal(ipMatchesProxyEntry('127.0.0.99', 'loopback'), true);
     assert.equal(ipMatchesProxyEntry('::1', 'loopback'), true);
+    assert.equal(ipMatchesProxyEntry('::ffff:127.0.0.1', 'loopback'), true);
     assert.equal(ipMatchesProxyEntry('169.254.1.1', 'linklocal'), true);
+    assert.equal(ipMatchesProxyEntry('::ffff:169.254.1.1', 'linklocal'), true);
     assert.equal(ipMatchesProxyEntry('10.1.2.3', 'private'), true);
+    assert.equal(ipMatchesProxyEntry('::ffff:10.1.2.3', 'private'), true);
     assert.equal(ipMatchesProxyEntry('8.8.8.8', 'private'), false);
+    assert.equal(ipMatchesProxyEntry('::ffff:8.8.8.8', 'private'), false);
   });
 
   test('rejects malformed, injected, or invalid IP addresses in headers', () => {

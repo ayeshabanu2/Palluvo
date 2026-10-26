@@ -165,102 +165,103 @@ export function ipv6ToBigInt(ip: string): bigint | null {
 }
 
 /**
+ * Normalizes an IP address into IPv4 and IPv6 BigInt representations.
+ * Handles standard IPv4, standard IPv6, and IPv4-mapped IPv6 (e.g. "::ffff:10.1.2.3").
+ */
+export function parseIpValues(ip: string): { v4: bigint | null; v6: bigint | null } {
+  const norm = ip.trim();
+  const v4Direct = ipv4ToBigInt(norm);
+  if (v4Direct !== null) {
+    return { v4: v4Direct, v6: (0xffffn << 32n) | v4Direct };
+  }
+  const v6Direct = ipv6ToBigInt(norm);
+  if (v6Direct !== null) {
+    if ((v6Direct >> 32n) === 0xffffn) {
+      return { v4: v6Direct & 0xffffffffn, v6: v6Direct };
+    }
+    return { v4: null, v6: v6Direct };
+  }
+  return { v4: null, v6: null };
+}
+
+/**
  * Checks whether an IP address matches a trusted proxy entry.
  * An entry can be:
- * - A single IPv4 or IPv6 address (e.g. "10.0.0.1", "::1")
- * - An IPv4 CIDR range (e.g. "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+ * - A single IPv4 or IPv6 address (e.g. "10.0.1.1", "::1")
+ * - An IPv4 CIDR range (e.g. "10.0.1.0/24", "172.31.0.0/20")
  * - An IPv6 CIDR range (e.g. "2001:db8::/32", "fd00::/8")
  * - The alias "loopback" (matching 127.0.0.0/8, ::1, and IPv4-mapped loopback)
  * - The alias "linklocal" (matching 169.254.0.0/16 and fe80::/10)
- * - The alias "private" (matching RFC 1918 private IPv4 subnets and RFC 4193 ULA fc00::/7)
+ * - The alias "private" (matching RFC 1918 private IPv4 subnets, mapped IPv6 RFC 1918, and RFC 4193 ULA fc00::/7)
  */
 export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
   const normIp = ip.trim();
   const normEntry = entry.trim().toLowerCase();
   if (!normIp || !normEntry) return false;
 
+  const target = parseIpValues(normIp);
+  if (target.v4 === null && target.v6 === null) return false;
+
   // 1. Named aliases
   if (normEntry === 'loopback') {
     if (normIp === '127.0.0.1' || normIp === '::1') return true;
-    const v4 = ipv4ToBigInt(normIp);
-    if (v4 !== null) return (v4 >> 24n) === 127n;
-    const v6 = ipv6ToBigInt(normIp);
-    if (v6 !== null) {
-      if (v6 === 1n) return true;
-      if ((v6 >> 32n) === 0xffffn) {
-        return ((v6 & 0xffffffffn) >> 24n) === 127n;
-      }
-    }
+    if (target.v4 !== null) return (target.v4 >> 24n) === 127n;
+    if (target.v6 === 1n) return true;
     return false;
   }
 
   if (normEntry === 'linklocal') {
-    const v4 = ipv4ToBigInt(normIp);
-    if (v4 !== null) return (v4 >> 16n) === 0xa9fen;
-    const v6 = ipv6ToBigInt(normIp);
-    if (v6 !== null) return (v6 >> 118n) === (0xfe80n >> 6n);
+    if (target.v4 !== null) return (target.v4 >> 16n) === 0xa9fen;
+    if (target.v6 !== null) return (target.v6 >> 118n) === (0xfe80n >> 6n);
     return false;
   }
 
   if (normEntry === 'private') {
-    const v4 = ipv4ToBigInt(normIp);
-    if (v4 !== null) {
-      if ((v4 >> 24n) === 10n) return true;
-      if ((v4 >> 20n) === ((172n << 4n) | 1n)) return true;
-      if ((v4 >> 16n) === ((192n << 8n) | 168n)) return true;
+    if (target.v4 !== null) {
+      if ((target.v4 >> 24n) === 10n) return true;
+      if ((target.v4 >> 20n) === ((172n << 4n) | 1n)) return true;
+      if ((target.v4 >> 16n) === ((192n << 8n) | 168n)) return true;
       return false;
     }
-    const v6 = ipv6ToBigInt(normIp);
-    if (v6 !== null) {
-      return (v6 >> 121n) === (0xfc00n >> 9n);
+    if (target.v6 !== null) {
+      return (target.v6 >> 121n) === (0xfc00n >> 9n);
     }
     return false;
   }
 
-  // 2. CIDR matching (e.g. 10.0.0.0/8, 2001:db8::/32)
+  // 2. CIDR matching (e.g. 10.0.1.0/24, 2001:db8::/32)
   if (normEntry.includes('/')) {
     const [rangeIp, prefixStr] = normEntry.split('/');
     const prefixLen = Number(prefixStr);
     if (isNaN(prefixLen) || prefixLen < 0) return false;
 
     if (net.isIPv4(rangeIp) && prefixLen <= 32) {
-      let targetV4 = ipv4ToBigInt(normIp);
-      if (targetV4 === null) {
-        const v6 = ipv6ToBigInt(normIp);
-        if (v6 !== null && (v6 >> 32n) === 0xffffn) {
-          targetV4 = v6 & 0xffffffffn;
-        }
-      }
-      if (targetV4 === null) return false;
+      if (target.v4 === null) return false;
       const baseV4 = ipv4ToBigInt(rangeIp);
       if (baseV4 === null) return false;
       if (prefixLen === 0) return true;
       const shift = BigInt(32 - prefixLen);
-      return (targetV4 >> shift) === (baseV4 >> shift);
+      return (target.v4 >> shift) === (baseV4 >> shift);
     }
 
     if (net.isIPv6(rangeIp) && prefixLen <= 128) {
-      const targetV6 = ipv6ToBigInt(normIp);
+      if (target.v6 === null) return false;
       const baseV6 = ipv6ToBigInt(rangeIp);
-      if (targetV6 === null || baseV6 === null) return false;
+      if (baseV6 === null) return false;
       if (prefixLen === 0) return true;
       const shift = BigInt(128 - prefixLen);
-      return (targetV6 >> shift) === (baseV6 >> shift);
+      return (target.v6 >> shift) === (baseV6 >> shift);
     }
 
     return false;
   }
 
-  // 3. Exact IP match with normalization
+  // 3. Exact IP match with normalization (handles IPv4 and IPv4-mapped IPv6 seamlessly)
   if (normIp.toLowerCase() === normEntry) return true;
 
-  const v4Target = ipv4ToBigInt(normIp);
-  const v4Entry = ipv4ToBigInt(normEntry);
-  if (v4Target !== null && v4Entry !== null) return v4Target === v4Entry;
-
-  const v6Target = ipv6ToBigInt(normIp);
-  const v6Entry = ipv6ToBigInt(normEntry);
-  if (v6Target !== null && v6Entry !== null) return v6Target === v6Entry;
+  const entryVals = parseIpValues(normEntry);
+  if (target.v4 !== null && entryVals.v4 !== null) return target.v4 === entryVals.v4;
+  if (target.v6 !== null && entryVals.v6 !== null) return target.v6 === entryVals.v6;
 
   return false;
 }
@@ -283,11 +284,16 @@ export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
  *      reachable, a caller can connect directly and spoof X-Forwarded-For to evade per-IP limits.
  *    - To cryptographically verify reverse proxy requests or when network ACLs cannot be enforced, operators
  *      can configure TRUSTED_PROXY_SECRET and TRUSTED_PROXY_SECRET_HEADER (e.g. X-Origin-Verify).
- *    - Alternatively, use TRUSTED_PROXIES with specific proxy IP addresses or CIDR subnets (e.g. 10.0.0.0/8).
- * 4. CIDR Subnet Support for TRUSTED_PROXIES:
- *    - Supports IPv4 CIDRs (e.g. 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), IPv6 CIDRs (e.g. 2001:db8::/32),
- *      and aliases ("loopback", "linklocal", "private"). Traverses right-to-left, skipping all proxies within
- *      configured subnets to find the authentic client IP.
+ * 4. CIDR Subnet Support & Threat Model for TRUSTED_PROXIES:
+ *    - Supports specific IPv4 CIDRs (e.g. 10.0.1.0/24), IPv6 CIDRs (e.g. 2001:db8::/32), exact IPs, and aliases ("loopback", "linklocal", "private").
+ *    - Traverses X-Forwarded-For right-to-left, skipping only trusted intermediate proxies in the chain.
+ *    - CRITICAL THREAT MODEL: Operators MUST configure ONLY the specific subnets/IPs where upstream reverse proxies
+ *      actually reside (e.g. 10.0.1.0/24), rather than broad blanket private IP ranges (such as 10.0.0.0/8 or the "private" alias).
+ *      If an internal or VPN client connects through an ingress that appends to incoming X-Forwarded-For headers
+ *      (e.g. AWS Application Load Balancer's default append behavior), trusting all private addresses will cause traversal
+ *      to skip the authentic private client IP and accept an attacker-supplied earlier public IP header, enabling quota evasion.
+ *      To avoid this, either restrict TRUSTED_PROXIES to the actual proxy tier subnets or configure the ingress load balancer
+ *      to drop/replace client-supplied X-Forwarded-For headers.
  * 5. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
  *    rather than lumping all visitors into a single shared loopback bucket (which would exhaust the 5-order
  *    quota across all visitors).
