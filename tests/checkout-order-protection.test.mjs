@@ -19,6 +19,7 @@ import {
   isMailboxVerified,
   getConfirmedUserEmail,
   resolveClientIp,
+  ipMatchesProxyEntry,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
@@ -1121,6 +1122,109 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
       trustedProxies: ['10.0.0.1', '10.0.0.2'],
     });
     assert.equal(resolved, '203.0.113.70', 'Must skip all trusted proxies from right to find authentic client IP');
+  });
+
+  test('REGRESSION [P2]: matches IPv4 and IPv6 CIDR subnets in TRUSTED_PROXIES without mistaking proxy as client', () => {
+    // 1. IPv4 CIDR matching: 10.0.0.0/8 and 172.16.0.0/12
+    // Chain: Spoofed/client (203.0.113.195), Internal proxy 1 (10.42.0.8), Internal proxy 2 (172.24.1.5)
+    const headers = new Map([
+      ['x-forwarded-for', '203.0.113.195, 10.42.0.8, 172.24.1.5'],
+    ]);
+
+    const resolved = resolveClientIp(headers, {
+      trustedProxies: ['10.0.0.0/8', '172.16.0.0/12'],
+    });
+    assert.equal(
+      resolved,
+      '203.0.113.195',
+      'Must match and skip all proxies covered by configured CIDR subnets (10.0.0.0/8 and 172.16.0.0/12)'
+    );
+
+    // 2. IPv6 CIDR matching: 2001:db8:ffff::/48
+    const headersV6 = new Map([
+      ['x-forwarded-for', '2001:db8:85a3::1, 2001:db8:ffff::10'],
+    ]);
+    const resolvedV6 = resolveClientIp(headersV6, {
+      trustedProxies: ['2001:db8:ffff::/48'],
+    });
+    assert.equal(
+      resolvedV6,
+      '2001:db8:85a3::1',
+      'Must match and skip IPv6 proxies covered by configured IPv6 CIDR subnet'
+    );
+
+    // 3. Named alias "private" matches RFC 1918 subnets
+    const headersPrivate = new Map([
+      ['x-forwarded-for', '198.51.100.80, 192.168.1.1'],
+    ]);
+    const resolvedPrivate = resolveClientIp(headersPrivate, {
+      trustedProxies: ['private'],
+    });
+    assert.equal(
+      resolvedPrivate,
+      '198.51.100.80',
+      'Must match and skip proxies in RFC 1918 subnets using "private" alias'
+    );
+  });
+
+  test('REGRESSION [P2]: origin verification secret validates requests arrived through trusted proxy and rejects direct-to-origin spoofing', () => {
+    process.env.TRUSTED_PROXY_COUNT = '1';
+    process.env.TRUSTED_PROXY_SECRET = 'super-secret-origin-token-xyz';
+    process.env.TRUSTED_PROXY_SECRET_HEADER = 'x-origin-verify';
+
+    // 1. Attacker sends direct request to origin with spoofed X-Forwarded-For without the origin secret header
+    const directSpoofedHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.10'],
+    ]);
+    assert.equal(
+      resolveClientIp(directSpoofedHeaders),
+      null,
+      'Direct-to-origin connection without secret header must fail closed to null'
+    );
+
+    // 2. Attacker sends direct request with incorrect secret header
+    const directTamperedHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.10'],
+      ['x-origin-verify', 'invalid-token'],
+    ]);
+    assert.equal(
+      resolveClientIp(directTamperedHeaders),
+      null,
+      'Direct connection with incorrect origin secret must fail closed to null'
+    );
+
+    // 3. Legitimate request forwarded through reverse proxy with genuine origin secret header
+    const proxyVerifiedHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.10'],
+      ['x-origin-verify', 'super-secret-origin-token-xyz'],
+    ]);
+    assert.equal(
+      resolveClientIp(proxyVerifiedHeaders),
+      '203.0.113.10',
+      'Request carrying valid reverse proxy origin secret header must be accepted'
+    );
+  });
+
+  test('ipMatchesProxyEntry helper accurately validates CIDR ranges, aliases, and exact IPs', () => {
+    // IPv4 CIDRs
+    assert.equal(ipMatchesProxyEntry('10.42.0.8', '10.0.0.0/8'), true);
+    assert.equal(ipMatchesProxyEntry('11.0.0.1', '10.0.0.0/8'), false);
+    assert.equal(ipMatchesProxyEntry('172.24.1.1', '172.16.0.0/12'), true);
+    assert.equal(ipMatchesProxyEntry('172.33.0.1', '172.16.0.0/12'), false);
+    assert.equal(ipMatchesProxyEntry('192.168.1.55', '192.168.1.0/24'), true);
+    assert.equal(ipMatchesProxyEntry('192.168.2.55', '192.168.1.0/24'), false);
+
+    // IPv6 CIDRs
+    assert.equal(ipMatchesProxyEntry('2001:db8:1::1', '2001:db8::/32'), true);
+    assert.equal(ipMatchesProxyEntry('2001:db9::1', '2001:db8::/32'), false);
+
+    // Aliases
+    assert.equal(ipMatchesProxyEntry('127.0.0.1', 'loopback'), true);
+    assert.equal(ipMatchesProxyEntry('127.0.0.99', 'loopback'), true);
+    assert.equal(ipMatchesProxyEntry('::1', 'loopback'), true);
+    assert.equal(ipMatchesProxyEntry('169.254.1.1', 'linklocal'), true);
+    assert.equal(ipMatchesProxyEntry('10.1.2.3', 'private'), true);
+    assert.equal(ipMatchesProxyEntry('8.8.8.8', 'private'), false);
   });
 
   test('rejects malformed, injected, or invalid IP addresses in headers', () => {

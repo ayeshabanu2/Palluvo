@@ -100,14 +100,175 @@ export interface TrustedProxyOptions {
   trustedHeader?: string;
   trustedProxies?: string[];
   trustedProxyCount?: number;
+  proxySecret?: string;
+  proxySecretHeader?: string;
   platform?: 'cloudflare' | 'vercel' | 'local';
   allowLoopbackFallback?: boolean;
 }
 
 /**
+ * Converts an IPv4 dotted-decimal string into an unsigned 32-bit BigInt.
+ * Returns null if the string is not a valid IPv4 address.
+ */
+export function ipv4ToBigInt(ip: string): bigint | null {
+  const parts = ip.split('.');
+  if (parts.length !== 4) return null;
+  let res = 0n;
+  for (const part of parts) {
+    if (!/^\d+$/.test(part)) return null;
+    const n = Number(part);
+    if (n < 0 || n > 255) return null;
+    res = (res << 8n) | BigInt(n);
+  }
+  return res;
+}
+
+/**
+ * Converts an IPv6 address string into an unsigned 128-bit BigInt.
+ * Safely expands double-colon "::" notation and handles IPv4-mapped IPv6 (::ffff:192.0.2.1).
+ * Returns null if the string is not a valid IPv6 address.
+ */
+export function ipv6ToBigInt(ip: string): bigint | null {
+  let clean = ip.toLowerCase().trim();
+  if (clean.includes('.')) {
+    const lastColon = clean.lastIndexOf(':');
+    if (lastColon === -1) return null;
+    const ipv4Part = clean.substring(lastColon + 1);
+    const ipv4Big = ipv4ToBigInt(ipv4Part);
+    if (ipv4Big === null) return null;
+    const prefix = clean.substring(0, lastColon + 1);
+    const hex1 = ((ipv4Big >> 16n) & 0xffffn).toString(16);
+    const hex2 = (ipv4Big & 0xffffn).toString(16);
+    clean = `${prefix}${hex1}:${hex2}`;
+  }
+
+  const doubleColonIndex = clean.indexOf('::');
+  if (doubleColonIndex !== -1) {
+    if (clean.indexOf('::', doubleColonIndex + 2) !== -1) return null;
+    const left = clean.substring(0, doubleColonIndex).split(':').filter(Boolean);
+    const right = clean.substring(doubleColonIndex + 2).split(':').filter(Boolean);
+    const missing = 8 - (left.length + right.length);
+    if (missing < 0) return null;
+    const mid = new Array(missing).fill('0');
+    clean = [...left, ...mid, ...right].join(':');
+  }
+
+  const groups = clean.split(':');
+  if (groups.length !== 8) return null;
+
+  let res = 0n;
+  for (const g of groups) {
+    if (!/^[0-9a-f]{1,4}$/.test(g)) return null;
+    res = (res << 16n) | BigInt(parseInt(g, 16));
+  }
+  return res;
+}
+
+/**
+ * Checks whether an IP address matches a trusted proxy entry.
+ * An entry can be:
+ * - A single IPv4 or IPv6 address (e.g. "10.0.0.1", "::1")
+ * - An IPv4 CIDR range (e.g. "10.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16")
+ * - An IPv6 CIDR range (e.g. "2001:db8::/32", "fd00::/8")
+ * - The alias "loopback" (matching 127.0.0.0/8, ::1, and IPv4-mapped loopback)
+ * - The alias "linklocal" (matching 169.254.0.0/16 and fe80::/10)
+ * - The alias "private" (matching RFC 1918 private IPv4 subnets and RFC 4193 ULA fc00::/7)
+ */
+export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
+  const normIp = ip.trim();
+  const normEntry = entry.trim().toLowerCase();
+  if (!normIp || !normEntry) return false;
+
+  // 1. Named aliases
+  if (normEntry === 'loopback') {
+    if (normIp === '127.0.0.1' || normIp === '::1') return true;
+    const v4 = ipv4ToBigInt(normIp);
+    if (v4 !== null) return (v4 >> 24n) === 127n;
+    const v6 = ipv6ToBigInt(normIp);
+    if (v6 !== null) {
+      if (v6 === 1n) return true;
+      if ((v6 >> 32n) === 0xffffn) {
+        return ((v6 & 0xffffffffn) >> 24n) === 127n;
+      }
+    }
+    return false;
+  }
+
+  if (normEntry === 'linklocal') {
+    const v4 = ipv4ToBigInt(normIp);
+    if (v4 !== null) return (v4 >> 16n) === 0xa9fen;
+    const v6 = ipv6ToBigInt(normIp);
+    if (v6 !== null) return (v6 >> 118n) === (0xfe80n >> 6n);
+    return false;
+  }
+
+  if (normEntry === 'private') {
+    const v4 = ipv4ToBigInt(normIp);
+    if (v4 !== null) {
+      if ((v4 >> 24n) === 10n) return true;
+      if ((v4 >> 20n) === ((172n << 4n) | 1n)) return true;
+      if ((v4 >> 16n) === ((192n << 8n) | 168n)) return true;
+      return false;
+    }
+    const v6 = ipv6ToBigInt(normIp);
+    if (v6 !== null) {
+      return (v6 >> 121n) === (0xfc00n >> 9n);
+    }
+    return false;
+  }
+
+  // 2. CIDR matching (e.g. 10.0.0.0/8, 2001:db8::/32)
+  if (normEntry.includes('/')) {
+    const [rangeIp, prefixStr] = normEntry.split('/');
+    const prefixLen = Number(prefixStr);
+    if (isNaN(prefixLen) || prefixLen < 0) return false;
+
+    if (net.isIPv4(rangeIp) && prefixLen <= 32) {
+      let targetV4 = ipv4ToBigInt(normIp);
+      if (targetV4 === null) {
+        const v6 = ipv6ToBigInt(normIp);
+        if (v6 !== null && (v6 >> 32n) === 0xffffn) {
+          targetV4 = v6 & 0xffffffffn;
+        }
+      }
+      if (targetV4 === null) return false;
+      const baseV4 = ipv4ToBigInt(rangeIp);
+      if (baseV4 === null) return false;
+      if (prefixLen === 0) return true;
+      const shift = BigInt(32 - prefixLen);
+      return (targetV4 >> shift) === (baseV4 >> shift);
+    }
+
+    if (net.isIPv6(rangeIp) && prefixLen <= 128) {
+      const targetV6 = ipv6ToBigInt(normIp);
+      const baseV6 = ipv6ToBigInt(rangeIp);
+      if (targetV6 === null || baseV6 === null) return false;
+      if (prefixLen === 0) return true;
+      const shift = BigInt(128 - prefixLen);
+      return (targetV6 >> shift) === (baseV6 >> shift);
+    }
+
+    return false;
+  }
+
+  // 3. Exact IP match with normalization
+  if (normIp.toLowerCase() === normEntry) return true;
+
+  const v4Target = ipv4ToBigInt(normIp);
+  const v4Entry = ipv4ToBigInt(normEntry);
+  if (v4Target !== null && v4Entry !== null) return v4Target === v4Entry;
+
+  const v6Target = ipv6ToBigInt(normIp);
+  const v6Entry = ipv6ToBigInt(normEntry);
+  if (v6Target !== null && v6Entry !== null) return v6Target === v6Entry;
+
+  return false;
+}
+
+/**
  * Derives the trusted client IP for rate limiting from ingress headers or proxy chains.
  *
- * Security Requirements:
+ * Security Requirements & Threat Model:
  * 1. Requires deployment-verified trust configuration. Headers like cf-connecting-ip, x-real-ip,
  *    and x-vercel-forwarded-for are ONLY trusted when explicitly configured via TRUSTED_INGRESS_HEADER,
  *    TRUSTED_PLATFORM, or when running under a verified platform deployment (e.g. Vercel, Cloudflare Pages).
@@ -115,9 +276,19 @@ export interface TrustedProxyOptions {
  *    which can pass through client-provided values. Therefore, True-Client-IP is NOT trusted implicitly
  *    from TRUSTED_PLATFORM alone. It must be explicitly configured via TRUSTED_INGRESS_HEADER after verifying
  *    origin access restrictions and overwrite behavior.
- * 3. For x-forwarded-for, trust is ONLY established when an explicit proxy chain configuration is provided
- *    (TRUSTED_PROXY_COUNT > 0 or TRUSTED_PROXIES list).
- * 4. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
+ * 3. Reverse Proxy Chain & Origin Lockdown:
+ *    - Per AWS ALB and reverse proxy security guidelines, X-Forwarded-For hop counts (TRUSTED_PROXY_COUNT)
+ *      are ONLY trustworthy when the origin server is locked down via ingress ACLs/firewalls (e.g. AWS Security
+ *      Groups or private subnets) to accept connections solely from the proxy tier. If the origin is publicly
+ *      reachable, a caller can connect directly and spoof X-Forwarded-For to evade per-IP limits.
+ *    - To cryptographically verify reverse proxy requests or when network ACLs cannot be enforced, operators
+ *      can configure TRUSTED_PROXY_SECRET and TRUSTED_PROXY_SECRET_HEADER (e.g. X-Origin-Verify).
+ *    - Alternatively, use TRUSTED_PROXIES with specific proxy IP addresses or CIDR subnets (e.g. 10.0.0.0/8).
+ * 4. CIDR Subnet Support for TRUSTED_PROXIES:
+ *    - Supports IPv4 CIDRs (e.g. 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16), IPv6 CIDRs (e.g. 2001:db8::/32),
+ *      and aliases ("loopback", "linklocal", "private"). Traverses right-to-left, skipping all proxies within
+ *      configured subnets to find the authentic client IP.
+ * 5. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
  *    rather than lumping all visitors into a single shared loopback bucket (which would exhaust the 5-order
  *    quota across all visitors).
  */
@@ -125,6 +296,23 @@ export function resolveClientIp(
   headers: HeaderSource,
   options?: TrustedProxyOptions
 ): string | null {
+  // 0. Optional origin verification secret check (protects against direct-to-origin connection spoofing)
+  const proxySecret =
+    options?.proxySecret ||
+    process.env.TRUSTED_PROXY_SECRET;
+  const proxySecretHeader =
+    options?.proxySecretHeader ||
+    process.env.TRUSTED_PROXY_SECRET_HEADER ||
+    'x-origin-verify';
+
+  if (proxySecret) {
+    const incomingSecret = getHeaderValue(headers, proxySecretHeader);
+    if (!incomingSecret || incomingSecret !== proxySecret) {
+      // Direct request without verified reverse proxy secret fails closed
+      return null;
+    }
+  }
+
   // 1. Explicit configured ingress header (e.g. TRUSTED_INGRESS_HEADER="cf-connecting-ip" or "x-real-ip" or "true-client-ip")
   const configuredHeader =
     options?.trustedHeader ||
@@ -185,14 +373,11 @@ export function resolveClientIp(
       const validIps = rawTokens.map(cleanAndValidateIp).filter((ip): ip is string => ip !== null);
 
       if (validIps.length > 0) {
-        // If trusted proxies list configured (e.g. 10.0.0.1, 10.0.0.2, loopback)
+        // If trusted proxies list configured (supports exact IPs, IPv4/IPv6 CIDRs, and named aliases)
         if (trustedProxyList && trustedProxyList.length > 0) {
-          const trustedSet = new Set(trustedProxyList);
           for (let i = validIps.length - 1; i >= 0; i--) {
             const ip = validIps[i];
-            const isTrusted =
-              trustedSet.has(ip.toLowerCase()) ||
-              (trustedSet.has('loopback') && (ip === '127.0.0.1' || ip === '::1'));
+            const isTrusted = trustedProxyList.some((entry) => ipMatchesProxyEntry(ip, entry));
             if (!isTrusted) {
               return ip;
             }
@@ -202,6 +387,7 @@ export function resolveClientIp(
         }
 
         // If trusted proxy count configured
+        // Requires origin network lockdown (ingress ACLs / AWS Security Groups) so only the proxy can reach origin
         if (configuredProxyCount !== undefined && configuredProxyCount > 0) {
           const targetIndex = validIps.length - configuredProxyCount;
           if (targetIndex >= 0 && targetIndex < validIps.length) {
