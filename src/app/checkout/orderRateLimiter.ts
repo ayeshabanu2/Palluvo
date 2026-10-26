@@ -100,7 +100,8 @@ export interface TrustedProxyOptions {
   trustedHeader?: string;
   trustedProxies?: string[];
   trustedProxyCount?: number;
-  platform?: 'cloudflare' | 'vercel' | 'akamai';
+  platform?: 'cloudflare' | 'vercel' | 'local';
+  allowLoopbackFallback?: boolean;
 }
 
 /**
@@ -110,16 +111,21 @@ export interface TrustedProxyOptions {
  * 1. Requires deployment-verified trust configuration. Headers like cf-connecting-ip, x-real-ip,
  *    and x-vercel-forwarded-for are ONLY trusted when explicitly configured via TRUSTED_INGRESS_HEADER,
  *    TRUSTED_PLATFORM, or when running under a verified platform deployment (e.g. Vercel, Cloudflare Pages).
- * 2. For x-forwarded-for, trust is ONLY established when an explicit proxy chain configuration is provided
+ * 2. Akamai Note: Akamai Property Manager permits an origin toggle ("Allow Client to set True-Client-IP")
+ *    which can pass through client-provided values. Therefore, True-Client-IP is NOT trusted implicitly
+ *    from TRUSTED_PLATFORM alone. It must be explicitly configured via TRUSTED_INGRESS_HEADER after verifying
+ *    origin access restrictions and overwrite behavior.
+ * 3. For x-forwarded-for, trust is ONLY established when an explicit proxy chain configuration is provided
  *    (TRUSTED_PROXY_COUNT > 0 or TRUSTED_PROXIES list).
- * 3. Fails closed to '127.0.0.1' under default configuration (or when trust cannot be established),
- *    preventing callers from choosing or rotating their rate-limit IP via spoofed single-value or multi-value headers.
+ * 4. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
+ *    rather than lumping all visitors into a single shared loopback bucket (which would exhaust the 5-order
+ *    quota across all visitors).
  */
 export function resolveClientIp(
   headers: HeaderSource,
   options?: TrustedProxyOptions
-): string {
-  // 1. Explicit configured ingress header (e.g. TRUSTED_INGRESS_HEADER="cf-connecting-ip" or "x-real-ip")
+): string | null {
+  // 1. Explicit configured ingress header (e.g. TRUSTED_INGRESS_HEADER="cf-connecting-ip" or "x-real-ip" or "true-client-ip")
   const configuredHeader =
     options?.trustedHeader ||
     process.env.TRUSTED_INGRESS_HEADER ||
@@ -128,7 +134,7 @@ export function resolveClientIp(
   if (configuredHeader) {
     const raw = getHeaderValue(headers, configuredHeader);
     const valid = cleanAndValidateIp(raw);
-    return valid || '127.0.0.1';
+    return valid || null;
   }
 
   // 2. Documented, guaranteed-overwritten platform headers when deployment platform is verified
@@ -143,18 +149,13 @@ export function resolveClientIp(
     const vercelIp =
       cleanAndValidateIp(getHeaderValue(headers, 'x-vercel-forwarded-for')) ||
       cleanAndValidateIp(getHeaderValue(headers, 'x-real-ip'));
-    return vercelIp || '127.0.0.1';
+    return vercelIp || null;
   }
 
   if (platform === 'cloudflare') {
     // Cloudflare edge strictly overwrites cf-connecting-ip
     const cfIp = cleanAndValidateIp(getHeaderValue(headers, 'cf-connecting-ip'));
-    return cfIp || '127.0.0.1';
-  }
-
-  if (platform === 'akamai') {
-    const akamaiIp = cleanAndValidateIp(getHeaderValue(headers, 'true-client-ip'));
-    return akamaiIp || '127.0.0.1';
+    return cfIp || null;
   }
 
   // 3. Trusted proxy chain parsing of x-forwarded-for (ONLY if proxy trust is explicitly configured)
@@ -197,7 +198,7 @@ export function resolveClientIp(
             }
           }
           // All IPs in chain were trusted proxies: no authentic client IP found
-          return '127.0.0.1';
+          return null;
         }
 
         // If trusted proxy count configured
@@ -206,15 +207,21 @@ export function resolveClientIp(
           if (targetIndex >= 0 && targetIndex < validIps.length) {
             return validIps[targetIndex];
           }
-          return '127.0.0.1';
+          return null;
         }
       }
     }
   }
 
-  // 4. Default configuration: no trusted ingress header, platform, or proxy chain configured.
-  // Fail closed to '127.0.0.1' to prevent caller from choosing or rotating rate-limit IP.
-  return '127.0.0.1';
+  // 4. Opt-in local development loopback fallback only when explicitly enabled
+  if (platform === 'local' || options?.allowLoopbackFallback) {
+    return '127.0.0.1';
+  }
+
+  // 5. Default configuration: no recognized platform or trusted-IP setting.
+  // Fails closed to null so calling actions can reject requests with an actionable error
+  // instead of lumping every customer into a shared loopback quota bucket.
+  return null;
 }
 
 
@@ -729,7 +736,7 @@ export function hashOrderRateIdentifier(identifier: string): string {
 
 export interface OrderRateLimitStore {
   checkAndAcquire(params: {
-    ip: string;
+    ip?: string | null;
     email?: string;
     isEmailVerified?: boolean;
     accountEmail?: string;
@@ -768,7 +775,7 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
   }
 
   async checkAndAcquire(params: {
-    ip: string;
+    ip?: string | null;
     email?: string;
     isEmailVerified?: boolean;
     accountEmail?: string;
@@ -776,6 +783,15 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
     now?: number;
   }): Promise<OrderThrottleResult> {
     try {
+      if (!params.ip || params.ip === 'unknown' || !cleanAndValidateIp(params.ip)) {
+        return {
+          allowed: false,
+          slotAcquired: false,
+          error:
+            'Order processing is temporarily unavailable due to unconfigured network proxy settings. Please configure trusted proxy headers (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).',
+        };
+      }
+
       const supabase = await this.getClient();
       if (!supabase) {
         return {
@@ -784,7 +800,7 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
         };
       }
 
-      const ipKey = params.ip && params.ip !== 'unknown' ? hashOrderRateIdentifier(`ip:${params.ip}`) : '';
+      const ipKey = hashOrderRateIdentifier(`ip:${params.ip}`);
       // Only enforce shared hard rate-limiting on email if ownership is verified.
       // Prevents unverified public/guest submissions from poisoning a victim's email quota.
       const emailKey =
@@ -969,7 +985,7 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
   }
 
   async checkAndAcquire(params: {
-    ip: string;
+    ip?: string | null;
     email?: string;
     isEmailVerified?: boolean;
     accountEmail?: string;
@@ -1017,9 +1033,17 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
 
       // 3. IP Rate Limit & Cooldown Check
       const cleanIp = (params.ip || '').trim();
-      if (cleanIp && cleanIp !== 'unknown') {
-        const ipRecord = state.ipRecords[cleanIp];
-        if (ipRecord) {
+      if (!cleanIp || cleanIp === 'unknown' || !cleanAndValidateIp(cleanIp)) {
+        return {
+          allowed: false,
+          slotAcquired: false,
+          error:
+            'Order processing is temporarily unavailable due to unconfigured network proxy settings. Please configure trusted proxy headers (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).',
+        };
+      }
+
+      const ipRecord = state.ipRecords[cleanIp];
+      if (ipRecord) {
           ipRecord.timestamps = ipRecord.timestamps.filter(
             (t) => now - t < ORDER_RATE_LIMIT_CONFIG.WINDOW_MS
           );
@@ -1038,7 +1062,6 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
             };
           }
         }
-      }
 
       // 4. Authenticated Account Quota & Cooldown Check
       // Applies a separate quota key based on the authenticated user's confirmed email principal,
@@ -1251,13 +1274,21 @@ export function setProductionOrderStore(store: OrderRateLimitStore | null): void
  * Returns slotAcquired = true ONLY when this call genuinely reserved the slot.
  */
 export async function checkAndAcquireOrderSlot(params: {
-  ip: string;
+  ip?: string | null;
   email?: string;
   isEmailVerified?: boolean;
   accountEmail?: string;
   fingerprint?: string;
   now?: number;
 }): Promise<OrderThrottleResult> {
+  if (!params.ip || typeof params.ip !== 'string' || !cleanAndValidateIp(params.ip)) {
+    return {
+      allowed: false,
+      slotAcquired: false,
+      error:
+        'Order processing is temporarily unavailable due to unconfigured network proxy settings. Please configure trusted proxy headers (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).',
+    };
+  }
   return await getProductionOrderStore().checkAndAcquire(params);
 }
 

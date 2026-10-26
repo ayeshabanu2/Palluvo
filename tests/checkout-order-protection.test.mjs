@@ -1053,18 +1053,42 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     assert.equal(resolved, '198.51.100.22', 'x-real-ip must take precedence over spoofed x-forwarded-for');
   });
 
-  test('prioritizes ingress-overwritten true-client-ip and x-vercel-forwarded-for under verified platform', () => {
+  test('prioritizes ingress-overwritten x-vercel-forwarded-for under verified platform', () => {
     const headersVercel = new Map([
       ['x-forwarded-for', '10.1.2.3'],
       ['x-vercel-forwarded-for', '198.51.100.33'],
     ]);
     assert.equal(resolveClientIp(headersVercel, { platform: 'vercel' }), '198.51.100.33');
+  });
 
+  test('REGRESSION [P2]: does not treat Akamai True-Client-IP as verified from platform flag alone', () => {
+    // Akamai Property Manager permits pass-through of client-supplied True-Client-IP headers.
+    // Setting TRUSTED_PLATFORM=akamai or { platform: 'akamai' } must NOT trust the header without explicit ingress header configuration.
     const headersAkamai = new Map([
       ['x-forwarded-for', '10.1.2.3'],
       ['true-client-ip', '198.51.100.44'],
     ]);
-    assert.equal(resolveClientIp(headersAkamai, { platform: 'akamai' }), '198.51.100.44');
+    assert.equal(
+      resolveClientIp(headersAkamai, { platform: 'akamai' }),
+      null,
+      'True-Client-IP must NOT be trusted implicitly from platform flag alone'
+    );
+
+    // Caller rotating true-client-ip without explicit TRUSTED_INGRESS_HEADER cannot evade rate limit
+    process.env.TRUSTED_PLATFORM = 'akamai';
+    assert.equal(
+      resolveClientIp(headersAkamai),
+      null,
+      'Environment TRUSTED_PLATFORM=akamai must not trust caller-supplied true-client-ip'
+    );
+
+    // But when TRUSTED_INGRESS_HEADER="true-client-ip" IS explicitly configured (after operator verified origin overwrite):
+    process.env.TRUSTED_INGRESS_HEADER = 'true-client-ip';
+    assert.equal(
+      resolveClientIp(headersAkamai),
+      '198.51.100.44',
+      'Explicitly configured TRUSTED_INGRESS_HEADER must be respected'
+    );
   });
 
   test('respects explicitly configured TRUSTED_INGRESS_HEADER', () => {
@@ -1104,7 +1128,7 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     const headersJunk = new Map([
       ['x-forwarded-for', '<script>alert(1)</script>, 999.999.999.999'],
     ]);
-    assert.equal(resolveClientIp(headersJunk), '127.0.0.1');
+    assert.equal(resolveClientIp(headersJunk), null);
   });
 
   test('REGRESSION [P2]: rotating spoofed x-forwarded-for leftmost IP does NOT bypass per-IP rate limit when behind proxy', async () => {
@@ -1149,7 +1173,7 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     assert.match(blockedRes.error, /Too many orders have been placed from your connection/);
   });
 
-  test('REGRESSION [P2]: under default configuration, spoofed single-value x-forwarded-for fails closed and cannot choose rate-limit identity', async () => {
+  test('REGRESSION [P2]: under default unconfigured deployment, fails closed without synthetic loopback bucket', async () => {
     // Under default configuration (no TRUSTED_INGRESS_HEADER, no TRUSTED_PROXY_COUNT, no TRUSTED_PROXIES, no platform env):
     delete process.env.TRUSTED_INGRESS_HEADER;
     delete process.env.TRUSTED_CLIENT_IP_HEADER;
@@ -1162,71 +1186,57 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     delete process.env.CLOUDFLARE;
     delete process.env.TRUSTED_PLATFORM;
 
-    // 1. Single-value spoofed x-forwarded-for fails closed to 127.0.0.1
-    const headersSingleXff = new Map([
-      ['x-forwarded-for', '203.0.113.195'],
-    ]);
+    // 1. Unverified headers resolve to null rather than synthetic '127.0.0.1'
+    const headersSingleXff = new Map([['x-forwarded-for', '203.0.113.195']]);
     assert.equal(
       resolveClientIp(headersSingleXff),
-      '127.0.0.1',
-      'Untrusted single-value x-forwarded-for must fail closed under default configuration'
+      null,
+      'Untrusted single-value x-forwarded-for must resolve to null under unconfigured deployment'
     );
 
-    // 2. Unconfigured cf-connecting-ip or x-real-ip also fails closed to 127.0.0.1
-    const headersUnverifiedCf = new Map([
-      ['cf-connecting-ip', '203.0.113.195'],
-    ]);
+    const headersUnverifiedCf = new Map([['cf-connecting-ip', '203.0.113.195']]);
     assert.equal(
       resolveClientIp(headersUnverifiedCf),
-      '127.0.0.1',
-      'Unconfigured cf-connecting-ip must not be trusted under default configuration'
+      null,
+      'Unconfigured cf-connecting-ip must resolve to null'
     );
 
-    const headersUnverifiedRealIp = new Map([
-      ['x-real-ip', '203.0.113.195'],
-    ]);
+    const headersUnverifiedRealIp = new Map([['x-real-ip', '203.0.113.195']]);
     assert.equal(
       resolveClientIp(headersUnverifiedRealIp),
-      '127.0.0.1',
-      'Unconfigured x-real-ip must not be trusted under default configuration'
+      null,
+      'Unconfigured x-real-ip must resolve to null'
     );
 
-    // 3. Rate-limiter integration: attacker attempts to bypass per-IP limits by rotating single-value x-forwarded-for
+    const headersUnverifiedAkamai = new Map([['true-client-ip', '203.0.113.195']]);
+    assert.equal(
+      resolveClientIp(headersUnverifiedAkamai),
+      null,
+      'Unconfigured true-client-ip must resolve to null'
+    );
+
+    // 2. Order rate limiter rejects requests when client IP cannot be verified,
+    // providing an actionable misconfiguration error rather than exhausting a shared synthetic loopback bucket
     await resetOrderRateLimiter();
-    const baseNow = Date.now();
 
-    for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP; i++) {
-      const spoofedHeaders = new Map([
-        ['x-forwarded-for', `198.51.100.${100 + i}`],
-      ]);
-      const resolvedIp = resolveClientIp(spoofedHeaders);
-      assert.equal(resolvedIp, '127.0.0.1', 'All unverified single-value x-forwarded-for must fail closed to 127.0.0.1');
-
-      const res = await checkAndAcquireOrderSlot({
-        ip: resolvedIp,
-        email: `guest.single.${i}@example.com`,
-        isEmailVerified: false,
-        now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
-      });
-      assert.equal(res.allowed, true, `Attempt ${i + 1} counted under safe fallback IP`);
-    }
-
-    // 6th attempt with another new single-value spoofed IP:
-    const spoofedHeaders6 = new Map([
-      ['x-forwarded-for', '198.51.100.200'],
-    ]);
-    const resolvedIp6 = resolveClientIp(spoofedHeaders6);
-    assert.equal(resolvedIp6, '127.0.0.1');
-
-    const blockedRes = await checkAndAcquireOrderSlot({
-      ip: resolvedIp6,
-      email: 'guest.single.blocked@example.com',
+    const res = await checkAndAcquireOrderSlot({
+      ip: resolveClientIp(headersSingleXff),
+      email: 'guest.unconfigured@example.com',
       isEmailVerified: false,
-      now: baseNow + 6 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
     });
 
-    assert.equal(blockedRes.allowed, false, 'Caller rotating single-value x-forwarded-for must be blocked by rate limiter');
-    assert.match(blockedRes.error, /Too many orders have been placed from your connection/);
+    assert.equal(res.allowed, false, 'Must reject unconfigured order request');
+    assert.match(
+      res.error,
+      /temporarily unavailable due to unconfigured network proxy settings/i,
+      'Must return actionable proxy configuration error'
+    );
+  });
+
+  test('supports opt-in local development loopback fallback', () => {
+    const emptyHeaders = new Map();
+    assert.equal(resolveClientIp(emptyHeaders, { allowLoopbackFallback: true }), '127.0.0.1');
+    assert.equal(resolveClientIp(emptyHeaders, { platform: 'local' }), '127.0.0.1');
   });
 });
 

@@ -67,13 +67,13 @@ export interface PaymentSessionResult {
   error?: string;
 }
 
-async function getClientIp(): Promise<string> {
+async function getClientIp(): Promise<string | null> {
   try {
     const headerList = await headers();
     return resolveClientIp(headerList);
   } catch {
     // headers() might not be available in non-request contexts or mock tests
-    return '127.0.0.1';
+    return null;
   }
 }
 
@@ -257,6 +257,17 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
     // 7. Server-side Rate Limiting & Duplicate Request Idempotency Guard (especially for public COD creation)
     const clientIp = await getClientIp();
+    if (!clientIp) {
+      console.error(
+        '[Checkout] Order processing rejected: No trusted client IP could be derived. Deployment must configure trusted proxy settings (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).'
+      );
+      return {
+        success: false,
+        error:
+          'Order processing is temporarily unavailable due to unconfigured network proxy settings. Please configure trusted proxy headers (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).',
+      };
+    }
+
     fingerprint = computeOrderFingerprint(validatedCustomer, validatedItems, trustedGrandTotal, paymentMethod);
 
     const throttleResult = await checkAndAcquireOrderSlot({

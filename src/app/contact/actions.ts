@@ -26,15 +26,14 @@ export interface ContactInquiryResult {
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-async function getClientIp(): Promise<string> {
+async function getClientIp(): Promise<string | null> {
   try {
     const headerList = await headers();
-    const ip = resolveClientIp(headerList);
-    return ip || 'unknown';
+    return resolveClientIp(headerList);
   } catch {
     // headers() might not be available in non-request contexts or mock tests
+    return null;
   }
-  return 'unknown';
 }
 
 export async function submitContactInquiry(input: ContactInquiryInput): Promise<ContactInquiryResult> {
@@ -80,6 +79,17 @@ export async function submitContactInquiry(input: ContactInquiryInput): Promise<
     // In multi-instance serverless environments (Vercel), distributed admission is authoritatively
     // enforced downstream across all instances by the Supabase rate limit RPC.
     const clientIp = await getClientIp();
+    if (!clientIp) {
+      console.error(
+        '[Contact] Inquiry rejected: No trusted client IP could be derived. Deployment must configure trusted proxy settings (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).'
+      );
+      return {
+        success: false,
+        error:
+          'Contact inquiry is temporarily unavailable due to a server network configuration issue. Please connect with us directly via WhatsApp or phone.',
+      };
+    }
+
     const admissionCheck = checkAdmissionLimit({ ip: clientIp });
     if (!admissionCheck.allowed) {
       return { success: false, error: admissionCheck.error };
