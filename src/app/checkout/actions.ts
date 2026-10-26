@@ -17,6 +17,8 @@ import {
   computeOrderFingerprint,
   isCanonicalItemMultisetEqual,
   isMailboxVerified,
+  getConfirmedUserEmail,
+  resolveClientIp,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   validateCustomerDetails,
@@ -68,18 +70,11 @@ export interface PaymentSessionResult {
 async function getClientIp(): Promise<string> {
   try {
     const headerList = await headers();
-    const forwardedFor = headerList.get('x-forwarded-for');
-    if (forwardedFor) {
-      return forwardedFor.split(',')[0].trim();
-    }
-    const realIp = headerList.get('x-real-ip') || headerList.get('cf-connecting-ip');
-    if (realIp) {
-      return realIp.trim();
-    }
+    return resolveClientIp(headerList);
   } catch {
     // headers() might not be available in non-request contexts or mock tests
+    return '127.0.0.1';
   }
-  return '127.0.0.1';
 }
 
 /**
@@ -248,11 +243,13 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
     // 6. Check authenticated user status to gate email quota against unverified guest spoofing
     let user: any = null;
     let isEmailVerified = false;
+    let confirmedAccountEmail: string | undefined = undefined;
     let supabaseClient: any = null;
     try {
       supabaseClient = await createClient();
       const authResponse = await supabaseClient.auth.getUser();
       user = authResponse?.data?.user || null;
+      confirmedAccountEmail = getConfirmedUserEmail(user) || undefined;
       isEmailVerified = isMailboxVerified(user, validatedCustomer.email);
     } catch {
       // In offline/test environments without Supabase client, user remains null (unverified)
@@ -266,6 +263,7 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       ip: clientIp,
       email: validatedCustomer.email,
       isEmailVerified,
+      accountEmail: confirmedAccountEmail,
       fingerprint,
     });
 

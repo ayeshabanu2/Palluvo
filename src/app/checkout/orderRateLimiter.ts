@@ -2,6 +2,8 @@ import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import net from 'node:net';
+
 /**
  * Checks whether the deployment requires and enforces confirmed email verification in Supabase Auth.
  * Supabase allows projects to have "Confirm email" disabled, where any caller can register an address
@@ -18,6 +20,29 @@ export function isEmailConfirmationEnforced(): boolean {
 }
 
 /**
+ * Returns the normalized confirmed email address of the authenticated user if email confirmation is enforced
+ * and the user has a valid confirmed email timestamp. Otherwise returns null.
+ */
+export function getConfirmedUserEmail(
+  user: { email?: string; email_confirmed_at?: string | null } | null | undefined
+): string | null {
+  if (!isEmailConfirmationEnforced()) {
+    return null;
+  }
+  if (!user || !user.email) {
+    return null;
+  }
+  if (
+    !user.email_confirmed_at ||
+    typeof user.email_confirmed_at !== 'string' ||
+    user.email_confirmed_at.trim().length === 0
+  ) {
+    return null;
+  }
+  return user.email.toLowerCase().trim();
+}
+
+/**
  * Strict mailbox verification requires:
  * 1. Confirmed-email configuration is enforced as a deployment requirement (`isEmailConfirmationEnforced() === true`).
  * 2. Authenticated user object exists with a valid email.
@@ -28,21 +53,141 @@ export function isMailboxVerified(
   user: { email?: string; email_confirmed_at?: string | null } | null | undefined,
   submittedEmail: string
 ): boolean {
-  if (!isEmailConfirmationEnforced()) {
+  const confirmed = getConfirmedUserEmail(user);
+  if (!confirmed) {
     return false;
   }
-  if (!user || !user.email) {
-    return false;
-  }
-  if (
-    !user.email_confirmed_at ||
-    typeof user.email_confirmed_at !== 'string' ||
-    user.email_confirmed_at.trim().length === 0
-  ) {
-    return false;
-  }
-  return (user.email || '').toLowerCase().trim() === (submittedEmail || '').toLowerCase().trim();
+  return confirmed === (submittedEmail || '').toLowerCase().trim();
 }
+
+export type HeaderSource =
+  | { get(name: string): string | null }
+  | Record<string, string | string[] | undefined>
+  | null
+  | undefined;
+
+function getHeaderValue(headers: HeaderSource, name: string): string | null {
+  if (!headers) return null;
+  if (typeof (headers as any).get === 'function') {
+    return (headers as any).get(name) || (headers as any).get(name.toLowerCase()) || null;
+  }
+  const lowerName = name.toLowerCase();
+  for (const [k, v] of Object.entries(headers)) {
+    if (k.toLowerCase() === lowerName) {
+      if (Array.isArray(v)) return v[0] || null;
+      return typeof v === 'string' ? v : null;
+    }
+  }
+  return null;
+}
+
+function cleanAndValidateIp(raw: string | null | undefined): string | null {
+  if (!raw || typeof raw !== 'string') return null;
+  let trimmed = raw.trim();
+  if (trimmed.startsWith('[') && trimmed.includes(']')) {
+    const end = trimmed.indexOf(']');
+    trimmed = trimmed.substring(1, end);
+  } else if (/^\d{1,3}(\.\d{1,3}){3}:\d+$/.test(trimmed)) {
+    trimmed = trimmed.split(':')[0];
+  }
+  if (net.isIP(trimmed) !== 0) {
+    return trimmed;
+  }
+  return null;
+}
+
+/**
+ * Derives the trusted client IP for rate limiting from ingress headers or proxy chains.
+ *
+ * 1. Prioritizes ingress-overwritten headers (cf-connecting-ip, true-client-ip, x-real-ip, x-vercel-forwarded-for).
+ *    These headers are guaranteed to be set/overwritten by the ingress edge proxy and cannot be spoofed by callers.
+ * 2. If parsing x-forwarded-for, avoids taking the caller-controlled leftmost value.
+ *    Parses the proxy chain from right to left using configured trusted proxies (TRUSTED_PROXIES)
+ *    or trusted proxy count (TRUSTED_PROXY_COUNT, defaulting to 1 when behind a reverse proxy).
+ */
+export function resolveClientIp(
+  headers: HeaderSource,
+  options?: {
+    trustedHeader?: string;
+    trustedProxies?: string[];
+    trustedProxyCount?: number;
+  }
+): string {
+  // 1. Explicit configured ingress header
+  const configuredHeader =
+    options?.trustedHeader ||
+    process.env.TRUSTED_INGRESS_HEADER ||
+    process.env.TRUSTED_CLIENT_IP_HEADER;
+  if (configuredHeader) {
+    const raw = getHeaderValue(headers, configuredHeader);
+    const valid = cleanAndValidateIp(raw);
+    if (valid) return valid;
+  }
+
+  // 2. Edge / ingress-overwritten headers guaranteed by trusted infrastructure
+  const guaranteedIngressHeaders = [
+    'cf-connecting-ip',
+    'true-client-ip',
+    'x-real-ip',
+    'x-vercel-forwarded-for',
+  ];
+  for (const headerName of guaranteedIngressHeaders) {
+    const raw = getHeaderValue(headers, headerName);
+    const valid = cleanAndValidateIp(raw);
+    if (valid) return valid;
+  }
+
+  // 3. Trusted proxy chain parsing of x-forwarded-for
+  const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
+  if (xForwardedFor) {
+    const rawTokens = xForwardedFor.split(',').map((s) => s.trim()).filter(Boolean);
+    const validIps = rawTokens.map(cleanAndValidateIp).filter((ip): ip is string => ip !== null);
+
+    if (validIps.length > 0) {
+      // If trusted proxies list configured (e.g. 10.0.0.1, 127.0.0.1, loopback)
+      const trustedProxyList =
+        options?.trustedProxies ||
+        (process.env.TRUSTED_PROXIES || process.env.TRUSTED_PROXY_IPS)
+          ?.split(',')
+          .map((s) => s.trim().toLowerCase())
+          .filter(Boolean);
+
+      if (trustedProxyList && trustedProxyList.length > 0) {
+        const trustedSet = new Set(trustedProxyList);
+        for (let i = validIps.length - 1; i >= 0; i--) {
+          const ip = validIps[i];
+          const isTrusted =
+            trustedSet.has(ip.toLowerCase()) ||
+            (trustedSet.has('loopback') && (ip === '127.0.0.1' || ip === '::1'));
+          if (!isTrusted) {
+            return ip;
+          }
+        }
+        return validIps[0];
+      }
+
+      // If trusted proxy count configured or default
+      const envProxyCount = process.env.TRUSTED_PROXY_COUNT;
+      const count =
+        options?.trustedProxyCount !== undefined
+          ? options.trustedProxyCount
+          : envProxyCount !== undefined
+          ? parseInt(envProxyCount, 10)
+          : 1;
+
+      if (count > 0) {
+        const targetIndex = validIps.length - count;
+        if (targetIndex >= 0 && targetIndex < validIps.length) {
+          return validIps[targetIndex];
+        }
+        return validIps[0];
+      }
+    }
+  }
+
+  return '127.0.0.1';
+}
+
 
 export const CHECKOUT_FIELD_LIMITS = {
   MAX_ITEMS: 20,
@@ -558,6 +703,7 @@ export interface OrderRateLimitStore {
     ip: string;
     email?: string;
     isEmailVerified?: boolean;
+    accountEmail?: string;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult>;
@@ -596,6 +742,7 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
     ip: string;
     email?: string;
     isEmailVerified?: boolean;
+    accountEmail?: string;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult> {
@@ -613,10 +760,14 @@ export class DatabaseRpcOrderRateLimitStore implements OrderRateLimitStore {
       // Prevents unverified public/guest submissions from poisoning a victim's email quota.
       const emailKey =
         params.email && params.isEmailVerified ? hashOrderRateIdentifier(`email:${params.email}`) : '';
+      // Separate quota key based on authenticated user's confirmed email principal
+      const accountKey =
+        params.accountEmail ? hashOrderRateIdentifier(`account:${params.accountEmail}`) : '';
 
       const { data, error } = await supabase.rpc('acquire_order_slot', {
         p_ip_key: ipKey,
         p_email_key: emailKey,
+        p_account_key: accountKey,
         p_fingerprint: params.fingerprint || null,
         p_window_ms: ORDER_RATE_LIMIT_CONFIG.WINDOW_MS,
         p_max_ip: ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP,
@@ -701,6 +852,7 @@ interface PersistentSharedState {
   globalTimestamps: number[];
   ipRecords: Record<string, StoredRateRecord>;
   emailRecords: Record<string, StoredRateRecord>;
+  accountRecords: Record<string, StoredRateRecord>;
   idempotencyRecords: Record<string, StoredIdempotencyRecord>;
 }
 
@@ -766,6 +918,7 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
           globalTimestamps: Array.isArray(parsed?.globalTimestamps) ? parsed.globalTimestamps : [],
           ipRecords: parsed?.ipRecords && typeof parsed.ipRecords === 'object' ? parsed.ipRecords : {},
           emailRecords: parsed?.emailRecords && typeof parsed.emailRecords === 'object' ? parsed.emailRecords : {},
+          accountRecords: parsed?.accountRecords && typeof parsed.accountRecords === 'object' ? parsed.accountRecords : {},
           idempotencyRecords:
             parsed?.idempotencyRecords && typeof parsed.idempotencyRecords === 'object' ? parsed.idempotencyRecords : {},
         };
@@ -775,6 +928,7 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
       globalTimestamps: [],
       ipRecords: {},
       emailRecords: {},
+      accountRecords: {},
       idempotencyRecords: {},
     };
   }
@@ -789,6 +943,7 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
     ip: string;
     email?: string;
     isEmailVerified?: boolean;
+    accountEmail?: string;
     fingerprint?: string;
     now?: number;
   }): Promise<OrderThrottleResult> {
@@ -856,12 +1011,39 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
         }
       }
 
-      // 4. Email Rate Limit & Cooldown Check
+      // 4. Authenticated Account Quota & Cooldown Check
+      // Applies a separate quota key based on the authenticated user's confirmed email principal,
+      // preventing authenticated users from bypassing the quota by varying guest contact emails.
+      const cleanAccountEmail = params.accountEmail ? params.accountEmail.toLowerCase().trim() : '';
+      if (cleanAccountEmail) {
+        const accountRecord = state.accountRecords[cleanAccountEmail];
+        if (accountRecord) {
+          accountRecord.timestamps = accountRecord.timestamps.filter(
+            (t) => now - t < ORDER_RATE_LIMIT_CONFIG.WINDOW_MS
+          );
+          if (now - accountRecord.lastUpdated < ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS) {
+            return {
+              allowed: false,
+              slotAcquired: false,
+              error: 'Please wait a few seconds before placing another order.',
+            };
+          }
+          if (accountRecord.timestamps.length >= ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL) {
+            return {
+              allowed: false,
+              slotAcquired: false,
+              error: 'Maximum order placement attempts reached for this account. Please try again in 10 minutes.',
+            };
+          }
+        }
+      }
+
+      // 5. Contact Email Rate Limit & Cooldown Check
       // Only enforce shared hard rate-limiting on email if ownership is verified.
       // Prevents unverified public/guest submissions from poisoning a victim's email quota.
       const cleanEmail =
         params.email && params.isEmailVerified ? params.email.toLowerCase().trim() : '';
-      if (cleanEmail) {
+      if (cleanEmail && cleanEmail !== cleanAccountEmail) {
         const emailRecord = state.emailRecords[cleanEmail];
         if (emailRecord) {
           emailRecord.timestamps = emailRecord.timestamps.filter(
@@ -884,7 +1066,7 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
         }
       }
 
-      // 5. Reserve slot atomically
+      // 6. Reserve slot atomically
       state.globalTimestamps.push(now);
 
       if (cleanIp && cleanIp !== 'unknown') {
@@ -893,6 +1075,14 @@ export class CrossProcessOrderRateLimitStore implements OrderRateLimitStore {
         rec.timestamps.push(now);
         rec.lastUpdated = now;
         state.ipRecords[cleanIp] = rec;
+      }
+
+      if (cleanAccountEmail) {
+        const rec = state.accountRecords[cleanAccountEmail] || { timestamps: [], lastUpdated: 0 };
+        rec.timestamps = (rec.timestamps || []).filter((t) => now - t < ORDER_RATE_LIMIT_CONFIG.WINDOW_MS);
+        rec.timestamps.push(now);
+        rec.lastUpdated = now;
+        state.accountRecords[cleanAccountEmail] = rec;
       }
 
       if (cleanEmail) {
@@ -1035,6 +1225,7 @@ export async function checkAndAcquireOrderSlot(params: {
   ip: string;
   email?: string;
   isEmailVerified?: boolean;
+  accountEmail?: string;
   fingerprint?: string;
   now?: number;
 }): Promise<OrderThrottleResult> {

@@ -17,6 +17,8 @@ import {
   createProductionOrderRateLimitStore,
   isCanonicalItemMultisetEqual,
   isMailboxVerified,
+  getConfirmedUserEmail,
+  resolveClientIp,
   checkAndAcquireOrderSlot,
   finalizeOrderSlot,
   resetOrderRateLimiter,
@@ -1021,4 +1023,295 @@ describe('Production Fail-Closed Store Security Tests [P1]', () => {
     assert.equal(store instanceof MisconfiguredOrderRateLimitStore, true);
   });
 });
+
+describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+  });
+
+  test('prioritizes ingress-overwritten cf-connecting-ip over attacker-supplied x-forwarded-for', () => {
+    const headers = new Map([
+      ['x-forwarded-for', '10.0.0.99, 10.0.0.100'],
+      ['cf-connecting-ip', '203.0.113.15'],
+    ]);
+
+    const resolved = resolveClientIp(headers);
+    assert.equal(resolved, '203.0.113.15', 'cf-connecting-ip must take precedence over spoofed x-forwarded-for');
+  });
+
+  test('prioritizes ingress-overwritten x-real-ip over attacker-supplied x-forwarded-for', () => {
+    const headers = new Map([
+      ['x-forwarded-for', '192.168.1.50'],
+      ['x-real-ip', '198.51.100.22'],
+    ]);
+
+    const resolved = resolveClientIp(headers);
+    assert.equal(resolved, '198.51.100.22', 'x-real-ip must take precedence over spoofed x-forwarded-for');
+  });
+
+  test('prioritizes ingress-overwritten true-client-ip and x-vercel-forwarded-for', () => {
+    const headersVercel = new Map([
+      ['x-forwarded-for', '10.1.2.3'],
+      ['x-vercel-forwarded-for', '198.51.100.33'],
+    ]);
+    assert.equal(resolveClientIp(headersVercel), '198.51.100.33');
+
+    const headersAkamai = new Map([
+      ['x-forwarded-for', '10.1.2.3'],
+      ['true-client-ip', '198.51.100.44'],
+    ]);
+    assert.equal(resolveClientIp(headersAkamai), '198.51.100.44');
+  });
+
+  test('respects explicitly configured TRUSTED_INGRESS_HEADER', () => {
+    process.env.TRUSTED_INGRESS_HEADER = 'x-custom-edge-ip';
+    const headers = new Map([
+      ['x-forwarded-for', '10.0.0.1'],
+      ['x-custom-edge-ip', '203.0.113.88'],
+    ]);
+
+    assert.equal(resolveClientIp(headers), '203.0.113.88');
+  });
+
+  test('parses proxy chain from right to left avoiding attacker-controlled leftmost x-forwarded-for', () => {
+    // Attacker sent "1.2.3.4" (leftmost spoof). Trusted reverse proxy appended "203.0.113.60".
+    const headers = new Map([
+      ['x-forwarded-for', '1.2.3.4, 203.0.113.60'],
+    ]);
+
+    const resolved = resolveClientIp(headers, { trustedProxyCount: 1 });
+    assert.equal(resolved, '203.0.113.60', 'Default trusted proxy count 1 must select authentic connecting client IP');
+  });
+
+  test('correctly traverses configured trusted proxy list in x-forwarded-for', () => {
+    // Chain: Spoofed IP (1.2.3.4), Client IP (203.0.113.70), Intermediate Proxy (10.0.0.2), Ingress Proxy (10.0.0.1)
+    const headers = new Map([
+      ['x-forwarded-for', '1.2.3.4, 203.0.113.70, 10.0.0.2, 10.0.0.1'],
+    ]);
+
+    const resolved = resolveClientIp(headers, {
+      trustedProxies: ['10.0.0.1', '10.0.0.2'],
+    });
+    assert.equal(resolved, '203.0.113.70', 'Must skip all trusted proxies from right to find authentic client IP');
+  });
+
+  test('rejects malformed, injected, or invalid IP addresses in headers', () => {
+    const headersJunk = new Map([
+      ['x-forwarded-for', '<script>alert(1)</script>, 999.999.999.999'],
+    ]);
+    assert.equal(resolveClientIp(headersJunk), '127.0.0.1');
+  });
+
+  test('REGRESSION [P2]: rotating spoofed x-forwarded-for leftmost IP does NOT bypass per-IP rate limit when behind proxy', async () => {
+    await resetOrderRateLimiter();
+    const baseNow = Date.now();
+    const authenticProxyIp = '203.0.113.95';
+
+    // Attacker rotates leftmost IP on every request, attempting to bypass the 5-orders-per-IP limit
+    for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_IP; i++) {
+      // Simulate ingress header resolution
+      const headers = new Map([
+        ['x-forwarded-for', `10.0.0.${i + 1}, ${authenticProxyIp}`],
+      ]);
+      const derivedIp = resolveClientIp(headers);
+      assert.equal(derivedIp, authenticProxyIp, 'Derived IP must stably match the authentic client IP');
+
+      const res = await checkAndAcquireOrderSlot({
+        ip: derivedIp,
+        email: `guest.${i}@example.com`,
+        isEmailVerified: false,
+        now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+      });
+      assert.equal(res.allowed, true, `Attempt ${i + 1} succeeded`);
+    }
+
+    // 6th attempt with another rotated spoofed IP:
+    const headersRotated = new Map([
+      ['x-forwarded-for', `10.0.0.99, ${authenticProxyIp}`],
+    ]);
+    const derivedRotatedIp = resolveClientIp(headersRotated);
+    assert.equal(derivedRotatedIp, authenticProxyIp);
+
+    const blockedRes = await checkAndAcquireOrderSlot({
+      ip: derivedRotatedIp,
+      email: 'guest.blocked@example.com',
+      isEmailVerified: false,
+      now: baseNow + 6 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+
+    assert.equal(blockedRes.allowed, false, 'Attacker must be blocked despite rotating leftmost spoofed IP');
+    assert.match(blockedRes.error, /Too many orders have been placed from your connection/);
+  });
+});
+
+describe('Authenticated Account Quota Protection with Alternate Contact Email [P2]', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(async () => {
+    process.env = { ...originalEnv };
+    process.env.REQUIRE_EMAIL_CONFIRMATION = 'true';
+    setProductionOrderStore(null);
+    await resetOrderRateLimiter();
+  });
+
+  test('getConfirmedUserEmail correctly identifies confirmed account email', () => {
+    assert.equal(getConfirmedUserEmail(null), null);
+    assert.equal(getConfirmedUserEmail({ email: 'user@example.com' }), null);
+    assert.equal(getConfirmedUserEmail({ email: 'user@example.com', email_confirmed_at: null }), null);
+    assert.equal(getConfirmedUserEmail({ email: 'user@example.com', email_confirmed_at: '' }), null);
+    assert.equal(
+      getConfirmedUserEmail({ email: '  ALICE@EXAMPLE.COM  ', email_confirmed_at: '2026-01-01T00:00:00Z' }),
+      'alice@example.com'
+    );
+  });
+
+  test('REGRESSION [P2]: authenticated user cannot bypass account quota by rotating recipient/contact emails', async () => {
+    const baseNow = Date.now();
+    const authenticatedUser = {
+      email: 'alice.shopper@example.com',
+      email_confirmed_at: '2026-01-01T00:00:00Z',
+    };
+    const confirmedAccountEmail = getConfirmedUserEmail(authenticatedUser);
+    assert.equal(confirmedAccountEmail, 'alice.shopper@example.com');
+
+    // Alice places 3 orders with 3 different recipient/contact emails (e.g. shipping gifts)
+    const recipientEmails = ['bob@example.com', 'carol@example.com', 'dave@example.com'];
+
+    for (let i = 0; i < ORDER_RATE_LIMIT_CONFIG.MAX_ORDERS_PER_EMAIL; i++) {
+      const recipient = recipientEmails[i];
+      // Recipient email does not match Alice's email, so isEmailVerified is false for recipient
+      assert.equal(isMailboxVerified(authenticatedUser, recipient), false);
+
+      const res = await checkAndAcquireOrderSlot({
+        ip: `198.51.100.${10 + i}`, // distinct IPs
+        email: recipient,
+        isEmailVerified: false,
+        accountEmail: confirmedAccountEmail,
+        now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+      });
+
+      assert.equal(res.allowed, true, `Alice's order ${i + 1} with alternate email ${recipient} should be allowed`);
+      assert.equal(res.slotAcquired, true);
+    }
+
+    // 4th order: Alice attempts another order with a 4th recipient email
+    const fourthRes = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.99',
+      email: 'eve@example.com',
+      isEmailVerified: false,
+      accountEmail: confirmedAccountEmail,
+      now: baseNow + 4 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+
+    assert.equal(fourthRes.allowed, false, '4th order must be blocked by account quota');
+    assert.equal(fourthRes.slotAcquired, false);
+    assert.match(fourthRes.error, /Maximum order placement attempts reached for this account/);
+
+    // 5th order: Alice also cannot order using her own email
+    const ownEmailRes = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.99',
+      email: confirmedAccountEmail,
+      isEmailVerified: true,
+      accountEmail: confirmedAccountEmail,
+      now: baseNow + 5 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+
+    assert.equal(ownEmailRes.allowed, false, 'Alice cannot place further orders under her own email either');
+    assert.match(ownEmailRes.error, /Maximum order placement attempts reached for this account/);
+  });
+
+  test('REGRESSION [P2]: recipient emails used in alternate-contact orders are NOT quota-poisoned', async () => {
+    const baseNow = Date.now();
+    const aliceUser = {
+      email: 'alice.shopper@example.com',
+      email_confirmed_at: '2026-01-01T00:00:00Z',
+    };
+    const bobEmail = 'bob.recipient@example.com';
+
+    // Alice sends orders addressing Bob
+    for (let i = 0; i < 2; i++) {
+      await checkAndAcquireOrderSlot({
+        ip: `198.51.100.${50 + i}`,
+        email: bobEmail,
+        isEmailVerified: false, // unverified contact email
+        accountEmail: getConfirmedUserEmail(aliceUser),
+        now: baseNow + i * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+      });
+    }
+
+    // Now Bob logs in as his own authenticated account and places orders
+    const bobUser = {
+      email: bobEmail,
+      email_confirmed_at: '2026-01-01T00:00:00Z',
+    };
+    assert.equal(isMailboxVerified(bobUser, bobEmail), true);
+
+    const bobRes = await checkAndAcquireOrderSlot({
+      ip: '203.0.113.88',
+      email: bobEmail,
+      isEmailVerified: true,
+      accountEmail: getConfirmedUserEmail(bobUser),
+      now: baseNow + 3 * (ORDER_RATE_LIMIT_CONFIG.MIN_ORDER_INTERVAL_MS + 100),
+    });
+
+    assert.equal(bobRes.allowed, true, 'Bob must have his full quota available and not be poisoned by Alice');
+    assert.equal(bobRes.slotAcquired, true);
+  });
+
+  test('REGRESSION [P2]: enforces account-level cooldown between rapid alternate contact email orders', async () => {
+    const baseNow = Date.now();
+    const user = {
+      email: 'fast.shopper@example.com',
+      email_confirmed_at: '2026-01-01T00:00:00Z',
+    };
+    const confirmedEmail = getConfirmedUserEmail(user);
+
+    // Order 1
+    const res1 = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.1',
+      email: 'gift1@example.com',
+      isEmailVerified: false,
+      accountEmail: confirmedEmail,
+      now: baseNow,
+    });
+    assert.equal(res1.allowed, true);
+
+    // Order 2 placed 1 second later with different recipient from different IP
+    const res2 = await checkAndAcquireOrderSlot({
+      ip: '198.51.100.2',
+      email: 'gift2@example.com',
+      isEmailVerified: false,
+      accountEmail: confirmedEmail,
+      now: baseNow + 1000, // 1s < 5s cooldown
+    });
+
+    assert.equal(res2.allowed, false, 'Must enforce account cooldown even with alternate contact email and IP');
+    assert.match(res2.error, /Please wait a few seconds before placing another order/);
+  });
+
+  test('DatabaseRpcOrderRateLimitStore derives p_account_key from authenticated accountEmail', async () => {
+    let capturedArgs = null;
+    const mockSupabase = {
+      rpc: async (name, args) => {
+        capturedArgs = args;
+        return { data: { allowed: true, isDuplicate: false, slotAcquired: true }, error: null };
+      },
+    };
+
+    const dbStore = new DatabaseRpcOrderRateLimitStore(async () => mockSupabase);
+    await dbStore.checkAndAcquire({
+      ip: '198.51.100.99',
+      email: 'alternate.recipient@example.com',
+      isEmailVerified: false,
+      accountEmail: 'verified.user@example.com',
+      fingerprint: 'test-fingerprint-account',
+    });
+
+    assert.equal(capturedArgs.p_email_key, '');
+    assert.equal(capturedArgs.p_account_key, hashOrderRateIdentifier('account:verified.user@example.com'));
+  });
+});
+
 

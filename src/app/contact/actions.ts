@@ -9,6 +9,7 @@ import {
   checkContactRateLimitMulti,
   isMailboxVerified,
 } from './rateLimiter';
+import { resolveClientIp } from '@/app/checkout/orderRateLimiter';
 
 export interface ContactInquiryInput {
   name: string;
@@ -28,14 +29,8 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 async function getClientIp(): Promise<string> {
   try {
     const headerList = await headers();
-    const forwardedFor = headerList.get('x-forwarded-for');
-    if (forwardedFor) {
-      return forwardedFor.split(',')[0].trim();
-    }
-    const realIp = headerList.get('x-real-ip') || headerList.get('cf-connecting-ip');
-    if (realIp) {
-      return realIp.trim();
-    }
+    const ip = resolveClientIp(headerList);
+    return ip || 'unknown';
   } catch {
     // headers() might not be available in non-request contexts or mock tests
   }

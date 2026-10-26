@@ -44,6 +44,7 @@ CREATE POLICY "Deny direct public access to order_idempotency_records"
 
 -- Drop previous function signatures if present
 DROP FUNCTION IF EXISTS public.acquire_order_slot(TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT);
+DROP FUNCTION IF EXISTS public.acquire_order_slot(TEXT, TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT);
 DROP FUNCTION IF EXISTS public.finalize_order_slot(TEXT, JSONB, BIGINT);
 DROP FUNCTION IF EXISTS public.prune_expired_order_rate_limits();
 
@@ -84,6 +85,7 @@ GRANT EXECUTE ON FUNCTION public.prune_expired_order_rate_limits() TO service_ro
 CREATE OR REPLACE FUNCTION public.acquire_order_slot(
   p_ip_key TEXT,
   p_email_key TEXT,
+  p_account_key TEXT DEFAULT NULL,
   p_fingerprint TEXT DEFAULT NULL,
   p_window_ms BIGINT DEFAULT 600000,           -- 10 minutes sliding window
   p_max_ip INT DEFAULT 5,                      -- max 5 orders per 10m per IP
@@ -107,6 +109,8 @@ DECLARE
   v_ip_ts BIGINT[];
   v_email_rec RECORD;
   v_email_ts BIGINT[];
+  v_account_rec RECORD;
+  v_account_ts BIGINT[];
   v_idem_rec RECORD;
   c_global_key CONSTANT TEXT := 'order_limit:global';
 BEGIN
@@ -251,7 +255,45 @@ BEGIN
     END IF;
   END IF;
 
-  -- 8. Commit Reservations Atomically
+  -- 8. Per-Account Check (separate quota key based on authenticated user's confirmed email principal)
+  IF p_account_key IS NOT NULL AND length(trim(p_account_key)) > 0 AND p_account_key != COALESCE(p_email_key, '') THEN
+    SELECT * INTO v_account_rec
+    FROM public.order_rate_limits
+    WHERE key = p_account_key
+    FOR UPDATE;
+
+    IF FOUND THEN
+      SELECT COALESCE(array_agg(ts), '{}'::BIGINT[]) INTO v_account_ts
+      FROM unnest(v_account_rec.timestamps) AS ts
+      WHERE ts > (v_now - p_window_ms);
+
+      IF v_account_ts IS NULL THEN
+        v_account_ts := '{}'::BIGINT[];
+      END IF;
+
+      -- Cooldown check
+      IF v_now - v_account_rec.last_updated < p_cooldown_ms THEN
+        RETURN jsonb_build_object(
+          'allowed', false,
+          'slotAcquired', false,
+          'error', 'Please wait a few seconds before placing another order.'
+        );
+      END IF;
+
+      -- Window count check
+      IF array_length(v_account_ts, 1) >= p_max_email THEN
+        RETURN jsonb_build_object(
+          'allowed', false,
+          'slotAcquired', false,
+          'error', 'Maximum order placement attempts reached for this account. Please try again in 10 minutes.'
+        );
+      END IF;
+    ELSE
+      v_account_ts := '{}'::BIGINT[];
+    END IF;
+  END IF;
+
+  -- 9. Commit Reservations Atomically
   -- Global record
   v_global_ts := array_append(v_global_ts, v_now);
   INSERT INTO public.order_rate_limits (key, timestamps, last_updated, expires_at)
@@ -298,6 +340,22 @@ BEGIN
         expires_at = to_timestamp((v_now + p_window_ms) / 1000.0);
   END IF;
 
+  -- Account record
+  IF p_account_key IS NOT NULL AND length(trim(p_account_key)) > 0 THEN
+    v_account_ts := array_append(COALESCE(v_account_ts, '{}'::BIGINT[]), v_now);
+    INSERT INTO public.order_rate_limits (key, timestamps, last_updated, expires_at)
+    VALUES (
+      p_account_key,
+      v_account_ts,
+      v_now,
+      to_timestamp((v_now + p_window_ms) / 1000.0)
+    )
+    ON CONFLICT (key) DO UPDATE
+    SET timestamps = v_account_ts,
+        last_updated = v_now,
+        expires_at = to_timestamp((v_now + p_window_ms) / 1000.0);
+  END IF;
+
   -- Idempotency reservation (in-flight)
   IF p_fingerprint IS NOT NULL AND length(trim(p_fingerprint)) > 0 THEN
     INSERT INTO public.order_idempotency_records (fingerprint, in_flight, order_data, created_at, expires_at)
@@ -322,6 +380,46 @@ BEGIN
   );
 END;
 $$;
+
+-- Backward-compatible 11-argument wrapper overload
+CREATE OR REPLACE FUNCTION public.acquire_order_slot(
+  p_ip_key TEXT,
+  p_email_key TEXT,
+  p_fingerprint TEXT,
+  p_window_ms BIGINT,
+  p_max_ip INT,
+  p_max_email INT,
+  p_cooldown_ms BIGINT,
+  p_global_window_ms BIGINT,
+  p_max_global INT,
+  p_idempotency_window_ms BIGINT,
+  p_max_store_size INT
+)
+RETURNS JSONB
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+  SELECT public.acquire_order_slot(
+    p_ip_key,
+    p_email_key,
+    NULL,
+    p_fingerprint,
+    p_window_ms,
+    p_max_ip,
+    p_max_email,
+    p_cooldown_ms,
+    p_global_window_ms,
+    p_max_global,
+    p_idempotency_window_ms,
+    p_max_store_size
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) FROM anon;
+REVOKE ALL ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) TO service_role;
 
 REVOKE ALL ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.acquire_order_slot(TEXT, TEXT, TEXT, BIGINT, INT, INT, BIGINT, BIGINT, INT, BIGINT, INT) FROM anon;
