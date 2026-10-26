@@ -100,6 +100,7 @@ export interface TrustedProxyOptions {
   trustedHeader?: string;
   trustedProxies?: string[];
   trustedProxyCount?: number;
+  peerIp?: string;
   proxySecret?: string;
   proxySecretHeader?: string;
   platform?: 'cloudflare' | 'vercel' | 'local';
@@ -277,14 +278,28 @@ export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
  *    which can pass through client-provided values. Therefore, True-Client-IP is NOT trusted implicitly
  *    from TRUSTED_PLATFORM alone. It must be explicitly configured via TRUSTED_INGRESS_HEADER after verifying
  *    origin access restrictions and overwrite behavior.
- * 3. Reverse Proxy Chain & Origin Lockdown:
- *    - Per AWS ALB and reverse proxy security guidelines, X-Forwarded-For hop counts (TRUSTED_PROXY_COUNT)
- *      are ONLY trustworthy when the origin server is locked down via ingress ACLs/firewalls (e.g. AWS Security
- *      Groups or private subnets) to accept connections solely from the proxy tier. If the origin is publicly
- *      reachable, a caller can connect directly and spoof X-Forwarded-For to evade per-IP limits.
+ * 3. Reverse Proxy Chain & Origin Lockdown (Mandatory for BOTH TRUSTED_PROXY_COUNT and TRUSTED_PROXIES):
+ *    - Per AWS ALB and reverse proxy security guidelines, X-Forwarded-For parsing is ONLY trustworthy
+ *      when the origin server is strictly locked down via network ingress ACLs/firewalls (e.g. AWS Security
+ *      Groups or private VPC subnets) so that the application accepts connections solely from the proxy tier.
+ *      If the origin is publicly reachable, an attacker can connect directly to the origin and spoof
+ *      X-Forwarded-For to evade per-IP limits:
+ *        a) In TRUSTED_PROXY_COUNT mode, a direct single-value header is accepted as the client IP.
+ *        b) In TRUSTED_PROXIES list mode, a direct arbitrary value is outside the proxy subnets and is
+ *           immediately returned as the client IP.
  *    - To cryptographically verify reverse proxy requests or when network ACLs cannot be enforced, operators
- *      can configure TRUSTED_PROXY_SECRET and TRUSTED_PROXY_SECRET_HEADER (e.g. X-Origin-Verify).
- * 4. CIDR Subnet Support & Threat Model for TRUSTED_PROXIES:
+ *      can configure TRUSTED_PROXY_SECRET and TRUSTED_PROXY_SECRET_HEADER (e.g. X-Origin-Verify) or provide
+ *      options.peerIp to verify the immediate peer socket. Requests failing verification fail closed to null.
+ * 4. Reverse Proxy Ingress Semantics: Append or Overwrite Required (No "Preserve" Mode):
+ *    - Both proxy trust modes consume X-Forwarded-For as the client identity chain. The ingress reverse proxy
+ *      MUST be configured to append the verified connecting client IP to the chain (e.g. AWS Application Load
+ *      Balancer default append mode) or replace the header, or provide a dedicated overwritten header
+ *      (via TRUSTED_INGRESS_HEADER, e.g. x-real-ip).
+ *    - CRITICAL: Ingress load balancers MUST NOT be configured in "preserve" mode (such as AWS ALB preserve mode).
+ *      In preserve mode, the load balancer passes client-supplied X-Forwarded-For headers through to the origin
+ *      without appending the actual client IP; even with origin network ACLs in place, an external caller's
+ *      spoofed header reaches the application and evades per-IP throttling.
+ * 5. CIDR Subnet Support & Threat Model for TRUSTED_PROXIES:
  *    - Supports specific IPv4 CIDRs (e.g. 10.0.1.0/24), IPv6 CIDRs (e.g. 2001:db8::/32), exact IPs, and aliases ("loopback", "linklocal", "private").
  *    - Traverses X-Forwarded-For right-to-left, skipping only trusted intermediate proxies in the chain.
  *    - CRITICAL THREAT MODEL: Operators MUST configure ONLY the specific subnets/IPs where upstream reverse proxies
@@ -294,7 +309,7 @@ export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
  *      to skip the authentic private client IP and accept an attacker-supplied earlier public IP header, enabling quota evasion.
  *      To avoid this, either restrict TRUSTED_PROXIES to the actual proxy tier subnets or configure the ingress load balancer
  *      to drop/replace client-supplied X-Forwarded-For headers.
- * 5. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
+ * 6. In unconfigured environments (no verified platform or trusted-IP setting), fails closed by returning null
  *    rather than lumping all visitors into a single shared loopback bucket (which would exhaust the 5-order
  *    quota across all visitors).
  */
@@ -373,6 +388,20 @@ export function resolveClientIp(
     (configuredProxyCount !== undefined && !isNaN(configuredProxyCount) && configuredProxyCount > 0);
 
   if (hasConfiguredProxyTrust) {
+    // Immediate peer connection validation:
+    // If peerIp is provided, verify that the connection arrived directly from a trusted proxy
+    if (options?.peerIp) {
+      const cleanPeer = cleanAndValidateIp(options.peerIp);
+      if (!cleanPeer) return null;
+      if (trustedProxyList && trustedProxyList.length > 0) {
+        const peerTrusted = trustedProxyList.some((entry) => ipMatchesProxyEntry(cleanPeer, entry));
+        if (!peerTrusted) {
+          // Direct connection from untrusted peer attempting to bypass proxy tier
+          return null;
+        }
+      }
+    }
+
     const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
     if (xForwardedFor) {
       const rawTokens = xForwardedFor.split(',').map((s) => s.trim()).filter(Boolean);

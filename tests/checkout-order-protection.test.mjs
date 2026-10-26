@@ -1279,6 +1279,82 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     );
   });
 
+  test('REGRESSION [P2]: requires origin lockdown / verification for TRUSTED_PROXIES list mode too', () => {
+    // 1. Direct connection to origin without origin secret under list mode fails closed
+    delete process.env.TRUSTED_PROXY_COUNT;
+    process.env.TRUSTED_PROXIES = '10.0.1.0/24';
+    process.env.TRUSTED_PROXY_SECRET = 'origin-secret-token-456';
+    process.env.TRUSTED_PROXY_SECRET_HEADER = 'x-origin-verify';
+
+    const directHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.50'],
+    ]);
+    assert.equal(
+      resolveClientIp(directHeaders),
+      null,
+      'Direct connection to origin under list mode without origin secret must fail closed to null'
+    );
+
+    // 2. Verified request with origin secret under list mode succeeds
+    const verifiedHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.50, 10.0.1.2'],
+      ['x-origin-verify', 'origin-secret-token-456'],
+    ]);
+    assert.equal(
+      resolveClientIp(verifiedHeaders),
+      '203.0.113.50',
+      'Verified proxy request with origin secret under list mode must resolve authentic client IP'
+    );
+
+    // 3. Immediate peer validation via options.peerIp rejects direct connections from untrusted peers
+    delete process.env.TRUSTED_PROXY_SECRET;
+    const directUntrustedPeerHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.50'],
+    ]);
+    assert.equal(
+      resolveClientIp(directUntrustedPeerHeaders, {
+        trustedProxies: ['10.0.1.0/24'],
+        peerIp: '198.51.100.99', // direct public internet caller
+      }),
+      null,
+      'Direct connection from untrusted peerIp must fail closed to null under list mode'
+    );
+
+    // 4. Request arriving from immediate peer inside trusted proxy subnet succeeds
+    const trustedPeerHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.50, 10.0.1.5'],
+    ]);
+    assert.equal(
+      resolveClientIp(trustedPeerHeaders, {
+        trustedProxies: ['10.0.1.0/24'],
+        peerIp: '10.0.1.5',
+      }),
+      '203.0.113.50',
+      'Request arriving from verified peerIp inside trusted proxy subnet must resolve client IP'
+    );
+  });
+
+  test('REGRESSION [P2]: ingress in preserve mode fails to establish authentic client IP and requires append or dedicated overwritten ingress header', () => {
+    // Scenario:
+    // If a load balancer is in 'preserve' mode (such as AWS ALB preserve mode),
+    // it forwards caller-supplied X-Forwarded-For headers through without appending the real client IP.
+    // A caller supplying 'X-Forwarded-For: 203.0.113.99' reaches the origin unchanged.
+    // To protect against this vulnerability, deployments must configure proxies to append/overwrite,
+    // or use a dedicated guaranteed-overwritten header (e.g. TRUSTED_INGRESS_HEADER="x-real-ip").
+    process.env.TRUSTED_INGRESS_HEADER = 'x-real-ip';
+    const preserveModeHeaders = new Map([
+      ['x-forwarded-for', '203.0.113.99'], // spoofed value preserved by proxy
+      ['x-real-ip', '198.51.100.22'],     // strictly overwritten by proxy
+    ]);
+
+    const resolved = resolveClientIp(preserveModeHeaders);
+    assert.equal(
+      resolved,
+      '198.51.100.22',
+      'Dedicated overwritten ingress header must take precedence over preserved/unverified x-forwarded-for'
+    );
+  });
+
   test('ipMatchesProxyEntry helper accurately validates CIDR ranges, aliases, and exact IPs', () => {
     // parseIpValues helper
     const parsedV4 = parseIpValues('10.0.1.5');
