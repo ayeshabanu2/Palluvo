@@ -96,95 +96,124 @@ function cleanAndValidateIp(raw: string | null | undefined): string | null {
   return null;
 }
 
+export interface TrustedProxyOptions {
+  trustedHeader?: string;
+  trustedProxies?: string[];
+  trustedProxyCount?: number;
+  platform?: 'cloudflare' | 'vercel' | 'akamai';
+}
+
 /**
  * Derives the trusted client IP for rate limiting from ingress headers or proxy chains.
  *
- * 1. Prioritizes ingress-overwritten headers (cf-connecting-ip, true-client-ip, x-real-ip, x-vercel-forwarded-for).
- *    These headers are guaranteed to be set/overwritten by the ingress edge proxy and cannot be spoofed by callers.
- * 2. If parsing x-forwarded-for, avoids taking the caller-controlled leftmost value.
- *    Parses the proxy chain from right to left using configured trusted proxies (TRUSTED_PROXIES)
- *    or trusted proxy count (TRUSTED_PROXY_COUNT, defaulting to 1 when behind a reverse proxy).
+ * Security Requirements:
+ * 1. Requires deployment-verified trust configuration. Headers like cf-connecting-ip, x-real-ip,
+ *    and x-vercel-forwarded-for are ONLY trusted when explicitly configured via TRUSTED_INGRESS_HEADER,
+ *    TRUSTED_PLATFORM, or when running under a verified platform deployment (e.g. Vercel, Cloudflare Pages).
+ * 2. For x-forwarded-for, trust is ONLY established when an explicit proxy chain configuration is provided
+ *    (TRUSTED_PROXY_COUNT > 0 or TRUSTED_PROXIES list).
+ * 3. Fails closed to '127.0.0.1' under default configuration (or when trust cannot be established),
+ *    preventing callers from choosing or rotating their rate-limit IP via spoofed single-value or multi-value headers.
  */
 export function resolveClientIp(
   headers: HeaderSource,
-  options?: {
-    trustedHeader?: string;
-    trustedProxies?: string[];
-    trustedProxyCount?: number;
-  }
+  options?: TrustedProxyOptions
 ): string {
-  // 1. Explicit configured ingress header
+  // 1. Explicit configured ingress header (e.g. TRUSTED_INGRESS_HEADER="cf-connecting-ip" or "x-real-ip")
   const configuredHeader =
     options?.trustedHeader ||
     process.env.TRUSTED_INGRESS_HEADER ||
     process.env.TRUSTED_CLIENT_IP_HEADER;
+
   if (configuredHeader) {
     const raw = getHeaderValue(headers, configuredHeader);
     const valid = cleanAndValidateIp(raw);
-    if (valid) return valid;
+    return valid || '127.0.0.1';
   }
 
-  // 2. Edge / ingress-overwritten headers guaranteed by trusted infrastructure
-  const guaranteedIngressHeaders = [
-    'cf-connecting-ip',
-    'true-client-ip',
-    'x-real-ip',
-    'x-vercel-forwarded-for',
-  ];
-  for (const headerName of guaranteedIngressHeaders) {
-    const raw = getHeaderValue(headers, headerName);
-    const valid = cleanAndValidateIp(raw);
-    if (valid) return valid;
+  // 2. Documented, guaranteed-overwritten platform headers when deployment platform is verified
+  const platform =
+    options?.platform ||
+    (process.env.VERCEL === '1' || process.env.VERCEL_ENV ? 'vercel' : null) ||
+    (process.env.CF_PAGES === '1' || process.env.CLOUDFLARE === '1' ? 'cloudflare' : null) ||
+    (process.env.TRUSTED_PLATFORM ? (process.env.TRUSTED_PLATFORM.trim().toLowerCase() as any) : null);
+
+  if (platform === 'vercel') {
+    // Vercel edge infrastructure strictly overwrites x-vercel-forwarded-for and x-real-ip
+    const vercelIp =
+      cleanAndValidateIp(getHeaderValue(headers, 'x-vercel-forwarded-for')) ||
+      cleanAndValidateIp(getHeaderValue(headers, 'x-real-ip'));
+    return vercelIp || '127.0.0.1';
   }
 
-  // 3. Trusted proxy chain parsing of x-forwarded-for
-  const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
-  if (xForwardedFor) {
-    const rawTokens = xForwardedFor.split(',').map((s) => s.trim()).filter(Boolean);
-    const validIps = rawTokens.map(cleanAndValidateIp).filter((ip): ip is string => ip !== null);
+  if (platform === 'cloudflare') {
+    // Cloudflare edge strictly overwrites cf-connecting-ip
+    const cfIp = cleanAndValidateIp(getHeaderValue(headers, 'cf-connecting-ip'));
+    return cfIp || '127.0.0.1';
+  }
 
-    if (validIps.length > 0) {
-      // If trusted proxies list configured (e.g. 10.0.0.1, 127.0.0.1, loopback)
-      const trustedProxyList =
-        options?.trustedProxies ||
-        (process.env.TRUSTED_PROXIES || process.env.TRUSTED_PROXY_IPS)
-          ?.split(',')
-          .map((s) => s.trim().toLowerCase())
-          .filter(Boolean);
+  if (platform === 'akamai') {
+    const akamaiIp = cleanAndValidateIp(getHeaderValue(headers, 'true-client-ip'));
+    return akamaiIp || '127.0.0.1';
+  }
 
-      if (trustedProxyList && trustedProxyList.length > 0) {
-        const trustedSet = new Set(trustedProxyList);
-        for (let i = validIps.length - 1; i >= 0; i--) {
-          const ip = validIps[i];
-          const isTrusted =
-            trustedSet.has(ip.toLowerCase()) ||
-            (trustedSet.has('loopback') && (ip === '127.0.0.1' || ip === '::1'));
-          if (!isTrusted) {
-            return ip;
+  // 3. Trusted proxy chain parsing of x-forwarded-for (ONLY if proxy trust is explicitly configured)
+  const trustedProxyList =
+    options?.trustedProxies ||
+    (process.env.TRUSTED_PROXIES || process.env.TRUSTED_PROXY_IPS)
+      ?.split(',')
+      .map((s) => s.trim().toLowerCase())
+      .filter(Boolean);
+
+  const envProxyCount = process.env.TRUSTED_PROXY_COUNT;
+  const configuredProxyCount =
+    options?.trustedProxyCount !== undefined
+      ? options.trustedProxyCount
+      : envProxyCount !== undefined && envProxyCount.trim().length > 0
+      ? parseInt(envProxyCount, 10)
+      : undefined;
+
+  const hasConfiguredProxyTrust =
+    (trustedProxyList && trustedProxyList.length > 0) ||
+    (configuredProxyCount !== undefined && !isNaN(configuredProxyCount) && configuredProxyCount > 0);
+
+  if (hasConfiguredProxyTrust) {
+    const xForwardedFor = getHeaderValue(headers, 'x-forwarded-for');
+    if (xForwardedFor) {
+      const rawTokens = xForwardedFor.split(',').map((s) => s.trim()).filter(Boolean);
+      const validIps = rawTokens.map(cleanAndValidateIp).filter((ip): ip is string => ip !== null);
+
+      if (validIps.length > 0) {
+        // If trusted proxies list configured (e.g. 10.0.0.1, 10.0.0.2, loopback)
+        if (trustedProxyList && trustedProxyList.length > 0) {
+          const trustedSet = new Set(trustedProxyList);
+          for (let i = validIps.length - 1; i >= 0; i--) {
+            const ip = validIps[i];
+            const isTrusted =
+              trustedSet.has(ip.toLowerCase()) ||
+              (trustedSet.has('loopback') && (ip === '127.0.0.1' || ip === '::1'));
+            if (!isTrusted) {
+              return ip;
+            }
           }
+          // All IPs in chain were trusted proxies: no authentic client IP found
+          return '127.0.0.1';
         }
-        return validIps[0];
-      }
 
-      // If trusted proxy count configured or default
-      const envProxyCount = process.env.TRUSTED_PROXY_COUNT;
-      const count =
-        options?.trustedProxyCount !== undefined
-          ? options.trustedProxyCount
-          : envProxyCount !== undefined
-          ? parseInt(envProxyCount, 10)
-          : 1;
-
-      if (count > 0) {
-        const targetIndex = validIps.length - count;
-        if (targetIndex >= 0 && targetIndex < validIps.length) {
-          return validIps[targetIndex];
+        // If trusted proxy count configured
+        if (configuredProxyCount !== undefined && configuredProxyCount > 0) {
+          const targetIndex = validIps.length - configuredProxyCount;
+          if (targetIndex >= 0 && targetIndex < validIps.length) {
+            return validIps[targetIndex];
+          }
+          return '127.0.0.1';
         }
-        return validIps[0];
       }
     }
   }
 
+  // 4. Default configuration: no trusted ingress header, platform, or proxy chain configured.
+  // Fail closed to '127.0.0.1' to prevent caller from choosing or rotating rate-limit IP.
   return '127.0.0.1';
 }
 
