@@ -26,6 +26,16 @@ import {
   resetOrderRateLimiter,
   setProductionOrderStore,
 } from '../src/app/checkout/orderRateLimiter.ts';
+import {
+  PAYMENT_SESSION_CONFIG,
+  createServerPaymentSession,
+  verifyPaymentProviderServer,
+  pruneExpiredPaymentSessions,
+  recordProcessedTransaction,
+  checkAndAcquirePaymentSessionSlot,
+  resetPaymentProviderState,
+  getPaymentProviderMetrics,
+} from '../src/utils/payment/provider.ts';
 
 const mockCatalog = [
   {
@@ -1334,6 +1344,66 @@ describe('Trusted Client IP Derivation & Anti-Spoofing Tests [P2]', () => {
     );
   });
 
+  test('REGRESSION [P2]: validates immediate peer in hop-count mode and fails closed if unconfigured or unverified', () => {
+    // 1. Hop-count mode with peerIp passed, but trustedPeers / trustedProxies unconfigured: fails closed
+    const headersHopCount = new Map([
+      ['x-forwarded-for', '198.51.100.99, 203.0.113.50'],
+    ]);
+    assert.equal(
+      resolveClientIp(headersHopCount, {
+        trustedProxyCount: 1,
+        peerIp: '10.0.1.5', // peerIp passed, but no trusted peer list
+      }),
+      null,
+      'When peerIp is passed in hop-count mode without trustedPeers or trustedProxies, must fail closed to null'
+    );
+
+    // 2. Hop-count mode with trustedPeers configured, but peerIp is untrusted caller: fails closed
+    assert.equal(
+      resolveClientIp(headersHopCount, {
+        trustedProxyCount: 1,
+        trustedPeers: ['10.0.1.5'],
+        peerIp: '198.51.100.99', // direct untrusted caller
+      }),
+      null,
+      'When peerIp does not match trustedPeers in hop-count mode, must fail closed to null'
+    );
+
+    // 3. Hop-count mode with trustedPeers configured and matching peerIp: succeeds
+    assert.equal(
+      resolveClientIp(headersHopCount, {
+        trustedProxyCount: 1,
+        trustedPeers: ['10.0.1.5'],
+        peerIp: '10.0.1.5',
+      }),
+      '203.0.113.50',
+      'When peerIp matches trustedPeers in hop-count mode, resolves client IP via hop count'
+    );
+
+    // 4. Hop-count mode with process.env.TRUSTED_PEERS configured and matching peerIp: succeeds
+    process.env.TRUSTED_PEERS = '10.0.1.0/24';
+    assert.equal(
+      resolveClientIp(headersHopCount, {
+        trustedProxyCount: 1,
+        peerIp: '10.0.1.5',
+      }),
+      '203.0.113.50',
+      'When peerIp matches process.env.TRUSTED_PEERS in hop-count mode, resolves client IP'
+    );
+    delete process.env.TRUSTED_PEERS;
+
+    // 5. Hop-count mode with options.trustedProxies fallback and matching peerIp: succeeds
+    assert.equal(
+      resolveClientIp(headersHopCount, {
+        trustedProxyCount: 1,
+        trustedProxies: ['10.0.1.0/24'],
+        peerIp: '10.0.1.5',
+      }),
+      '203.0.113.50',
+      'When peerIp matches trustedProxies fallback in hop-count mode, resolves client IP'
+    );
+  });
+
   test('REGRESSION [P2]: ingress in preserve mode fails to establish authentic client IP and requires append or dedicated overwritten ingress header', () => {
     // Scenario:
     // If a load balancer is in 'preserve' mode (such as AWS ALB preserve mode),
@@ -1671,5 +1741,108 @@ describe('Authenticated Account Quota Protection with Alternate Contact Email [P
     assert.equal(capturedArgs.p_account_key, hashOrderRateIdentifier('account:verified.user@example.com'));
   });
 });
+
+describe('Payment Session Bounded Allocation & Admission Control Tests', () => {
+  beforeEach(() => {
+    resetPaymentProviderState();
+    process.env.PAYMENT_GATEWAY_SECRET = 'test_secret_for_payment_provider_key_12345';
+  });
+
+  test('REGRESSION [P2]: createServerPaymentSession purges expired sessions during allocation', () => {
+    const baseNow = 1700000000000;
+    const session1 = createServerPaymentSession(1999, 'INR', undefined, baseNow);
+    assert.ok(session1);
+    assert.equal(getPaymentProviderMetrics().activeSessionsCount, 1);
+
+    // Fast-forward past 15 min TTL and allocate a new session: must prune session1 during allocation
+    const futureNow = baseNow + PAYMENT_SESSION_CONFIG.SESSION_TTL_MS + 1000;
+    const session2 = createServerPaymentSession(2999, 'INR', undefined, futureNow);
+    assert.ok(session2);
+    assert.equal(
+      getPaymentProviderMetrics().activeSessionsCount,
+      1,
+      'Expired session1 must be pruned during allocation of session2'
+    );
+  });
+
+  test('REGRESSION [P2]: createServerPaymentSession enforces hard capacity bound by evicting oldest sessions', () => {
+    const originalMax = PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS;
+    try {
+      PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS = 5;
+      for (let i = 0; i < 5; i++) {
+        const sess = createServerPaymentSession(1000 + i, 'INR');
+        assert.ok(sess);
+      }
+      assert.equal(getPaymentProviderMetrics().activeSessionsCount, 5);
+
+      // Allocating 6th session must evict oldest and maintain bound
+      const sess6 = createServerPaymentSession(6000, 'INR');
+      assert.ok(sess6);
+      assert.equal(
+        getPaymentProviderMetrics().activeSessionsCount,
+        5,
+        'activeSessions must not exceed MAX_ACTIVE_SESSIONS'
+      );
+    } finally {
+      PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS = originalMax;
+    }
+  });
+
+  test('REGRESSION [P2]: recordProcessedTransaction enforces hard capacity bound on processedTransactions', () => {
+    const originalMax = PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS;
+    try {
+      PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS = 5;
+      for (let i = 0; i < 5; i++) {
+        recordProcessedTransaction(`pay_tx_${i}`);
+      }
+      assert.equal(getPaymentProviderMetrics().processedTransactionsCount, 5);
+
+      recordProcessedTransaction('pay_tx_overflow');
+      assert.equal(
+        getPaymentProviderMetrics().processedTransactionsCount,
+        5,
+        'processedTransactions must not exceed MAX_PROCESSED_TRANSACTIONS'
+      );
+    } finally {
+      PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS = originalMax;
+    }
+  });
+
+  test('REGRESSION [P2]: checkAndAcquirePaymentSessionSlot enforces per-IP admission limits within window', () => {
+    const testIp = '198.51.100.42';
+    const baseNow = Date.now();
+
+    for (let i = 0; i < PAYMENT_SESSION_CONFIG.MAX_SESSIONS_PER_IP; i++) {
+      const result = checkAndAcquirePaymentSessionSlot(testIp, baseNow);
+      assert.equal(result.allowed, true, `Slot ${i + 1} should be admitted`);
+    }
+
+    // Next request within window must be rejected
+    const blocked = checkAndAcquirePaymentSessionSlot(testIp, baseNow);
+    assert.equal(blocked.allowed, false);
+    assert.match(blocked.error, /Too many payment sessions initiated/);
+    assert.ok(blocked.retryAfter > 0);
+
+    // After window expires, admission is restored
+    const futureNow = baseNow + PAYMENT_SESSION_CONFIG.IP_WINDOW_MS + 1000;
+    const restored = checkAndAcquirePaymentSessionSlot(testIp, futureNow);
+    assert.equal(restored.allowed, true, 'Slot should be admitted after window expires');
+  });
+
+  test('REGRESSION [P2]: checkAndAcquirePaymentSessionSlot bounds memory under high IP churn', () => {
+    const originalMax = PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS;
+    try {
+      PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS = 5;
+      const baseNow = Date.now();
+      for (let i = 0; i < 6; i++) {
+        checkAndAcquirePaymentSessionSlot(`198.51.100.${i}`, baseNow);
+      }
+      assert.ok(getPaymentProviderMetrics().trackedIpsCount <= 6);
+    } finally {
+      PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS = originalMax;
+    }
+  });
+});
+
 
 

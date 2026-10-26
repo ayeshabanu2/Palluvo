@@ -8,6 +8,7 @@ import {
   createServerPaymentSession,
   verifyPaymentProviderServer,
   isPaymentGatewayConfigured,
+  checkAndAcquirePaymentSessionSlot,
   PaymentSession,
 } from '@/utils/payment/provider';
 import { normalizeEmail } from '@/utils/format';
@@ -169,11 +170,35 @@ export async function initiatePaymentSession(
       }
     }
 
+    // 1. IP resolution and deployment proxy trust check
+    const clientIp = await getClientIp();
+    if (!clientIp) {
+      console.error(
+        '[Checkout] Payment session initiation rejected: No trusted client IP could be derived. Deployment must configure trusted proxy settings (e.g. TRUSTED_PLATFORM, TRUSTED_INGRESS_HEADER, or TRUSTED_PROXY_COUNT).'
+      );
+      return {
+        success: false,
+        isGatewayConfigured: false,
+        error:
+          'Payment initiation is temporarily unavailable due to unconfigured network proxy settings.',
+      };
+    }
+
+    // 2. Per-IP admission control to bound memory & prevent unauthenticated session flooding
+    const admission = checkAndAcquirePaymentSessionSlot(clientIp);
+    if (!admission.allowed) {
+      return {
+        success: false,
+        isGatewayConfigured: false,
+        error: admission.error || 'Too many payment sessions initiated. Please wait before retrying.',
+      };
+    }
+
     const { trustedSubtotal, trustedDiscount, trustedShipping, trustedGrandTotal } =
       calculateTrustedOrderTotals(itemsValidation.items, couponCode);
 
     const isConfigured = isPaymentGatewayConfigured();
-    const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR') : undefined;
+    const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR', clientIp) : undefined;
 
     return {
       success: true,

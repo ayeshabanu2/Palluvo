@@ -8,11 +8,14 @@ import crypto from 'crypto';
  * Fails closed if environment secrets are absent.
  */
 
-const PAYMENT_GATEWAY_SECRET =
-  process.env.PAYMENT_GATEWAY_SECRET ||
-  process.env.RAZORPAY_KEY_SECRET ||
-  process.env.STRIPE_SECRET_KEY ||
-  '';
+export function getPaymentGatewaySecret(): string {
+  return (
+    process.env.PAYMENT_GATEWAY_SECRET ||
+    process.env.RAZORPAY_KEY_SECRET ||
+    process.env.STRIPE_SECRET_KEY ||
+    ''
+  ).trim();
+}
 
 export interface PaymentSession {
   sessionId: string;
@@ -38,6 +41,15 @@ export interface PaymentVerificationResult {
   error?: string;
 }
 
+export const PAYMENT_SESSION_CONFIG = {
+  SESSION_TTL_MS: 15 * 60 * 1000, // 15 minutes TTL
+  MAX_ACTIVE_SESSIONS: 1000,       // Max simultaneous unconsumed active sessions in memory
+  MAX_PROCESSED_TRANSACTIONS: 5000,// Max replay transaction IDs retained
+  MAX_SESSIONS_PER_IP: 10,         // Max active sessions per IP within admission window
+  IP_WINDOW_MS: 60 * 1000,         // 1 minute window for per-IP rate limiting
+  MAX_TRACKED_IPS: 5000,           // Max IP admission records tracked
+};
+
 // In-memory store for server-issued payment sessions and replay prevention
 // In serverless/clustered environments, this is augmented with database/Redis persistence.
 interface SessionRecord {
@@ -46,35 +58,140 @@ interface SessionRecord {
   createdAt: number;
   expiresAt: number;
   consumed: boolean;
+  clientIp?: string;
 }
 
 const activeSessions = new Map<string, SessionRecord>();
 const processedTransactions = new Set<string>();
 
+interface IpAdmissionRecord {
+  timestamps: number[];
+}
+const ipAdmissionTracker = new Map<string, IpAdmissionRecord>();
+
+/**
+ * Prunes expired or consumed payment sessions from the in-memory cache.
+ * Returns the number of pruned sessions.
+ */
+export function pruneExpiredPaymentSessions(now = Date.now()): number {
+  let prunedCount = 0;
+  for (const [id, record] of activeSessions.entries()) {
+    if (now > record.expiresAt || record.consumed) {
+      activeSessions.delete(id);
+      prunedCount++;
+    }
+  }
+  return prunedCount;
+}
+
+/**
+ * Records a processed transaction ID with LRU / FIFO eviction to enforce
+ * MAX_PROCESSED_TRANSACTIONS bounded memory.
+ */
+export function recordProcessedTransaction(paymentId: string): void {
+  while (processedTransactions.size >= PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS) {
+    const oldest = processedTransactions.values().next().value;
+    if (oldest) {
+      processedTransactions.delete(oldest);
+    } else {
+      break;
+    }
+  }
+  processedTransactions.add(paymentId);
+}
+
+/**
+ * Checks and acquires a payment session slot for an IP address.
+ * Prevents rapid unauthenticated flooding and unbounded memory consumption.
+ */
+export function checkAndAcquirePaymentSessionSlot(
+  clientIp: string,
+  now = Date.now()
+): { allowed: boolean; retryAfter?: number; error?: string } {
+  const normIp = clientIp.trim();
+  if (!normIp) {
+    return { allowed: false, error: 'Invalid client IP address for payment session.' };
+  }
+
+  // Bound memory of IP tracker by pruning stale IPs
+  if (ipAdmissionTracker.size >= PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS) {
+    for (const [ip, record] of ipAdmissionTracker.entries()) {
+      record.timestamps = record.timestamps.filter((t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS);
+      if (record.timestamps.length === 0) {
+        ipAdmissionTracker.delete(ip);
+      }
+    }
+  }
+
+  let record = ipAdmissionTracker.get(normIp);
+  if (!record) {
+    record = { timestamps: [] };
+    ipAdmissionTracker.set(normIp, record);
+  }
+
+  record.timestamps = record.timestamps.filter((t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS);
+
+  if (record.timestamps.length >= PAYMENT_SESSION_CONFIG.MAX_SESSIONS_PER_IP) {
+    const oldestTimestamp = record.timestamps[0];
+    const retryAfter = Math.max(
+      1,
+      Math.ceil((oldestTimestamp + PAYMENT_SESSION_CONFIG.IP_WINDOW_MS - now) / 1000)
+    );
+    return {
+      allowed: false,
+      retryAfter,
+      error: `Too many payment sessions initiated. Please wait ${retryAfter}s before retrying.`,
+    };
+  }
+
+  record.timestamps.push(now);
+  return { allowed: true };
+}
+
 /**
  * Checks if the payment provider is fully configured with a server secret.
  */
 export function isPaymentGatewayConfigured(): boolean {
-  return typeof PAYMENT_GATEWAY_SECRET === 'string' && PAYMENT_GATEWAY_SECRET.trim().length > 0;
+  return getPaymentGatewaySecret().length > 0;
 }
 
 /**
  * Generates a trusted payment session on the server.
  * Fails closed if the payment gateway secret is missing.
+ * Purges expired sessions during allocation and enforces hard capacity bounds on activeSessions.
  */
-export function createServerPaymentSession(amount: number, currency = 'INR'): PaymentSession | null {
-  if (!isPaymentGatewayConfigured()) {
+export function createServerPaymentSession(
+  amount: number,
+  currency = 'INR',
+  clientIp?: string,
+  now = Date.now()
+): PaymentSession | null {
+  const secret = getPaymentGatewaySecret();
+  if (!secret) {
     return null;
   }
 
-  const sessionId = `sess_${Date.now()}_${crypto.randomBytes(12).toString('hex')}`;
-  const createdAt = Date.now();
-  const expiresAt = createdAt + 15 * 60 * 1000; // 15 minutes TTL
+  // 1. Purge expired and consumed records during allocation to prevent stale memory leaks
+  pruneExpiredPaymentSessions(now);
+
+  // 2. Enforce hard capacity bound on active server sessions by evicting oldest (FIFO)
+  while (activeSessions.size >= PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
+    const oldestKey = activeSessions.keys().next().value;
+    if (oldestKey) {
+      activeSessions.delete(oldestKey);
+    } else {
+      break;
+    }
+  }
+
+  const sessionId = `sess_${now}_${crypto.randomBytes(12).toString('hex')}`;
+  const createdAt = now;
+  const expiresAt = createdAt + PAYMENT_SESSION_CONFIG.SESSION_TTL_MS;
 
   // Cryptographic session token binding sessionId, amount, currency, and timestamps
   const payload = `${sessionId}:${amount}:${currency}:${createdAt}:${expiresAt}`;
   const sessionToken = crypto
-    .createHmac('sha256', PAYMENT_GATEWAY_SECRET)
+    .createHmac('sha256', secret)
     .update(payload)
     .digest('hex');
 
@@ -85,6 +202,7 @@ export function createServerPaymentSession(amount: number, currency = 'INR'): Pa
     createdAt,
     expiresAt,
     consumed: false,
+    clientIp,
   });
 
   return {
@@ -104,7 +222,8 @@ export function createServerPaymentSession(amount: number, currency = 'INR'): Pa
  */
 export function verifyPaymentProviderServer(input: PaymentVerificationInput): PaymentVerificationResult {
   try {
-    if (!isPaymentGatewayConfigured()) {
+    const secret = getPaymentGatewaySecret();
+    if (!secret) {
       return {
         verified: false,
         error: 'Payment gateway is not configured on the server. Required environment secrets are missing.',
@@ -163,7 +282,7 @@ export function verifyPaymentProviderServer(input: PaymentVerificationInput): Pa
     // 4. Timing-safe cryptographic HMAC-SHA256 signature verification
     const expectedPayload = `${sessionId}:${paymentId}:${amount}:${currency}`;
     const expectedSignature = crypto
-      .createHmac('sha256', PAYMENT_GATEWAY_SECRET)
+      .createHmac('sha256', secret)
       .update(expectedPayload)
       .digest('hex');
 
@@ -179,7 +298,7 @@ export function verifyPaymentProviderServer(input: PaymentVerificationInput): Pa
 
     // 5. Mark session and transaction as consumed to prevent replay attacks
     session.consumed = true;
-    processedTransactions.add(paymentId);
+    recordProcessedTransaction(paymentId);
 
     return {
       verified: true,
@@ -192,4 +311,28 @@ export function verifyPaymentProviderServer(input: PaymentVerificationInput): Pa
       error: 'An internal error occurred during payment verification.',
     };
   }
+}
+
+/**
+ * Test helper to reset internal session, replay transaction, and IP tracking state.
+ */
+export function resetPaymentProviderState(): void {
+  activeSessions.clear();
+  processedTransactions.clear();
+  ipAdmissionTracker.clear();
+}
+
+/**
+ * Returns current metrics for monitoring and testing.
+ */
+export function getPaymentProviderMetrics(): {
+  activeSessionsCount: number;
+  processedTransactionsCount: number;
+  trackedIpsCount: number;
+} {
+  return {
+    activeSessionsCount: activeSessions.size,
+    processedTransactionsCount: processedTransactions.size,
+    trackedIpsCount: ipAdmissionTracker.size,
+  };
 }

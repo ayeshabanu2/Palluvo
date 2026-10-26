@@ -101,6 +101,7 @@ export interface TrustedProxyOptions {
   trustedProxies?: string[];
   trustedProxyCount?: number;
   peerIp?: string;
+  trustedPeers?: string[];
   proxySecret?: string;
   proxySecretHeader?: string;
   platform?: 'cloudflare' | 'vercel' | 'local';
@@ -289,7 +290,9 @@ export function ipMatchesProxyEntry(ip: string, entry: string): boolean {
  *           immediately returned as the client IP.
  *    - To cryptographically verify reverse proxy requests or when network ACLs cannot be enforced, operators
  *      can configure TRUSTED_PROXY_SECRET and TRUSTED_PROXY_SECRET_HEADER (e.g. X-Origin-Verify) or provide
- *      options.peerIp to verify the immediate peer socket. Requests failing verification fail closed to null.
+ *      options.peerIp to verify the immediate peer socket. In BOTH list mode and hop-count mode, if peerIp
+ *      is supplied, an explicit trusted peer list (trustedPeers or trustedProxies) MUST be configured; if
+ *      unconfigured or if peerIp fails verification, resolution fails closed to null.
  * 4. Reverse Proxy Ingress Semantics: Append or Overwrite Required (No "Preserve" Mode):
  *    - Both proxy trust modes consume X-Forwarded-For as the client identity chain. The ingress reverse proxy
  *      MUST be configured to append the verified connecting client IP to the chain (e.g. AWS Application Load
@@ -389,16 +392,28 @@ export function resolveClientIp(
 
   if (hasConfiguredProxyTrust) {
     // Immediate peer connection validation:
-    // If peerIp is provided, verify that the connection arrived directly from a trusted proxy
+    // If peerIp is provided, verify that the connection arrived directly from a trusted proxy/peer.
+    // In both list mode and hop-count mode, an explicit trusted peer list (trustedPeers or trustedProxies)
+    // is required; if unconfigured or if peerIp does not match, fail closed to null.
     if (options?.peerIp) {
       const cleanPeer = cleanAndValidateIp(options.peerIp);
       if (!cleanPeer) return null;
-      if (trustedProxyList && trustedProxyList.length > 0) {
-        const peerTrusted = trustedProxyList.some((entry) => ipMatchesProxyEntry(cleanPeer, entry));
-        if (!peerTrusted) {
-          // Direct connection from untrusted peer attempting to bypass proxy tier
-          return null;
-        }
+
+      const effectiveTrustedPeers =
+        options?.trustedPeers ||
+        process.env.TRUSTED_PEERS?.split(',').map((s) => s.trim().toLowerCase()).filter(Boolean) ||
+        trustedProxyList;
+
+      if (!effectiveTrustedPeers || effectiveTrustedPeers.length === 0) {
+        // Peer validation requested via peerIp, but no trusted peer list is configured.
+        // Fail closed to prevent direct internet callers from bypassing reverse proxy.
+        return null;
+      }
+
+      const peerTrusted = effectiveTrustedPeers.some((entry) => ipMatchesProxyEntry(cleanPeer, entry));
+      if (!peerTrusted) {
+        // Direct connection from untrusted peer attempting to bypass proxy tier
+        return null;
       }
     }
 
