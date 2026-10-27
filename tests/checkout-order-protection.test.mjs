@@ -1,5 +1,6 @@
 import { test, describe, beforeEach } from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import os from 'node:os';
 import fs from 'node:fs';
@@ -31,6 +32,7 @@ import {
   createServerPaymentSession,
   verifyPaymentProviderServer,
   pruneExpiredPaymentSessions,
+  pruneStaleTrackedIps,
   recordProcessedTransaction,
   checkAndAcquirePaymentSessionSlot,
   resetPaymentProviderState,
@@ -1765,24 +1767,48 @@ describe('Payment Session Bounded Allocation & Admission Control Tests', () => {
     );
   });
 
-  test('REGRESSION [P2]: createServerPaymentSession enforces hard capacity bound by evicting oldest sessions', () => {
+  test('REGRESSION [P2]: createServerPaymentSession preserves unexpired sessions at capacity and rejects new allocations', () => {
     const originalMax = PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS;
     try {
       PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS = 5;
+      const baseNow = 1700000000000;
+      const sessions = [];
       for (let i = 0; i < 5; i++) {
-        const sess = createServerPaymentSession(1000 + i, 'INR');
+        const sess = createServerPaymentSession(1000 + i, 'INR', undefined, baseNow);
         assert.ok(sess);
+        sessions.push(sess);
       }
       assert.equal(getPaymentProviderMetrics().activeSessionsCount, 5);
 
-      // Allocating 6th session must evict oldest and maintain bound
-      const sess6 = createServerPaymentSession(6000, 'INR');
-      assert.ok(sess6);
+      // Allocating 6th session while all 5 are active and unexpired must reject new allocation and preserve live sessions
+      const sess6 = createServerPaymentSession(6000, 'INR', undefined, baseNow + 1000);
+      assert.equal(sess6, null, 'Must reject new session allocation when active unexpired sessions are at capacity');
       assert.equal(
         getPaymentProviderMetrics().activeSessionsCount,
         5,
-        'activeSessions must not exceed MAX_ACTIVE_SESSIONS'
+        'activeSessions count must remain at capacity without evicting live sessions'
       );
+
+      // Verify that the oldest session (session 0) was NOT evicted and remains valid for payment verification
+      const verifySession0 = verifyPaymentProviderServer(
+        {
+          paymentId: 'pay_tx_0',
+          sessionId: sessions[0].sessionId,
+          signature: crypto
+            .createHmac('sha256', process.env.PAYMENT_GATEWAY_SECRET)
+            .update(`${sessions[0].sessionId}:pay_tx_0:${sessions[0].amount}:INR`)
+            .digest('hex'),
+          amount: sessions[0].amount,
+          currency: 'INR',
+        },
+        baseNow + 1500
+      );
+      assert.equal(verifySession0.verified, true, 'Oldest unexpired session must remain valid and verifiable');
+
+      // Now session 0 is consumed. Allocating a new session reclaims session 0's slot
+      const sess7 = createServerPaymentSession(7000, 'INR', undefined, baseNow + 2000);
+      assert.ok(sess7, 'Should allocate new session after an expired/consumed session is swept');
+      assert.equal(getPaymentProviderMetrics().activeSessionsCount, 5);
     } finally {
       PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS = originalMax;
     }
@@ -1829,15 +1855,61 @@ describe('Payment Session Bounded Allocation & Admission Control Tests', () => {
     assert.equal(restored.allowed, true, 'Slot should be admitted after window expires');
   });
 
-  test('REGRESSION [P2]: checkAndAcquirePaymentSessionSlot bounds memory under high IP churn', () => {
+  test('REGRESSION [P2]: checkAndAcquirePaymentSessionSlot strictly enforces tracked-IP cap when all entries are active', () => {
     const originalMax = PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS;
     try {
       PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS = 5;
       const baseNow = Date.now();
-      for (let i = 0; i < 6; i++) {
-        checkAndAcquirePaymentSessionSlot(`198.51.100.${i}`, baseNow);
+
+      // Admit 5 unique IPs up to MAX_TRACKED_IPS
+      for (let i = 0; i < 5; i++) {
+        const res = checkAndAcquirePaymentSessionSlot(`198.51.100.${i}`, baseNow);
+        assert.equal(res.allowed, true, `Slot for IP 198.51.100.${i} must be admitted`);
       }
-      assert.ok(getPaymentProviderMetrics().trackedIpsCount <= 6);
+      assert.equal(
+        getPaymentProviderMetrics().trackedIpsCount,
+        PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS,
+        'Tracked IPs count must equal configured maximum (5)'
+      );
+
+      // Attempting 6th unique IP while all 5 are active in-window must be rejected
+      const overflowRes = checkAndAcquirePaymentSessionSlot('198.51.100.99', baseNow);
+      assert.equal(overflowRes.allowed, false, 'New IP must be rejected when all entries are active at cap');
+      assert.match(overflowRes.error, /Payment session capacity reached/);
+      assert.equal(
+        getPaymentProviderMetrics().trackedIpsCount,
+        PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS,
+        'Tracked IPs count must strictly assert the configured maximum (5)'
+      );
+
+      // Churn 50 more unique IPs: all must be rejected and map size must remain exactly MAX_TRACKED_IPS
+      for (let i = 100; i < 150; i++) {
+        const res = checkAndAcquirePaymentSessionSlot(`203.0.113.${i}`, baseNow);
+        assert.equal(res.allowed, false);
+      }
+      assert.equal(
+        getPaymentProviderMetrics().trackedIpsCount,
+        PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS,
+        'Tracked IPs must strictly assert configured maximum even under rapid unique-IP churn'
+      );
+
+      // An existing tracked IP can still acquire within its per-IP quota without increasing map size
+      const existingRes = checkAndAcquirePaymentSessionSlot('198.51.100.0', baseNow + 500);
+      assert.equal(existingRes.allowed, true, 'Existing tracked IP can still acquire within per-IP quota');
+      assert.equal(
+        getPaymentProviderMetrics().trackedIpsCount,
+        PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS,
+        'Existing IP acquisition must not grow the map'
+      );
+
+      // After IP window expires, stale IPs can be pruned and a new IP can be admitted
+      const futureNow = baseNow + PAYMENT_SESSION_CONFIG.IP_WINDOW_MS + 1000;
+      const futureRes = checkAndAcquirePaymentSessionSlot('198.51.100.99', futureNow);
+      assert.equal(futureRes.allowed, true, 'New IP admitted after window expires and stale IPs are reclaimed');
+      assert.ok(
+        getPaymentProviderMetrics().trackedIpsCount <= PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS,
+        'Tracked IPs must not exceed configured maximum'
+      );
     } finally {
       PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS = originalMax;
     }

@@ -85,6 +85,22 @@ export function pruneExpiredPaymentSessions(now = Date.now()): number {
 }
 
 /**
+ * Prunes expired timestamps and stale IP entries from the admission tracker.
+ * Returns the number of pruned IP entries.
+ */
+export function pruneStaleTrackedIps(now = Date.now()): number {
+  let prunedCount = 0;
+  for (const [ip, record] of ipAdmissionTracker.entries()) {
+    record.timestamps = record.timestamps.filter((t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS);
+    if (record.timestamps.length === 0) {
+      ipAdmissionTracker.delete(ip);
+      prunedCount++;
+    }
+  }
+  return prunedCount;
+}
+
+/**
  * Records a processed transaction ID with LRU / FIFO eviction to enforce
  * MAX_PROCESSED_TRANSACTIONS bounded memory.
  */
@@ -103,6 +119,7 @@ export function recordProcessedTransaction(paymentId: string): void {
 /**
  * Checks and acquires a payment session slot for an IP address.
  * Prevents rapid unauthenticated flooding and unbounded memory consumption.
+ * Strictly enforces the MAX_TRACKED_IPS cap by rejecting new IP keys when all slots are active.
  */
 export function checkAndAcquirePaymentSessionSlot(
   clientIp: string,
@@ -113,38 +130,49 @@ export function checkAndAcquirePaymentSessionSlot(
     return { allowed: false, error: 'Invalid client IP address for payment session.' };
   }
 
-  // Bound memory of IP tracker by pruning stale IPs
-  if (ipAdmissionTracker.size >= PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS) {
-    for (const [ip, record] of ipAdmissionTracker.entries()) {
-      record.timestamps = record.timestamps.filter((t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS);
-      if (record.timestamps.length === 0) {
-        ipAdmissionTracker.delete(ip);
-      }
+  // 1. If IP is already tracked, enforce per-IP quota without expanding map keys
+  const existingRecord = ipAdmissionTracker.get(normIp);
+  if (existingRecord) {
+    existingRecord.timestamps = existingRecord.timestamps.filter(
+      (t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS
+    );
+    if (existingRecord.timestamps.length >= PAYMENT_SESSION_CONFIG.MAX_SESSIONS_PER_IP) {
+      const oldestTimestamp = existingRecord.timestamps[0];
+      const retryAfter = Math.max(
+        1,
+        Math.ceil((oldestTimestamp + PAYMENT_SESSION_CONFIG.IP_WINDOW_MS - now) / 1000)
+      );
+      return {
+        allowed: false,
+        retryAfter,
+        error: `Too many payment sessions initiated. Please wait ${retryAfter}s before retrying.`,
+      };
     }
+    existingRecord.timestamps.push(now);
+    return { allowed: true };
   }
 
-  let record = ipAdmissionTracker.get(normIp);
-  if (!record) {
-    record = { timestamps: [] };
-    ipAdmissionTracker.set(normIp, record);
+  // 2. IP is new. Bound memory of IP tracker by pruning stale IP entries first
+  if (ipAdmissionTracker.size >= PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS) {
+    pruneStaleTrackedIps(now);
   }
 
-  record.timestamps = record.timestamps.filter((t) => now - t < PAYMENT_SESSION_CONFIG.IP_WINDOW_MS);
-
-  if (record.timestamps.length >= PAYMENT_SESSION_CONFIG.MAX_SESSIONS_PER_IP) {
-    const oldestTimestamp = record.timestamps[0];
+  // 3. Strictly enforce tracked-IP cap: if all entries are active inside window and no slot
+  // can be reclaimed, reject new IP key to eliminate the memory-exhaustion path.
+  if (ipAdmissionTracker.size >= PAYMENT_SESSION_CONFIG.MAX_TRACKED_IPS) {
     const retryAfter = Math.max(
       1,
-      Math.ceil((oldestTimestamp + PAYMENT_SESSION_CONFIG.IP_WINDOW_MS - now) / 1000)
+      Math.ceil(PAYMENT_SESSION_CONFIG.IP_WINDOW_MS / 1000)
     );
     return {
       allowed: false,
       retryAfter,
-      error: `Too many payment sessions initiated. Please wait ${retryAfter}s before retrying.`,
+      error: `Payment session capacity reached. Please wait ${retryAfter}s before retrying.`,
     };
   }
 
-  record.timestamps.push(now);
+  // 4. Slot available: register new IP record
+  ipAdmissionTracker.set(normIp, { timestamps: [now] });
   return { allowed: true };
 }
 
@@ -158,7 +186,8 @@ export function isPaymentGatewayConfigured(): boolean {
 /**
  * Generates a trusted payment session on the server.
  * Fails closed if the payment gateway secret is missing.
- * Purges expired sessions during allocation and enforces hard capacity bounds on activeSessions.
+ * Purges expired sessions during allocation and enforces hard capacity bounds on activeSessions
+ * by preserving live unexpired sessions and rejecting new allocations when capacity is full.
  */
 export function createServerPaymentSession(
   amount: number,
@@ -171,17 +200,13 @@ export function createServerPaymentSession(
     return null;
   }
 
-  // 1. Purge expired and consumed records during allocation to prevent stale memory leaks
+  // 1. Purge expired and consumed records during allocation to reclaim space
   pruneExpiredPaymentSessions(now);
 
-  // 2. Enforce hard capacity bound on active server sessions by evicting oldest (FIFO)
-  while (activeSessions.size >= PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
-    const oldestKey = activeSessions.keys().next().value;
-    if (oldestKey) {
-      activeSessions.delete(oldestKey);
-    } else {
-      break;
-    }
+  // 2. Preserve unexpired payment sessions: reject new allocations when at capacity
+  // rather than evicting live sessions awaiting customer payment.
+  if (activeSessions.size >= PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
+    return null;
   }
 
   const sessionId = `sess_${now}_${crypto.randomBytes(12).toString('hex')}`;
@@ -220,7 +245,10 @@ export function createServerPaymentSession(
  * Strictly verifies provider capture status, session validity, amount match, currency, and replay prevention.
  * Fails closed if environment secret is missing.
  */
-export function verifyPaymentProviderServer(input: PaymentVerificationInput): PaymentVerificationResult {
+export function verifyPaymentProviderServer(
+  input: PaymentVerificationInput,
+  now = Date.now()
+): PaymentVerificationResult {
   try {
     const secret = getPaymentGatewaySecret();
     if (!secret) {
@@ -256,7 +284,7 @@ export function verifyPaymentProviderServer(input: PaymentVerificationInput): Pa
       };
     }
 
-    if (Date.now() > session.expiresAt) {
+    if (now > session.expiresAt) {
       activeSessions.delete(sessionId);
       return {
         verified: false,

@@ -199,6 +199,14 @@ export async function initiatePaymentSession(
 
     const isConfigured = isPaymentGatewayConfigured();
     const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR', clientIp) : undefined;
+    if (isConfigured && !session) {
+      return {
+        success: false,
+        isGatewayConfigured: true,
+        error:
+          'Payment session capacity reached on server. Please wait a moment and try again.',
+      };
+    }
 
     return {
       success: true,
