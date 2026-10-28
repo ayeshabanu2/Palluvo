@@ -145,5 +145,51 @@ describe('Hero Marquee Accessibility & Sitemap Freshness Regression Tests', () =
       `Next.js version (${nextDep}) must be >= 16.4.1 to resolve GHSA-p3m5-59mp-jv5r, GHSA-2464-fhr4-w9xw, and GHSA-673q-mjm6-r5xr`
     );
   });
+
+  test('REGRESSION [P2]: .gitignore excludes environment files while keeping .env.example tracked', () => {
+    const gitignoreContent = fs.readFileSync(path.join(rootDir, '.gitignore'), 'utf-8');
+    assert.match(gitignoreContent, /^\.env\*/m, '.gitignore must exclude .env* files');
+    assert.match(gitignoreContent, /^!\.env\.example/m, '.gitignore must explicitly keep .env.example tracked');
+  });
+
+  test('REGRESSION [P3]: login and register metadata use bare titles and branded openGraph titles to avoid duplicate brand suffix', () => {
+    const loginContent = fs.readFileSync(path.join(rootDir, 'src/app/login/page.tsx'), 'utf-8');
+    assert.match(
+      loginContent,
+      /title:\s*['"]Sign In['"]/,
+      'login page must use bare title "Sign In" so layout template does not double brand suffix'
+    );
+    assert.match(
+      loginContent,
+      /openGraph:\s*\{[\s\S]*?title:\s*['"]Sign In \| PALLUVO Luxury Sarees['"]/,
+      'login page must provide branded title in openGraph'
+    );
+
+    const registerContent = fs.readFileSync(path.join(rootDir, 'src/app/register/page.tsx'), 'utf-8');
+    assert.match(
+      registerContent,
+      /title:\s*['"]Create an Account['"]/,
+      'register page must use bare title "Create an Account" so layout template does not double brand suffix'
+    );
+    assert.match(
+      registerContent,
+      /openGraph:\s*\{[\s\S]*?title:\s*['"]Create an Account \| PALLUVO Luxury Sarees['"]/,
+      'register page must provide branded title in openGraph'
+    );
+  });
+
+  test('REGRESSION [P3]: adopts Next.js 16 proxy.ts convention and removes deprecated middleware.ts', () => {
+    const proxyExists = fs.existsSync(path.join(rootDir, 'src/proxy.ts'));
+    const middlewareExists = fs.existsSync(path.join(rootDir, 'src/middleware.ts'));
+    assert.ok(proxyExists, 'src/proxy.ts must exist under Next.js 16 convention');
+    assert.equal(middlewareExists, false, 'src/middleware.ts must be migrated to src/proxy.ts');
+
+    const proxyContent = fs.readFileSync(path.join(rootDir, 'src/proxy.ts'), 'utf-8');
+    assert.match(
+      proxyContent,
+      /export\s+(?:async\s+)?function\s+proxy\s*\(/,
+      'src/proxy.ts must export proxy function'
+    );
+  });
 });
 

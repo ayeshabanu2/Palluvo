@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import LoginForm from './LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Sign In | PALLUVO Luxury Sarees',
+  title: 'Sign In',
   description: 'Sign in to your PALLUVO Atelier account to track orders and manage your handloom saree collection.',
   robots: {
     index: false,
@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/login',
+  },
+  openGraph: {
+    title: 'Sign In | PALLUVO Luxury Sarees',
+    description: 'Sign in to your PALLUVO Atelier account to track orders and manage your handloom saree collection.',
+    url: 'https://palluvo.com/login',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Sign In | PALLUVO Luxury Sarees',
+    description: 'Sign in to your PALLUVO Atelier account to track orders and manage your handloom saree collection.',
   },
 };
 

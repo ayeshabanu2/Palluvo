@@ -129,7 +129,7 @@ The migration preserves strict **100% saree-only merchandising**, authentic mast
 | [`src/utils/supabase/admin.ts`](src/utils/supabase/admin.ts) | ✅ **Added** | Server-only admin Supabase client using service role key for privileged operations |
 | [`src/utils/supabase/config.ts`](src/utils/supabase/config.ts) | ✅ **Added** | Deployment configuration validators including `isEmailConfirmationEnforced` |
 | [`src/utils/supabase/middleware.ts`](src/utils/supabase/middleware.ts) | ✅ **Added** | Supabase session synchronization middleware |
-| [`src/middleware.ts`](src/middleware.ts) | ✅ **Added** | Edge middleware managing session cookies across routes |
+| [`src/proxy.ts`](src/proxy.ts) | ✅ **Added** | Next.js 16 proxy convention managing session cookies across routes |
 | **Configuration, CI/CD & Tests** | | |
 | [`package.json`](package.json) | ✅ **Modified** | Updated `eslint` to `^9.0.0` for `eslint-config-next@16.4.0` compatibility and updated `lint` script to `eslint .` |
 | [`tsconfig.json`](tsconfig.json) | ✅ **Added** | Strict TypeScript compiler configuration with `@/*` path mapping |

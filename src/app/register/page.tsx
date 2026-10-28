@@ -3,7 +3,7 @@ import { Metadata } from 'next';
 import RegisterForm from './RegisterForm';
 
 export const metadata: Metadata = {
-  title: 'Create an Account | PALLUVO Luxury Sarees',
+  title: 'Create an Account',
   description: 'Join PALLUVO to experience curated authentic Indian handloom sarees and member benefits.',
   robots: {
     index: false,
@@ -11,6 +11,16 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: '/register',
+  },
+  openGraph: {
+    title: 'Create an Account | PALLUVO Luxury Sarees',
+    description: 'Join PALLUVO to experience curated authentic Indian handloom sarees and member benefits.',
+    url: 'https://palluvo.com/register',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Create an Account | PALLUVO Luxury Sarees',
+    description: 'Join PALLUVO to experience curated authentic Indian handloom sarees and member benefits.',
   },
 };
 
