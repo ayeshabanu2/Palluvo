@@ -1,4 +1,4 @@
-import { test, describe, beforeEach } from 'node:test';
+import { test, describe, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import crypto from 'node:crypto';
 import path from 'node:path';
@@ -31,6 +31,11 @@ import {
   PAYMENT_SESSION_CONFIG,
   createServerPaymentSession,
   verifyPaymentProviderServer,
+  consumePaymentSession,
+  CrossProcessPaymentStore,
+  DatabasePaymentStore,
+  getPaymentStore,
+  setPaymentStore,
   pruneExpiredPaymentSessions,
   pruneStaleTrackedIps,
   recordProcessedTransaction,
@@ -1915,6 +1920,294 @@ describe('Payment Session Bounded Allocation & Admission Control Tests', () => {
     }
   });
 });
+
+describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2]', () => {
+  let tmpDir;
+
+  beforeEach(() => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'palluvo-payment-test-'));
+    setPaymentStore(new CrossProcessPaymentStore(tmpDir));
+    resetPaymentProviderState();
+    process.env.PAYMENT_GATEWAY_SECRET = 'test_secret_for_payment_provider_key_12345';
+  });
+
+  afterEach(() => {
+    setPaymentStore(null);
+    try {
+      if (fs.existsSync(tmpDir)) {
+        fs.rmSync(tmpDir, { recursive: true, force: true });
+      }
+    } catch {}
+  });
+
+  test('REGRESSION [P2]: payment sessions persist across serverless instances sharing durable store', async () => {
+    const baseNow = 1700000000000;
+    // Instance A allocates a payment session
+    const instanceAStore = new CrossProcessPaymentStore(tmpDir);
+    setPaymentStore(instanceAStore);
+
+    const sessionA = await createServerPaymentSession(3999, 'INR', '198.51.100.10', baseNow);
+    assert.ok(sessionA);
+    assert.ok(sessionA.sessionId);
+
+    // Simulate Instance B in a separate process/worker with clean in-memory state
+    const instanceBStore = new CrossProcessPaymentStore(tmpDir);
+    setPaymentStore(instanceBStore);
+
+    // Instance B receives the payment verification payload from customer
+    const signature = crypto
+      .createHmac('sha256', process.env.PAYMENT_GATEWAY_SECRET)
+      .update(`${sessionA.sessionId}:pay_instance_b_123:3999:INR`)
+      .digest('hex');
+
+    const verifyResult = await verifyPaymentProviderServer(
+      {
+        paymentId: 'pay_instance_b_123',
+        sessionId: sessionA.sessionId,
+        signature,
+        amount: 3999,
+        currency: 'INR',
+        autoConsume: false, // verify without burning session
+      },
+      baseNow + 5000
+    );
+
+    assert.equal(verifyResult.verified, true, 'Instance B must discover session from shared durable store');
+    assert.equal(verifyResult.paymentId, 'pay_instance_b_123');
+  });
+
+  test('REGRESSION [P2]: payment session survives simulated process restart', async () => {
+    const baseNow = 1700000000000;
+    const session = await createServerPaymentSession(4999, 'INR', '198.51.100.20', baseNow);
+    assert.ok(session);
+
+    // Simulate process termination and restart: reinstantiate store from disk
+    const restartedStore = new CrossProcessPaymentStore(tmpDir);
+    setPaymentStore(restartedStore);
+
+    const signature = crypto
+      .createHmac('sha256', process.env.PAYMENT_GATEWAY_SECRET)
+      .update(`${session.sessionId}:pay_restart_999:4999:INR`)
+      .digest('hex');
+
+    const verifyResult = await verifyPaymentProviderServer(
+      {
+        paymentId: 'pay_restart_999',
+        sessionId: session.sessionId,
+        signature,
+        amount: 4999,
+        currency: 'INR',
+        autoConsume: false,
+      },
+      baseNow + 3000
+    );
+
+    assert.equal(verifyResult.verified, true, 'Payment session must survive process restart');
+  });
+
+  test('REGRESSION [P2]: atomic consumePaymentSession prevents double-consumption and replay attacks', async () => {
+    const baseNow = 1700000000000;
+    const session = await createServerPaymentSession(5999, 'INR', '198.51.100.30', baseNow);
+    assert.ok(session);
+
+    // First consumption succeeds and records orderNumber
+    const firstConsume = await consumePaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_atomic_001',
+      orderNumber: 'PLV-100001',
+      amount: 5999,
+      currency: 'INR',
+      now: baseNow + 1000,
+    });
+
+    assert.equal(firstConsume.success, true);
+    assert.equal(firstConsume.orderNumber, 'PLV-100001');
+
+    // Duplicate attempt to consume the same payment transaction must be rejected
+    const duplicateTx = await consumePaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_atomic_001',
+      orderNumber: 'PLV-100002',
+      amount: 5999,
+      currency: 'INR',
+      now: baseNow + 2000,
+    });
+
+    assert.equal(duplicateTx.success, false);
+    assert.equal(duplicateTx.duplicate, true);
+    assert.equal(duplicateTx.orderNumber, 'PLV-100001');
+    assert.match(duplicateTx.error, /Duplicate transaction detected/);
+
+    // Attempt to consume the same session with a new paymentId must also be rejected as already consumed
+    const duplicateSession = await consumePaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_atomic_002',
+      orderNumber: 'PLV-100003',
+      amount: 5999,
+      currency: 'INR',
+      now: baseNow + 3000,
+    });
+
+    assert.equal(duplicateSession.success, false);
+    assert.equal(duplicateSession.duplicate, true);
+    assert.match(duplicateSession.error, /Payment session has already been consumed/);
+  });
+
+  test('REGRESSION [P2]: payment session is preserved when order placement fails and can be recovered', async () => {
+    const baseNow = 1700000000000;
+    const session = await createServerPaymentSession(2999, 'INR', '198.51.100.40', baseNow);
+    assert.ok(session);
+
+    const signature = crypto
+      .createHmac('sha256', process.env.PAYMENT_GATEWAY_SECRET)
+      .update(`${session.sessionId}:pay_failed_db_777:2999:INR`)
+      .digest('hex');
+
+    // 1. Initial verification with autoConsume: false succeeds without consuming session
+    const preVerify = await verifyPaymentProviderServer(
+      {
+        paymentId: 'pay_failed_db_777',
+        sessionId: session.sessionId,
+        signature,
+        amount: 2999,
+        currency: 'INR',
+        autoConsume: false,
+      },
+      baseNow + 500
+    );
+    assert.equal(preVerify.verified, true);
+
+    // Simulate: Database insert fails (e.g. constraint error or DB unavailable).
+    // In actions.ts, consumePaymentSession is NOT called when insert fails.
+    // The session remains unconsumed in the durable store.
+    const store = getPaymentStore();
+    const storedSession = await store.getSession(session.sessionId);
+    assert.equal(storedSession.consumed, false, 'Session must not be consumed if database insert fails');
+
+    // 2. Customer retries after transient failure: re-verification must succeed (NOT duplicate error)
+    const retryVerify = await verifyPaymentProviderServer(
+      {
+        paymentId: 'pay_failed_db_777',
+        sessionId: session.sessionId,
+        signature,
+        amount: 2999,
+        currency: 'INR',
+        autoConsume: false,
+      },
+      baseNow + 2000
+    );
+    assert.equal(retryVerify.verified, true, 'Retry must succeed and not be locked out by previous failed attempt');
+
+    // 3. Database insert now succeeds: consumePaymentSession commits session and transaction
+    const finalCommit = await consumePaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_failed_db_777',
+      orderNumber: 'PLV-888888',
+      amount: 2999,
+      currency: 'INR',
+      now: baseNow + 2500,
+    });
+    assert.equal(finalCommit.success, true);
+
+    // 4. Repeated retry after order committed returns duplicate flag and existing orderNumber for idempotent recovery
+    const repeatVerify = await verifyPaymentProviderServer(
+      {
+        paymentId: 'pay_failed_db_777',
+        sessionId: session.sessionId,
+        signature,
+        amount: 2999,
+        currency: 'INR',
+        autoConsume: false,
+      },
+      baseNow + 3000
+    );
+    assert.equal(repeatVerify.verified, false);
+    assert.equal(repeatVerify.duplicate, true);
+    assert.equal(repeatVerify.orderNumber, 'PLV-888888', 'Must return associated orderNumber for idempotent recovery');
+  });
+
+  test('REGRESSION [P2]: DatabasePaymentStore executes RPCs with service_role privilege', async () => {
+    let rpcCalled = '';
+    let rpcArgs = null;
+
+    const mockSupabase = {
+      rpc: async (fn, args) => {
+        rpcCalled = fn;
+        rpcArgs = args;
+        if (fn === 'save_payment_session') {
+          return { data: { success: true, session_id: args.p_session_id }, error: null };
+        }
+        if (fn === 'consume_payment_session') {
+          return {
+            data: {
+              success: true,
+              session_id: args.p_session_id,
+              payment_id: args.p_payment_id,
+              order_number: args.p_order_number,
+            },
+            error: null,
+          };
+        }
+        return { data: null, error: null };
+      },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
+    };
+
+    const dbStore = new DatabasePaymentStore(async () => mockSupabase);
+
+    // Test saveSession via RPC
+    const saved = await dbStore.saveSession({
+      sessionId: 'sess_rpc_test',
+      amount: 1999,
+      currency: 'INR',
+      sessionToken: 'token_rpc',
+      createdAt: 1700000000000,
+      expiresAt: 1700000900000,
+      consumed: false,
+      clientIp: '198.51.100.50',
+    });
+
+    assert.equal(saved, true);
+    assert.equal(rpcCalled, 'save_payment_session');
+    assert.equal(rpcArgs.p_session_id, 'sess_rpc_test');
+    assert.equal(rpcArgs.p_amount, 1999);
+
+    // Test consumePayment via RPC
+    const consumed = await dbStore.consumePayment({
+      sessionId: 'sess_rpc_test',
+      paymentId: 'pay_rpc_test',
+      orderNumber: 'PLV-999999',
+      amount: 1999,
+      currency: 'INR',
+    });
+
+    assert.equal(consumed.success, true);
+    assert.equal(rpcCalled, 'consume_payment_session');
+    assert.equal(rpcArgs.p_payment_id, 'pay_rpc_test');
+    assert.equal(rpcArgs.p_order_number, 'PLV-999999');
+  });
+
+  test('REGRESSION [P2]: SQL migration file sets up payment_sessions, payment_transactions, and service_role RLS', () => {
+    const migrationPath = path.join(process.cwd(), 'supabase', 'migrations', '20261028_payment_sessions.sql');
+    assert.ok(fs.existsSync(migrationPath), '20261028_payment_sessions.sql migration file must exist');
+
+    const sqlContent = fs.readFileSync(migrationPath, 'utf8');
+    assert.match(sqlContent, /CREATE TABLE IF NOT EXISTS public\.payment_sessions/);
+    assert.match(sqlContent, /CREATE TABLE IF NOT EXISTS public\.payment_transactions/);
+    assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.save_payment_session/);
+    assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.consume_payment_session/);
+    assert.match(sqlContent, /GRANT EXECUTE ON FUNCTION public\.consume_payment_session\(.*\) TO service_role/);
+    assert.match(sqlContent, /ALTER TABLE public\.payment_sessions ENABLE ROW LEVEL SECURITY/);
+    assert.match(sqlContent, /ALTER TABLE public\.payment_transactions ENABLE ROW LEVEL SECURITY/);
+  });
+});
+
 
 
 

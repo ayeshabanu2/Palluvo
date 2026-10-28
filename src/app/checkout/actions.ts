@@ -1,12 +1,12 @@
 'use server';
 
-import { headers } from 'next/headers';
 import { SAREE_PRODUCTS } from '@/data/products';
 import { createClient } from '@/utils/supabase/server';
 import { CartItem, OrderCustomerDetails, PlacedOrder } from '@/types';
 import {
   createServerPaymentSession,
   verifyPaymentProviderServer,
+  consumePaymentSession,
   isPaymentGatewayConfigured,
   checkAndAcquirePaymentSessionSlot,
   PaymentSession,
@@ -70,6 +70,7 @@ export interface PaymentSessionResult {
 
 async function getClientIp(): Promise<string | null> {
   try {
+    const { headers } = await import('next/headers');
     const headerList = await headers();
     return resolveClientIp(headerList);
   } catch {
@@ -198,7 +199,7 @@ export async function initiatePaymentSession(
       calculateTrustedOrderTotals(itemsValidation.items, couponCode);
 
     const isConfigured = isPaymentGatewayConfigured();
-    const session = isConfigured ? createServerPaymentSession(trustedGrandTotal, 'INR', clientIp) : undefined;
+    const session = isConfigured ? await createServerPaymentSession(trustedGrandTotal, 'INR', clientIp) : undefined;
     if (isConfigured && !session) {
       return {
         success: false,
@@ -337,18 +338,74 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         paymentVerification.sessionId &&
         paymentVerification.signature
       ) {
-        const verificationResult = verifyPaymentProviderServer({
+        // Step 1: Pre-verify payment signature, session validity, amount match, and currency
+        // Set autoConsume: false so payment session is NOT consumed before order is committed to DB
+        const verificationResult = await verifyPaymentProviderServer({
           paymentId: paymentVerification.paymentId,
           sessionId: paymentVerification.sessionId,
           signature: paymentVerification.signature,
           amount: trustedGrandTotal,
           currency: 'INR',
+          autoConsume: false,
         });
 
-        if (verificationResult.verified) {
-          orderStatus = 'Confirmed';
-          paymentStatus = `Verified & Captured (${paymentMethod.toUpperCase()}: ${paymentVerification.paymentId})`;
-        } else {
+        if (!verificationResult.verified) {
+          // If transaction was already consumed, check if this is an idempotent retry of an already-persisted order
+          if (verificationResult.duplicate) {
+            try {
+              const supabase = supabaseClient || (await createClient());
+              let existingDbOrder: any = null;
+
+              if (verificationResult.orderNumber) {
+                const { data } = await supabase
+                  .from('orders')
+                  .select('*')
+                  .or(`id.eq.${verificationResult.orderNumber},order_number.eq.${verificationResult.orderNumber}`)
+                  .limit(1)
+                  .maybeSingle();
+                existingDbOrder = data;
+              }
+
+              if (!existingDbOrder && paymentVerification.paymentId) {
+                const { data } = await supabase
+                  .from('orders')
+                  .select('*')
+                  .like('payment_status', `%${paymentVerification.paymentId}%`)
+                  .limit(1)
+                  .maybeSingle();
+                existingDbOrder = data;
+              }
+
+              if (existingDbOrder) {
+                const recoveredOrder: PlacedOrder = {
+                  id: existingDbOrder.id,
+                  orderNumber: existingDbOrder.order_number || existingDbOrder.id,
+                  date:
+                    existingDbOrder.date ||
+                    (existingDbOrder.created_at
+                      ? new Date(existingDbOrder.created_at).toLocaleDateString('en-GB', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })
+                      : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })),
+                  status: existingDbOrder.status || 'Confirmed',
+                  items: existingDbOrder.items || canonicalItems,
+                  subtotal: Number(existingDbOrder.subtotal) || trustedSubtotal,
+                  discountAmount: Number(existingDbOrder.discount_amount) || trustedDiscount,
+                  shippingFee: Number(existingDbOrder.shipping_fee) || trustedShipping,
+                  grandTotal: Number(existingDbOrder.grand_total) || trustedGrandTotal,
+                  paymentMethod: existingDbOrder.payment_method || paymentMethod,
+                  customer: existingDbOrder.customer || validatedCustomer,
+                };
+                orderCreated = recoveredOrder;
+                return { success: true, order: recoveredOrder };
+              }
+            } catch (recoveryErr) {
+              console.error('[Checkout] Error checking existing order for duplicate payment:', recoveryErr);
+            }
+          }
+
           return {
             success: false,
             error:
@@ -356,6 +413,9 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
               'Payment provider verification failed: invalid signature or transaction mismatch.',
           };
         }
+
+        orderStatus = 'Confirmed';
+        paymentStatus = `Verified & Captured (${paymentMethod.toUpperCase()}: ${paymentVerification.paymentId})`;
       } else {
         return {
           success: false,
@@ -388,6 +448,34 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       if (!user) {
         const authData = await supabase.auth.getUser();
         user = authData?.data?.user || null;
+      }
+
+      // Check for existing order with this paymentId before creating a new one (idempotency guard)
+      if (paymentVerification?.paymentId) {
+        const { data: existingPaymentOrders } = await supabase
+          .from('orders')
+          .select('*')
+          .like('payment_status', `%${paymentVerification.paymentId}%`)
+          .limit(1);
+
+        if (existingPaymentOrders && existingPaymentOrders.length > 0) {
+          const dbo = existingPaymentOrders[0];
+          const duplicateOrder: PlacedOrder = {
+            id: dbo.id,
+            orderNumber: dbo.order_number || dbo.id,
+            date: dbo.date || verifiedOrder.date,
+            status: dbo.status || 'Confirmed',
+            items: dbo.items || canonicalItems,
+            subtotal: Number(dbo.subtotal) || trustedSubtotal,
+            discountAmount: Number(dbo.discount_amount) || trustedDiscount,
+            shippingFee: Number(dbo.shipping_fee) || trustedShipping,
+            grandTotal: Number(dbo.grand_total) || trustedGrandTotal,
+            paymentMethod: dbo.payment_method || paymentMethod,
+            customer: dbo.customer || validatedCustomer,
+          };
+          orderCreated = duplicateOrder;
+          return { success: true, order: duplicateOrder };
+        }
       }
 
       // Check for recent duplicate order in Supabase within the deduplication window
@@ -456,6 +544,8 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
       if (insertError) {
         console.error('Supabase orders table insertion error:', insertError);
+        // Note: Payment session is NOT consumed on insert failure!
+        // The customer can safely retry without their payment session being locked out.
         return {
           success: false,
           error: `Order could not be saved to the database (${insertError.message}). Please try again or contact customer support.`,
@@ -463,6 +553,7 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       }
     } catch (dbException) {
       console.error('Supabase client exception during order insertion:', dbException);
+      // Note: Payment session is NOT consumed on database exception!
       return {
         success: false,
         error:
@@ -470,6 +561,24 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
             ? dbException.message
             : 'Database connection error during order placement. Please try again.',
       };
+    }
+
+    // 9. Order committed successfully to database! Durably consume payment session and record replay state
+    if (paymentMethod === 'upi' || paymentMethod === 'card') {
+      if (paymentVerification?.sessionId && paymentVerification?.paymentId) {
+        try {
+          await consumePaymentSession({
+            sessionId: paymentVerification.sessionId,
+            paymentId: paymentVerification.paymentId,
+            orderNumber: verifiedOrder.orderNumber,
+            amount: trustedGrandTotal,
+            currency: 'INR',
+          });
+        } catch (consumeErr) {
+          console.error('[Checkout] Error committing payment session consumption:', consumeErr);
+          // Order was already persisted to database, so checkout completes successfully
+        }
+      }
     }
 
     orderCreated = verifiedOrder;
