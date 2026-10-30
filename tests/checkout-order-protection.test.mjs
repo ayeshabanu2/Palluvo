@@ -31,6 +31,9 @@ import {
   PAYMENT_SESSION_CONFIG,
   createServerPaymentSession,
   verifyPaymentProviderServer,
+  claimPaymentSession,
+  releasePaymentClaim,
+  confirmPaymentSession,
   consumePaymentSession,
   CrossProcessPaymentStore,
   DatabasePaymentStore,
@@ -2386,11 +2389,213 @@ describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2
     const sqlContent = fs.readFileSync(migrationPath, 'utf8');
     assert.match(sqlContent, /CREATE TABLE IF NOT EXISTS public\.payment_sessions/);
     assert.match(sqlContent, /CREATE TABLE IF NOT EXISTS public\.payment_transactions/);
+    assert.match(sqlContent, /status TEXT NOT NULL DEFAULT 'confirmed'/);
     assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.save_payment_session/);
+    assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.claim_payment_session/);
+    assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.release_payment_claim/);
     assert.match(sqlContent, /CREATE OR REPLACE FUNCTION public\.consume_payment_session/);
+    assert.match(sqlContent, /GRANT EXECUTE ON FUNCTION public\.claim_payment_session\(.*\) TO service_role/);
+    assert.match(sqlContent, /GRANT EXECUTE ON FUNCTION public\.release_payment_claim\(.*\) TO service_role/);
     assert.match(sqlContent, /GRANT EXECUTE ON FUNCTION public\.consume_payment_session\(.*\) TO service_role/);
     assert.match(sqlContent, /ALTER TABLE public\.payment_sessions ENABLE ROW LEVEL SECURITY/);
     assert.match(sqlContent, /ALTER TABLE public\.payment_transactions ENABLE ROW LEVEL SECURITY/);
+  });
+
+  test('REGRESSION [P2]: CrossProcessPaymentStore.withLock fails closed when lock cannot be acquired', async () => {
+    const testDir = path.join(os.tmpdir(), `palluvo_lock_fail_test_${Date.now()}_${Math.random().toString(36).slice(2)}`);
+    fs.mkdirSync(testDir, { recursive: true });
+    try {
+      const store = new CrossProcessPaymentStore(testDir);
+      // Pre-create lock file so store cannot acquire lock
+      fs.writeFileSync(store.lockFilePath, JSON.stringify({ pid: process.pid, time: Date.now() }));
+
+      let callbackExecuted = false;
+      assert.throws(
+        () => {
+          store['withLock'](() => {
+            callbackExecuted = true;
+            return 'should_not_run';
+          });
+        },
+        /Failed to acquire lock/
+      );
+      assert.equal(callbackExecuted, false, 'Callback must strictly NOT execute if lock was not acquired');
+
+      // Caller methods must fail closed gracefully
+      const saveRes = await store.saveSession({
+        sessionId: 'sess_lock_fail',
+        amount: 1000,
+        currency: 'INR',
+        sessionToken: 'tok',
+        createdAt: Date.now(),
+        expiresAt: Date.now() + 60000,
+        consumed: false,
+      });
+      assert.equal(saveRes, false, 'saveSession must fail closed when lock cannot be acquired');
+
+      const claimRes = await store.claimPayment({
+        sessionId: 'sess_lock_fail',
+        paymentId: 'pay_lock_fail',
+        orderNumber: 'PLV-LOCK-1',
+        amount: 1000,
+      });
+      assert.equal(claimRes.success, false, 'claimPayment must fail closed when lock cannot be acquired');
+      assert.match(claimRes.error, /lock/i);
+    } finally {
+      try { fs.rmSync(testDir, { recursive: true, force: true }); } catch {}
+    }
+  });
+
+  test('REGRESSION [P1]: Atomic claim workflow prevents concurrent double order submissions for same payment', async () => {
+    const baseNow = 1700000000000;
+    const session = await createServerPaymentSession(4999, 'INR', '198.51.100.99', baseNow);
+    assert.ok(session);
+
+    // Concurrent request A claims the payment ID for order PLV-CONCURRENT-A
+    const claimA = await claimPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_concurrent_123',
+      orderNumber: 'PLV-CONCURRENT-A',
+      amount: 4999,
+      currency: 'INR',
+      now: baseNow + 100,
+    });
+    assert.equal(claimA.success, true);
+    assert.equal(claimA.orderNumber, 'PLV-CONCURRENT-A');
+
+    // Concurrent request B attempts to claim the same payment ID for a different order PLV-CONCURRENT-B
+    const claimB = await claimPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_concurrent_123',
+      orderNumber: 'PLV-CONCURRENT-B',
+      amount: 4999,
+      currency: 'INR',
+      now: baseNow + 150,
+    });
+    assert.equal(claimB.success, false, 'Second concurrent claim must fail');
+    assert.equal(claimB.duplicate, true, 'Second concurrent claim must be flagged as duplicate');
+    assert.equal(claimB.orderNumber, 'PLV-CONCURRENT-A', 'Must report winning orderNumber so concurrent request can recover existing order');
+    assert.match(claimB.error, /Duplicate transaction detected/);
+
+    // Idempotent retry by the SAME order PLV-CONCURRENT-A succeeds
+    const retryA = await claimPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_concurrent_123',
+      orderNumber: 'PLV-CONCURRENT-A',
+      amount: 4999,
+      currency: 'INR',
+      now: baseNow + 200,
+    });
+    assert.equal(retryA.success, true, 'Idempotent retry for the same order must succeed');
+  });
+
+  test('REGRESSION [P1]: Releasing payment claim on insert failure permits customer retry without lockout', async () => {
+    const baseNow = 1700000000000;
+    const session = await createServerPaymentSession(3499, 'INR', '198.51.100.99', baseNow);
+    assert.ok(session);
+
+    // Step 1: Claim payment for order attempt 1
+    const claim1 = await claimPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_retry_456',
+      orderNumber: 'PLV-ATTEMPT-1',
+      amount: 3499,
+      currency: 'INR',
+      now: baseNow + 100,
+    });
+    assert.equal(claim1.success, true);
+
+    // Step 2: Database insert fails -> actions.ts invokes releasePaymentClaim
+    const released = await releasePaymentClaim({
+      sessionId: session.sessionId,
+      paymentId: 'pay_retry_456',
+      orderNumber: 'PLV-ATTEMPT-1',
+    });
+    assert.equal(released, true);
+
+    // Step 3: Customer retries order placement -> claim succeeds for attempt 2
+    const claim2 = await claimPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_retry_456',
+      orderNumber: 'PLV-ATTEMPT-2',
+      amount: 3499,
+      currency: 'INR',
+      now: baseNow + 500,
+    });
+    assert.equal(claim2.success, true, 'Customer retry must succeed after previous claim was released');
+    assert.equal(claim2.orderNumber, 'PLV-ATTEMPT-2');
+
+    // Step 4: Database insert succeeds -> confirmPaymentSession finalizes payment
+    const confirmed = await confirmPaymentSession({
+      sessionId: session.sessionId,
+      paymentId: 'pay_retry_456',
+      orderNumber: 'PLV-ATTEMPT-2',
+      amount: 3499,
+      currency: 'INR',
+      now: baseNow + 600,
+    });
+    assert.equal(confirmed.success, true);
+
+    // Step 5: After confirmation, releasePaymentClaim can no longer unseat the confirmed transaction
+    const lateRelease = await releasePaymentClaim({
+      sessionId: session.sessionId,
+      paymentId: 'pay_retry_456',
+      orderNumber: 'PLV-ATTEMPT-2',
+    });
+    assert.equal(lateRelease, true);
+
+    const store = getPaymentStore();
+    const tx = await store.getTransaction('pay_retry_456');
+    assert.ok(tx, 'Confirmed transaction must remain persisted');
+    assert.equal(tx.status, 'confirmed');
+  });
+
+  test('REGRESSION [P1]: DatabasePaymentStore executes claim and release RPCs with service_role privilege', async () => {
+    const rpcLog = [];
+
+    const mockSupabase = {
+      rpc: async (fn, args) => {
+        rpcLog.push({ fn, args });
+        if (fn === 'claim_payment_session') {
+          return {
+            data: {
+              success: true,
+              session_id: args.p_session_id,
+              payment_id: args.p_payment_id,
+              order_number: args.p_order_number,
+            },
+            error: null,
+          };
+        }
+        if (fn === 'release_payment_claim') {
+          return { data: { success: true }, error: null };
+        }
+        return { data: null, error: null };
+      },
+    };
+
+    const dbStore = new DatabasePaymentStore(async () => mockSupabase);
+
+    const claimRes = await dbStore.claimPayment({
+      sessionId: 'sess_db_claim',
+      paymentId: 'pay_db_claim',
+      orderNumber: 'PLV-DB-CLAIM-1',
+      amount: 7999,
+      currency: 'INR',
+    });
+    assert.equal(claimRes.success, true);
+    assert.equal(claimRes.orderNumber, 'PLV-DB-CLAIM-1');
+    assert.equal(rpcLog[0].fn, 'claim_payment_session');
+    assert.equal(rpcLog[0].args.p_payment_id, 'pay_db_claim');
+
+    const releaseRes = await dbStore.releaseClaim({
+      sessionId: 'sess_db_claim',
+      paymentId: 'pay_db_claim',
+      orderNumber: 'PLV-DB-CLAIM-1',
+    });
+    assert.equal(releaseRes, true);
+    assert.equal(rpcLog[1].fn, 'release_payment_claim');
+    assert.equal(rpcLog[1].args.p_payment_id, 'pay_db_claim');
   });
 });
 

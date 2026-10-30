@@ -6,6 +6,9 @@ import { CartItem, OrderCustomerDetails, PlacedOrder } from '@/types';
 import {
   createServerPaymentSession,
   verifyPaymentProviderServer,
+  claimPaymentSession,
+  releasePaymentClaim,
+  confirmPaymentSession,
   consumePaymentSession,
   isPaymentGatewayConfigured,
   checkAndAcquirePaymentSessionSlot,
@@ -469,7 +472,8 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       customer: validatedCustomer,
     };
 
-    // 8. Persist to Supabase orders table with RLS and duplicate protection
+    // 8. Persist to Supabase orders table with RLS, atomic payment reservation claim, and duplicate protection
+    let paymentClaimed = false;
     try {
       const supabase = supabaseClient || (await createClient());
       if (!user) {
@@ -551,6 +555,81 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         }
       }
 
+      // Atomically claim payment ID before order creation to prevent concurrent double-order submissions
+      if (paymentMethod === 'upi' || paymentMethod === 'card') {
+        if (paymentVerification?.sessionId && paymentVerification?.paymentId) {
+          const claimRes = await claimPaymentSession({
+            sessionId: paymentVerification.sessionId,
+            paymentId: paymentVerification.paymentId,
+            orderNumber,
+            amount: trustedGrandTotal,
+            currency: 'INR',
+          });
+
+          if (!claimRes.success) {
+            if (claimRes.duplicate) {
+              // Concurrent submission or already claimed: locate and return existing winner order
+              let existingWinnerOrder: any = null;
+              for (let attempt = 0; attempt < 3; attempt++) {
+                if (claimRes.orderNumber) {
+                  const { data } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .or(`id.eq.${claimRes.orderNumber},order_number.eq.${claimRes.orderNumber}`)
+                    .limit(1)
+                    .maybeSingle();
+                  existingWinnerOrder = data;
+                }
+
+                if (!existingWinnerOrder && paymentVerification.paymentId) {
+                  const { data } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .like('payment_status', `%${paymentVerification.paymentId}%`)
+                    .limit(1)
+                    .maybeSingle();
+                  existingWinnerOrder = data;
+                }
+
+                if (existingWinnerOrder) break;
+                await new Promise((resolve) => setTimeout(resolve, 100));
+              }
+
+              if (existingWinnerOrder) {
+                const recoveredOrder: PlacedOrder = {
+                  id: existingWinnerOrder.id,
+                  orderNumber: existingWinnerOrder.order_number || existingWinnerOrder.id,
+                  date: existingWinnerOrder.date || verifiedOrder.date,
+                  status: existingWinnerOrder.status || 'Confirmed',
+                  items: existingWinnerOrder.items || canonicalItems,
+                  subtotal: Number(existingWinnerOrder.subtotal) || trustedSubtotal,
+                  discountAmount: Number(existingWinnerOrder.discount_amount) || trustedDiscount,
+                  shippingFee: Number(existingWinnerOrder.shipping_fee) || trustedShipping,
+                  grandTotal: Number(existingWinnerOrder.grand_total) || trustedGrandTotal,
+                  paymentMethod: existingWinnerOrder.payment_method || paymentMethod,
+                  customer: existingWinnerOrder.customer || validatedCustomer,
+                };
+                orderCreated = recoveredOrder;
+                return { success: true, order: recoveredOrder };
+              }
+
+              return {
+                success: false,
+                error:
+                  'A concurrent transaction for this payment is currently being processed. Please check your order history or wait a moment.',
+              };
+            }
+
+            return {
+              success: false,
+              error: claimRes.error || 'Payment session could not be claimed for this order.',
+            };
+          }
+
+          paymentClaimed = true;
+        }
+      }
+
       const { error: insertError } = await supabase.from('orders').insert([
         {
           id: orderNumber,
@@ -571,8 +650,14 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
       if (insertError) {
         console.error('Supabase orders table insertion error:', insertError);
-        // Note: Payment session is NOT consumed on insert failure!
-        // The customer can safely retry without their payment session being locked out.
+        // Release atomic payment claim so customer can retry without lockout
+        if (paymentClaimed && paymentVerification?.sessionId && paymentVerification?.paymentId) {
+          await releasePaymentClaim({
+            sessionId: paymentVerification.sessionId,
+            paymentId: paymentVerification.paymentId,
+            orderNumber,
+          }).catch((relErr) => console.error('[Checkout] Error releasing payment claim on insert failure:', relErr));
+        }
         return {
           success: false,
           error: `Order could not be saved to the database (${insertError.message}). Please try again or contact customer support.`,
@@ -580,7 +665,13 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       }
     } catch (dbException) {
       console.error('Supabase client exception during order insertion:', dbException);
-      // Note: Payment session is NOT consumed on database exception!
+      if (paymentClaimed && paymentVerification?.sessionId && paymentVerification?.paymentId) {
+        await releasePaymentClaim({
+          sessionId: paymentVerification.sessionId,
+          paymentId: paymentVerification.paymentId,
+          orderNumber,
+        }).catch((relErr) => console.error('[Checkout] Error releasing payment claim on DB exception:', relErr));
+      }
       return {
         success: false,
         error:
@@ -590,19 +681,22 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
       };
     }
 
-    // 9. Order committed successfully to database! Durably consume payment session and record replay state
+    // 9. Order committed successfully to database! Durably confirm payment session and finalize replay state
     if (paymentMethod === 'upi' || paymentMethod === 'card') {
       if (paymentVerification?.sessionId && paymentVerification?.paymentId) {
         try {
-          await consumePaymentSession({
+          const confirmRes = await confirmPaymentSession({
             sessionId: paymentVerification.sessionId,
             paymentId: paymentVerification.paymentId,
             orderNumber: verifiedOrder.orderNumber,
             amount: trustedGrandTotal,
             currency: 'INR',
           });
-        } catch (consumeErr) {
-          console.error('[Checkout] Error committing payment session consumption:', consumeErr);
+          if (!confirmRes.success) {
+            console.warn('[Checkout] Payment confirmation returned non-success:', confirmRes.error);
+          }
+        } catch (confirmErr) {
+          console.error('[Checkout] Error committing payment session confirmation:', confirmErr);
           // Order was already persisted to database, so checkout completes successfully
         }
       }

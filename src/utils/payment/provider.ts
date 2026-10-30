@@ -40,6 +40,7 @@ export interface SessionRecord {
   clientIp?: string;
   orderNumber?: string;
   consumedAt?: number;
+  claimedAt?: number;
 }
 
 export interface TransactionRecord {
@@ -48,7 +49,30 @@ export interface TransactionRecord {
   orderNumber: string;
   amount?: number;
   currency?: string;
+  status?: 'claimed' | 'confirmed';
   timestamp: number;
+}
+
+export interface ClaimPaymentParams {
+  sessionId: string;
+  paymentId: string;
+  orderNumber: string;
+  amount: number;
+  currency?: string;
+  now?: number;
+}
+
+export interface ClaimPaymentResult {
+  success: boolean;
+  error?: string;
+  duplicate?: boolean;
+  orderNumber?: string;
+}
+
+export interface ReleaseClaimParams {
+  sessionId: string;
+  paymentId: string;
+  orderNumber: string;
 }
 
 export interface ConsumePaymentParams {
@@ -72,6 +96,9 @@ export interface PaymentStore {
   getSession(sessionId: string): Promise<SessionRecord | null>;
   isTransactionProcessed(paymentId: string): Promise<boolean>;
   getTransaction(paymentId: string): Promise<TransactionRecord | null>;
+  claimPayment?(params: ClaimPaymentParams): Promise<ClaimPaymentResult>;
+  releaseClaim?(params: ReleaseClaimParams): Promise<boolean>;
+  confirmPayment?(params: ConsumePaymentParams): Promise<ConsumePaymentResult>;
   consumePayment(params: ConsumePaymentParams): Promise<ConsumePaymentResult>;
   pruneExpired(now?: number): Promise<number>;
   clear(): Promise<void>;
@@ -161,13 +188,15 @@ export class CrossProcessPaymentStore implements PaymentStore {
       }
     }
 
+    if (fd === null) {
+      throw new Error(`[CrossProcessPaymentStore] Failed to acquire lock within ${maxWaitMs}ms.`);
+    }
+
     try {
       return fn();
     } finally {
-      if (fd !== null) {
-        try { fs.closeSync(fd); } catch {}
-        try { fs.unlinkSync(this.lockFilePath); } catch {}
-      }
+      try { fs.closeSync(fd); } catch {}
+      try { fs.unlinkSync(this.lockFilePath); } catch {}
     }
   }
 
@@ -204,131 +233,302 @@ export class CrossProcessPaymentStore implements PaymentStore {
   }
 
   async saveSession(session: SessionRecord): Promise<boolean> {
-    return this.withLock(() => {
-      const state = this.readState();
-      const now = Date.now();
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+        const now = Date.now();
 
-      // Prune expired or consumed sessions first
-      for (const [id, rec] of Object.entries(state.activeSessions)) {
-        if (now > rec.expiresAt || rec.consumed) {
-          delete state.activeSessions[id];
+        // Prune expired or consumed sessions first
+        for (const [id, rec] of Object.entries(state.activeSessions)) {
+          if (now > rec.expiresAt || rec.consumed) {
+            delete state.activeSessions[id];
+          }
         }
-      }
 
-      // Preserve unexpired sessions: reject new allocations when at capacity
-      if (Object.keys(state.activeSessions).length >= PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
-        return false;
-      }
+        // Preserve unexpired sessions: reject new allocations when at capacity
+        if (Object.keys(state.activeSessions).length >= PAYMENT_SESSION_CONFIG.MAX_ACTIVE_SESSIONS) {
+          return false;
+        }
 
-      state.activeSessions[session.sessionId] = session;
-      this.writeState(state);
-      return true;
-    });
+        state.activeSessions[session.sessionId] = session;
+        this.writeState(state);
+        return true;
+      });
+    } catch {
+      return false;
+    }
   }
 
   async getSession(sessionId: string): Promise<SessionRecord | null> {
-    return this.withLock(() => {
-      const state = this.readState();
-      return state.activeSessions[sessionId] || null;
-    });
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+        return state.activeSessions[sessionId] || null;
+      });
+    } catch {
+      return null;
+    }
   }
 
   async isTransactionProcessed(paymentId: string): Promise<boolean> {
-    return this.withLock(() => {
-      const state = this.readState();
-      return Boolean(state.processedTransactions[paymentId]);
-    });
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+        return Boolean(state.processedTransactions[paymentId]);
+      });
+    } catch {
+      return false;
+    }
   }
 
   async getTransaction(paymentId: string): Promise<TransactionRecord | null> {
-    return this.withLock(() => {
-      const state = this.readState();
-      return state.processedTransactions[paymentId] || null;
-    });
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+        return state.processedTransactions[paymentId] || null;
+      });
+    } catch {
+      return null;
+    }
+  }
+
+  async claimPayment(params: ClaimPaymentParams): Promise<ClaimPaymentResult> {
+    const now = params.now || Date.now();
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+
+        // 1. Replay prevention check: reject already-claimed or already-consumed transactions
+        const existingTx = state.processedTransactions[params.paymentId];
+        if (existingTx) {
+          if (existingTx.orderNumber === params.orderNumber) {
+            return {
+              success: true,
+              orderNumber: existingTx.orderNumber,
+            };
+          }
+          return {
+            success: false,
+            duplicate: true,
+            orderNumber: existingTx.orderNumber,
+            error: 'Duplicate transaction detected. This payment transaction has already been claimed or consumed.',
+          };
+        }
+
+        // 2. Session validity check
+        const session = state.activeSessions[params.sessionId];
+        if (!session) {
+          return {
+            success: false,
+            error: 'Invalid or unrecognized payment session ID.',
+          };
+        }
+
+        if (now > session.expiresAt) {
+          delete state.activeSessions[params.sessionId];
+          this.writeState(state);
+          return {
+            success: false,
+            error: 'Payment session has expired. Please initiate a new checkout session.',
+          };
+        }
+
+        if (session.consumed) {
+          if (session.orderNumber === params.orderNumber) {
+            return {
+              success: true,
+              orderNumber: session.orderNumber,
+            };
+          }
+          return {
+            success: false,
+            duplicate: true,
+            orderNumber: session.orderNumber,
+            error: 'Payment session has already been consumed for a completed order.',
+          };
+        }
+
+        if (session.orderNumber && session.orderNumber !== params.orderNumber) {
+          return {
+            success: false,
+            duplicate: true,
+            orderNumber: session.orderNumber,
+            error: 'Payment session is already claimed by another concurrent order.',
+          };
+        }
+
+        if (session.amount !== params.amount || (params.currency && session.currency !== params.currency)) {
+          return {
+            success: false,
+            error: `Payment amount or currency mismatch. Expected ${session.amount} ${session.currency}, received ${params.amount} ${params.currency || 'INR'}.`,
+          };
+        }
+
+        // 3. Atomically record claim
+        session.orderNumber = params.orderNumber;
+        session.claimedAt = now;
+
+        state.processedTransactions[params.paymentId] = {
+          paymentId: params.paymentId,
+          sessionId: params.sessionId,
+          orderNumber: params.orderNumber,
+          amount: params.amount,
+          currency: params.currency || 'INR',
+          status: 'claimed',
+          timestamp: now,
+        };
+
+        this.writeState(state);
+        return {
+          success: true,
+          orderNumber: params.orderNumber,
+        };
+      });
+    } catch (err: any) {
+      return {
+        success: false,
+        error: err?.message || 'Payment store lock acquisition failed. Could not claim payment.',
+      };
+    }
+  }
+
+  async releaseClaim(params: ReleaseClaimParams): Promise<boolean> {
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
+        const existingTx = state.processedTransactions[params.paymentId];
+        if (existingTx && existingTx.orderNumber === params.orderNumber && existingTx.status === 'claimed') {
+          delete state.processedTransactions[params.paymentId];
+        }
+
+        const session = state.activeSessions[params.sessionId];
+        if (session && session.orderNumber === params.orderNumber && !session.consumed) {
+          delete session.orderNumber;
+          delete session.claimedAt;
+        }
+
+        this.writeState(state);
+        return true;
+      });
+    } catch {
+      return false;
+    }
+  }
+
+  async confirmPayment(params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
+    return this.consumePayment(params);
   }
 
   async consumePayment(params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
     const now = params.now || Date.now();
-    return this.withLock(() => {
-      const state = this.readState();
+    try {
+      return this.withLock(() => {
+        const state = this.readState();
 
-      // 1. Replay prevention check: reject reused transactions
-      const existingTx = state.processedTransactions[params.paymentId];
-      if (existingTx) {
-        return {
-          success: false,
-          duplicate: true,
-          orderNumber: existingTx.orderNumber,
-          error: 'Duplicate transaction detected. This payment transaction has already been consumed.',
+        // 1. Replay prevention check: reject reused transactions unless idempotent retry/confirmation
+        const existingTx = state.processedTransactions[params.paymentId];
+        if (existingTx) {
+          if (existingTx.orderNumber === params.orderNumber) {
+            existingTx.status = 'confirmed';
+            const session = state.activeSessions[params.sessionId];
+            if (session) {
+              session.consumed = true;
+              session.orderNumber = params.orderNumber;
+              session.consumedAt = now;
+            }
+            this.writeState(state);
+            return {
+              success: true,
+              orderNumber: params.orderNumber,
+            };
+          }
+          return {
+            success: false,
+            duplicate: true,
+            orderNumber: existingTx.orderNumber,
+            error: 'Duplicate transaction detected. This payment transaction has already been consumed.',
+          };
+        }
+
+        // 2. Session validity check: must exist, not be expired, and not be consumed
+        const session = state.activeSessions[params.sessionId];
+        if (!session) {
+          return {
+            success: false,
+            error: 'Invalid or unrecognized payment session ID.',
+          };
+        }
+
+        if (now > session.expiresAt) {
+          delete state.activeSessions[params.sessionId];
+          this.writeState(state);
+          return {
+            success: false,
+            error: 'Payment session has expired. Please initiate a new checkout session.',
+          };
+        }
+
+        if (session.consumed) {
+          if (session.orderNumber === params.orderNumber) {
+            return {
+              success: true,
+              orderNumber: session.orderNumber,
+            };
+          }
+          return {
+            success: false,
+            duplicate: true,
+            orderNumber: session.orderNumber,
+            error: 'Payment session has already been consumed for a completed order.',
+          };
+        }
+
+        // 3. Amount verification check
+        if (session.amount !== params.amount || (params.currency && session.currency !== params.currency)) {
+          return {
+            success: false,
+            error: `Payment amount or currency mismatch. Expected ${session.amount} ${session.currency}, received ${params.amount} ${params.currency || 'INR'}.`,
+          };
+        }
+
+        // 4. Atomically consume session and record transaction
+        session.consumed = true;
+        session.orderNumber = params.orderNumber;
+        session.consumedAt = now;
+
+        // Bound processedTransactions memory with FIFO eviction
+        const txKeys = Object.keys(state.processedTransactions);
+        while (txKeys.length >= PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS) {
+          const oldestKey = txKeys.shift();
+          if (oldestKey) {
+            delete state.processedTransactions[oldestKey];
+          } else {
+            break;
+          }
+        }
+
+        state.processedTransactions[params.paymentId] = {
+          paymentId: params.paymentId,
+          sessionId: params.sessionId,
+          orderNumber: params.orderNumber,
+          amount: params.amount,
+          currency: params.currency || 'INR',
+          status: 'confirmed',
+          timestamp: now,
         };
-      }
 
-      // 2. Session validity check: must exist, not be expired, and not be consumed
-      const session = state.activeSessions[params.sessionId];
-      if (!session) {
-        return {
-          success: false,
-          error: 'Invalid or unrecognized payment session ID.',
-        };
-      }
-
-      if (now > session.expiresAt) {
-        delete state.activeSessions[params.sessionId];
         this.writeState(state);
         return {
-          success: false,
-          error: 'Payment session has expired. Please initiate a new checkout session.',
+          success: true,
+          orderNumber: params.orderNumber,
         };
-      }
-
-      if (session.consumed) {
-        return {
-          success: false,
-          duplicate: true,
-          orderNumber: session.orderNumber,
-          error: 'Payment session has already been consumed for a completed order.',
-        };
-      }
-
-      // 3. Amount verification check
-      if (session.amount !== params.amount || (params.currency && session.currency !== params.currency)) {
-        return {
-          success: false,
-          error: `Payment amount or currency mismatch. Expected ${session.amount} ${session.currency}, received ${params.amount} ${params.currency || 'INR'}.`,
-        };
-      }
-
-      // 4. Atomically consume session and record transaction
-      session.consumed = true;
-      session.orderNumber = params.orderNumber;
-      session.consumedAt = now;
-
-      // Bound processedTransactions memory with FIFO eviction
-      const txKeys = Object.keys(state.processedTransactions);
-      while (txKeys.length >= PAYMENT_SESSION_CONFIG.MAX_PROCESSED_TRANSACTIONS) {
-        const oldestKey = txKeys.shift();
-        if (oldestKey) {
-          delete state.processedTransactions[oldestKey];
-        } else {
-          break;
-        }
-      }
-
-      state.processedTransactions[params.paymentId] = {
-        paymentId: params.paymentId,
-        sessionId: params.sessionId,
-        orderNumber: params.orderNumber,
-        amount: params.amount,
-        currency: params.currency || 'INR',
-        timestamp: now,
-      };
-
-      this.writeState(state);
+      });
+    } catch (err: any) {
       return {
-        success: true,
-        orderNumber: params.orderNumber,
+        success: false,
+        error: err?.message || 'Payment store lock acquisition failed. Could not consume payment.',
       };
-    });
+    }
   }
 
   async pruneExpired(now: number = Date.now()): Promise<number> {
@@ -563,6 +763,78 @@ export class DatabasePaymentStore implements PaymentStore {
     }
   }
 
+  async claimPayment(params: ClaimPaymentParams): Promise<ClaimPaymentResult> {
+    try {
+      const supabase = await this.getClient();
+      if (!supabase) {
+        return {
+          success: false,
+          error: 'Payment store service unavailable.',
+        };
+      }
+
+      const { data, error } = await supabase.rpc('claim_payment_session', {
+        p_session_id: params.sessionId,
+        p_payment_id: params.paymentId,
+        p_order_number: params.orderNumber,
+        p_amount: params.amount,
+        p_currency: params.currency || 'INR',
+      });
+
+      if (error) {
+        console.error('[DatabasePaymentStore] claim_payment_session RPC error:', error);
+        return {
+          success: false,
+          error: error.message || 'Error executing atomic payment claim.',
+        };
+      }
+
+      if (data && typeof data === 'object') {
+        return {
+          success: Boolean(data.success),
+          error: data.error,
+          duplicate: Boolean(data.duplicate),
+          orderNumber: data.order_number,
+        };
+      }
+
+      return { success: false, error: 'Unexpected response from payment store.' };
+    } catch (err) {
+      console.error('[DatabasePaymentStore] claimPayment exception:', err);
+      return {
+        success: false,
+        error: err instanceof Error ? err.message : 'Exception during payment claim.',
+      };
+    }
+  }
+
+  async releaseClaim(params: ReleaseClaimParams): Promise<boolean> {
+    try {
+      const supabase = await this.getClient();
+      if (!supabase) return false;
+
+      const { data, error } = await supabase.rpc('release_payment_claim', {
+        p_session_id: params.sessionId,
+        p_payment_id: params.paymentId,
+        p_order_number: params.orderNumber,
+      });
+
+      if (error) {
+        console.error('[DatabasePaymentStore] release_payment_claim RPC error:', error);
+        return false;
+      }
+
+      return Boolean(data && data.success);
+    } catch (err) {
+      console.error('[DatabasePaymentStore] releaseClaim exception:', err);
+      return false;
+    }
+  }
+
+  async confirmPayment(params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
+    return this.consumePayment(params);
+  }
+
   async consumePayment(params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
     try {
       const supabase = await this.getClient();
@@ -692,6 +964,24 @@ export class MisconfiguredPaymentStore implements PaymentStore {
 
   async getTransaction(_paymentId: string): Promise<TransactionRecord | null> {
     return null;
+  }
+
+  async claimPayment(_params: ClaimPaymentParams): Promise<ClaimPaymentResult> {
+    return {
+      success: false,
+      error: `Payment store service unavailable: ${this.reason}`,
+    };
+  }
+
+  async releaseClaim(_params: ReleaseClaimParams): Promise<boolean> {
+    return false;
+  }
+
+  async confirmPayment(_params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
+    return {
+      success: false,
+      error: `Payment store service unavailable: ${this.reason}`,
+    };
   }
 
   async consumePayment(_params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
@@ -1248,6 +1538,64 @@ export function verifyPaymentProviderServer(
       error: 'An internal error occurred during payment verification.',
     });
   }
+}
+
+/**
+ * Atomically claims a payment ID and session for an order candidate BEFORE database insertion.
+ * Prevents concurrent requests from both creating separate orders for the same payment.
+ */
+export async function claimPaymentSession(params: {
+  sessionId: string;
+  paymentId: string;
+  orderNumber: string;
+  amount: number;
+  currency?: string;
+  now?: number;
+}): Promise<ClaimPaymentResult> {
+  const store = getPaymentStore();
+  if (store instanceof MisconfiguredPaymentStore) {
+    return {
+      success: false,
+      error: `Payment store configuration error: ${store.reason}`,
+    };
+  }
+  if (store.claimPayment) {
+    return await store.claimPayment(params);
+  }
+  return { success: true, orderNumber: params.orderNumber };
+}
+
+/**
+ * Releases a payment claim if database insertion failed or encountered an exception.
+ * Allows the customer to retry without being permanently locked out.
+ */
+export async function releasePaymentClaim(params: {
+  sessionId: string;
+  paymentId: string;
+  orderNumber: string;
+}): Promise<boolean> {
+  const store = getPaymentStore();
+  if (store instanceof MisconfiguredPaymentStore) {
+    return false;
+  }
+  if (store.releaseClaim) {
+    return await store.releaseClaim(params);
+  }
+  return true;
+}
+
+/**
+ * Confirms and permanently marks a claimed payment as consumed after successful order insertion.
+ */
+export async function confirmPaymentSession(params: {
+  sessionId: string;
+  paymentId: string;
+  orderNumber: string;
+  amount: number;
+  currency?: string;
+  now?: number;
+}): Promise<ConsumePaymentResult> {
+  return consumePaymentSession(params);
 }
 
 /**

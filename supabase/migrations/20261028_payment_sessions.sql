@@ -38,15 +38,21 @@ CREATE TABLE IF NOT EXISTS public.payment_transactions (
   order_number TEXT NOT NULL,
   amount NUMERIC NOT NULL,
   currency TEXT NOT NULL DEFAULT 'INR',
+  status TEXT NOT NULL DEFAULT 'confirmed',
   created_at BIGINT NOT NULL,
   expires_at TIMESTAMPTZ NOT NULL
 );
+
+ALTER TABLE public.payment_transactions ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'confirmed';
 
 CREATE INDEX IF NOT EXISTS idx_payment_transactions_expires_at
   ON public.payment_transactions (expires_at);
 
 CREATE INDEX IF NOT EXISTS idx_payment_transactions_order_number
   ON public.payment_transactions (order_number);
+
+CREATE INDEX IF NOT EXISTS idx_payment_transactions_status
+  ON public.payment_transactions (status);
 
 ALTER TABLE public.payment_transactions ENABLE ROW LEVEL SECURITY;
 
@@ -58,6 +64,8 @@ CREATE POLICY "Deny direct public access to payment_transactions"
   USING (false);
 
 -- Drop previous function signatures if present
+DROP FUNCTION IF EXISTS public.claim_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT);
+DROP FUNCTION IF EXISTS public.release_payment_claim(TEXT, TEXT, TEXT);
 DROP FUNCTION IF EXISTS public.save_payment_session(TEXT, NUMERIC, TEXT, TEXT, BIGINT, BIGINT, TEXT, INT);
 DROP FUNCTION IF EXISTS public.consume_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT, INT);
 DROP FUNCTION IF EXISTS public.prune_expired_payment_data();
@@ -134,6 +142,168 @@ BEGIN
 END;
 $$;
 
+-- Atomic Claim Payment Session RPC (Claim payment before order insertion)
+CREATE OR REPLACE FUNCTION public.claim_payment_session(
+  p_session_id TEXT,
+  p_payment_id TEXT,
+  p_order_number TEXT,
+  p_amount NUMERIC,
+  p_currency TEXT DEFAULT 'INR'
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_session RECORD;
+  v_existing_tx RECORD;
+  v_now BIGINT;
+  v_now_tz TIMESTAMPTZ;
+BEGIN
+  IF current_user NOT IN ('service_role', 'postgres', 'supabase_admin') AND
+     COALESCE(current_setting('request.jwt.claim.role', true), '') != 'service_role' THEN
+    RAISE EXCEPTION 'Permission denied: claim_payment_session is restricted to service_role credential';
+  END IF;
+
+  v_now := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
+  v_now_tz := clock_timestamp();
+
+  -- 1. Check if transaction was already processed or claimed
+  SELECT * INTO v_existing_tx FROM public.payment_transactions WHERE payment_id = p_payment_id FOR UPDATE;
+  IF FOUND THEN
+    IF v_existing_tx.order_number = p_order_number THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'order_number', p_order_number,
+        'claimed', true
+      );
+    END IF;
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Duplicate transaction detected. This payment transaction has already been claimed or consumed.',
+      'duplicate', true,
+      'order_number', v_existing_tx.order_number
+    );
+  END IF;
+
+  -- 2. Lock and check session
+  SELECT * INTO v_session FROM public.payment_sessions WHERE id = p_session_id FOR UPDATE;
+  IF NOT FOUND THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Invalid or unrecognized payment session ID.'
+    );
+  END IF;
+
+  IF v_session.expires_at < v_now_tz THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Payment session has expired. Please initiate a new checkout session.'
+    );
+  END IF;
+
+  IF v_session.consumed THEN
+    IF v_session.order_number = p_order_number THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'order_number', p_order_number
+      );
+    END IF;
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Payment session has already been consumed for a completed order.',
+      'duplicate', true,
+      'order_number', v_session.order_number
+    );
+  END IF;
+
+  IF v_session.order_number IS NOT NULL AND v_session.order_number != p_order_number THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Payment session is already claimed by another concurrent order.',
+      'duplicate', true,
+      'order_number', v_session.order_number
+    );
+  END IF;
+
+  IF v_session.amount != p_amount OR v_session.currency != p_currency THEN
+    RETURN jsonb_build_object(
+      'success', false,
+      'error', 'Payment amount or currency mismatch.'
+    );
+  END IF;
+
+  -- 3. Atomically record claim
+  UPDATE public.payment_sessions
+  SET order_number = p_order_number
+  WHERE id = p_session_id;
+
+  INSERT INTO public.payment_transactions (
+    payment_id,
+    session_id,
+    order_number,
+    amount,
+    currency,
+    status,
+    created_at,
+    expires_at
+  ) VALUES (
+    p_payment_id,
+    p_session_id,
+    p_order_number,
+    p_amount,
+    p_currency,
+    'claimed',
+    v_now,
+    v_now_tz + INTERVAL '1 hour'
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'session_id', p_session_id,
+    'payment_id', p_payment_id,
+    'order_number', p_order_number
+  );
+END;
+$$;
+
+-- Atomic Release Payment Claim RPC (If order insertion fails)
+CREATE OR REPLACE FUNCTION public.release_payment_claim(
+  p_session_id TEXT,
+  p_payment_id TEXT,
+  p_order_number TEXT
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF current_user NOT IN ('service_role', 'postgres', 'supabase_admin') AND
+     COALESCE(current_setting('request.jwt.claim.role', true), '') != 'service_role' THEN
+    RAISE EXCEPTION 'Permission denied: release_payment_claim is restricted to service_role credential';
+  END IF;
+
+  -- Delete from transactions only if status is 'claimed'
+  DELETE FROM public.payment_transactions
+  WHERE payment_id = p_payment_id
+    AND order_number = p_order_number
+    AND status = 'claimed';
+
+  -- Release order_number from session if not consumed
+  UPDATE public.payment_sessions
+  SET order_number = NULL
+  WHERE id = p_session_id
+    AND order_number = p_order_number
+    AND NOT consumed;
+
+  RETURN jsonb_build_object(
+    'success', true
+  );
+END;
+$$;
+
 -- Atomic Consume Payment Session and Record Replay Transaction RPC
 CREATE OR REPLACE FUNCTION public.consume_payment_session(
   p_session_id TEXT,
@@ -162,9 +332,30 @@ BEGIN
   v_now := (EXTRACT(EPOCH FROM clock_timestamp()) * 1000)::BIGINT;
   v_now_tz := clock_timestamp();
 
-  -- Check if transaction was already processed
+  -- Check if transaction was already processed or claimed
   SELECT * INTO v_existing_tx FROM public.payment_transactions WHERE payment_id = p_payment_id FOR UPDATE;
   IF FOUND THEN
+    IF v_existing_tx.order_number = p_order_number THEN
+      -- Already claimed by this order: transition to confirmed
+      UPDATE public.payment_transactions
+      SET status = 'confirmed',
+          expires_at = v_now_tz + (p_retention_days || ' days')::INTERVAL
+      WHERE payment_id = p_payment_id;
+
+      UPDATE public.payment_sessions
+      SET consumed = true,
+          order_number = p_order_number,
+          consumed_at = v_now_tz
+      WHERE id = p_session_id;
+
+      RETURN jsonb_build_object(
+        'success', true,
+        'session_id', p_session_id,
+        'payment_id', p_payment_id,
+        'order_number', p_order_number
+      );
+    END IF;
+
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Duplicate transaction detected. This payment transaction has already been consumed.',
@@ -190,6 +381,12 @@ BEGIN
   END IF;
 
   IF v_session.consumed THEN
+    IF v_session.order_number = p_order_number THEN
+      RETURN jsonb_build_object(
+        'success', true,
+        'order_number', p_order_number
+      );
+    END IF;
     RETURN jsonb_build_object(
       'success', false,
       'error', 'Payment session has already been consumed for a completed order.',
@@ -212,6 +409,7 @@ BEGIN
     order_number,
     amount,
     currency,
+    status,
     created_at,
     expires_at
   ) VALUES (
@@ -220,6 +418,7 @@ BEGIN
     p_order_number,
     p_amount,
     p_currency,
+    'confirmed',
     v_now,
     v_now_tz + (p_retention_days || ' days')::INTERVAL
   );
@@ -263,6 +462,16 @@ REVOKE ALL ON FUNCTION public.save_payment_session(TEXT, NUMERIC, TEXT, TEXT, BI
 REVOKE ALL ON FUNCTION public.save_payment_session(TEXT, NUMERIC, TEXT, TEXT, BIGINT, BIGINT, TEXT, INT) FROM anon;
 REVOKE ALL ON FUNCTION public.save_payment_session(TEXT, NUMERIC, TEXT, TEXT, BIGINT, BIGINT, TEXT, INT) FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.save_payment_session(TEXT, NUMERIC, TEXT, TEXT, BIGINT, BIGINT, TEXT, INT) TO service_role;
+
+REVOKE ALL ON FUNCTION public.claim_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.claim_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.claim_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.claim_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT) TO service_role;
+
+REVOKE ALL ON FUNCTION public.release_payment_claim(TEXT, TEXT, TEXT) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.release_payment_claim(TEXT, TEXT, TEXT) FROM anon;
+REVOKE ALL ON FUNCTION public.release_payment_claim(TEXT, TEXT, TEXT) FROM authenticated;
+GRANT EXECUTE ON FUNCTION public.release_payment_claim(TEXT, TEXT, TEXT) TO service_role;
 
 REVOKE ALL ON FUNCTION public.consume_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT, INT) FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.consume_payment_session(TEXT, TEXT, TEXT, NUMERIC, TEXT, INT) FROM anon;
