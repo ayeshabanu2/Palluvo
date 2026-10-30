@@ -1551,3 +1551,138 @@ export async function resetOrderRateLimiter(): Promise<void> {
     await store.clear();
   }
 }
+
+export const ORDER_SELECT_FIELDS =
+  'id, order_number, user_id, date, status, items, subtotal, discount_amount, shipping_fee, grand_total, payment_method, customer, created_at, payment_id';
+
+/**
+ * Validates that a recovered database order strictly belongs to the current requester.
+ * Enforces authenticated user ID matching and exact normalized customer email matching,
+ * preventing cross-customer order leakage or guest claiming of authenticated accounts.
+ */
+export function isOrderOwnedByRequester(
+  dbOrder: any,
+  user: { id: string } | null,
+  validatedCustomer: { email: string }
+): boolean {
+  if (!dbOrder) return false;
+
+  const reqEmail = (validatedCustomer?.email || '').toLowerCase().trim();
+  const orderEmail = (dbOrder.customer?.email || '').toLowerCase().trim();
+
+  // Authenticated match: if requester is logged in, their user.id must match order's user_id
+  if (user?.id && dbOrder.user_id && dbOrder.user_id === user.id) {
+    return true;
+  }
+
+  // Email exact equality check (case-insensitive, trimmed)
+  if (reqEmail && orderEmail && reqEmail === orderEmail) {
+    // If order is bound to an authenticated account, unauthenticated guests cannot claim it
+    if (dbOrder.user_id && (!user?.id || dbOrder.user_id !== user.id)) {
+      return false;
+    }
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Formats a raw database order record into a type-safe PlacedOrder object using only projected fields.
+ */
+export function toPlacedOrder(
+  dbOrder: any,
+  fallbackCustomer: any,
+  fallbackDate: string,
+  fallbackItems: any[] = [],
+  fallbackSubtotal: number = 0,
+  fallbackDiscount: number = 0,
+  fallbackShipping: number = 0,
+  fallbackTotal: number = 0,
+  fallbackPaymentMethod: 'upi' | 'card' | 'cod' = 'cod'
+): any {
+  return {
+    id: dbOrder.id,
+    orderNumber: dbOrder.order_number || dbOrder.id,
+    date:
+      dbOrder.date ||
+      (dbOrder.created_at
+        ? new Date(dbOrder.created_at).toLocaleDateString('en-GB', {
+            day: '2-digit',
+            month: 'short',
+            year: 'numeric',
+          })
+        : fallbackDate),
+    status: dbOrder.status || 'Confirmed',
+    items: dbOrder.items || fallbackItems,
+    subtotal: Number(dbOrder.subtotal) || fallbackSubtotal,
+    discountAmount: Number(dbOrder.discount_amount ?? dbOrder.discountAmount ?? fallbackDiscount),
+    shippingFee: Number(dbOrder.shipping_fee ?? dbOrder.shippingFee ?? fallbackShipping),
+    grandTotal: Number(dbOrder.grand_total ?? dbOrder.grandTotal ?? fallbackTotal),
+    paymentMethod: dbOrder.payment_method || fallbackPaymentMethod,
+    customer: dbOrder.customer || fallbackCustomer,
+  };
+}
+
+/**
+ * Safely looks up an existing order by claimed order_number or exact payment_id,
+ * strictly scoped to the requesting customer / authenticated user with projected fields only.
+ * Avoids any unescaped LIKE pattern matching.
+ */
+export async function findOwnedExistingOrder(params: {
+  supabase: any;
+  orderNumber?: string;
+  paymentId?: string;
+  user: { id: string } | null;
+  validatedCustomer: { email: string };
+}): Promise<any | null> {
+  const { supabase, orderNumber, paymentId, user, validatedCustomer } = params;
+  if (!supabase) return null;
+  const normalizedEmail = (validatedCustomer?.email || '').toLowerCase().trim();
+
+  // 1. First priority: match on the claimed order_number (authoritative candidate assigned by server)
+  if (orderNumber) {
+    let orderNumQuery = supabase
+      .from('orders')
+      .select(ORDER_SELECT_FIELDS)
+      .or(`id.eq.${orderNumber},order_number.eq.${orderNumber}`);
+
+    // Scope query with own-order predicate
+    if (user?.id) {
+      orderNumQuery = orderNumQuery.or(`user_id.eq.${user.id},customer->>email.eq.${normalizedEmail}`);
+    } else {
+      orderNumQuery = orderNumQuery.eq('customer->>email', normalizedEmail);
+    }
+
+    const { data: orderData } = await orderNumQuery.limit(1).maybeSingle();
+    if (orderData && isOrderOwnedByRequester(orderData, user, validatedCustomer)) {
+      return orderData;
+    }
+  }
+
+  // 2. Second priority: match on exact indexed payment_id (exact equality, NO LIKE wildcards)
+  if (paymentId) {
+    try {
+      let paymentQuery = supabase
+        .from('orders')
+        .select(ORDER_SELECT_FIELDS)
+        .eq('payment_id', paymentId);
+
+      // Scope query with own-order predicate
+      if (user?.id) {
+        paymentQuery = paymentQuery.or(`user_id.eq.${user.id},customer->>email.eq.${normalizedEmail}`);
+      } else {
+        paymentQuery = paymentQuery.eq('customer->>email', normalizedEmail);
+      }
+
+      const { data: paymentOrderData } = await paymentQuery.limit(1).maybeSingle();
+      if (paymentOrderData && isOrderOwnedByRequester(paymentOrderData, user, validatedCustomer)) {
+        return paymentOrderData;
+      }
+    } catch {
+      // Ignore if payment_id column is not yet present on table
+    }
+  }
+
+  return null;
+}

@@ -26,6 +26,10 @@ import {
   finalizeOrderSlot,
   resetOrderRateLimiter,
   setProductionOrderStore,
+  isOrderOwnedByRequester,
+  toPlacedOrder,
+  findOwnedExistingOrder,
+  ORDER_SELECT_FIELDS,
 } from '../src/app/checkout/orderRateLimiter.ts';
 import {
   PAYMENT_SESSION_CONFIG,
@@ -2399,6 +2403,8 @@ describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2
     assert.match(sqlContent, /GRANT EXECUTE ON FUNCTION public\.consume_payment_session\(.*\) TO service_role/);
     assert.match(sqlContent, /ALTER TABLE public\.payment_sessions ENABLE ROW LEVEL SECURITY/);
     assert.match(sqlContent, /ALTER TABLE public\.payment_transactions ENABLE ROW LEVEL SECURITY/);
+    assert.match(sqlContent, /ALTER TABLE IF EXISTS public\.orders ADD COLUMN IF NOT EXISTS payment_id TEXT/);
+    assert.match(sqlContent, /CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON public\.orders \(payment_id\)/);
   });
 
   test('REGRESSION [P2]: CrossProcessPaymentStore.withLock fails closed when lock cannot be acquired', async () => {
@@ -2596,6 +2602,237 @@ describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2
     assert.equal(releaseRes, true);
     assert.equal(rpcLog[1].fn, 'release_payment_claim');
     assert.equal(rpcLog[1].args.p_payment_id, 'pay_db_claim');
+  });
+
+  test('REGRESSION [P2]: isOrderOwnedByRequester enforces ownership and rejects cross-customer order recovery', () => {
+    const authOrder = {
+      id: 'PLV-AUTH-1',
+      user_id: 'usr_authenticated_1',
+      customer: { email: 'customer@example.com', firstName: 'Priya' },
+    };
+    const guestOrder = {
+      id: 'PLV-GUEST-1',
+      user_id: null,
+      customer: { email: 'guest@example.com', firstName: 'Guest' },
+    };
+
+    // 1. Authenticated user matching user_id -> allowed
+    assert.equal(
+      isOrderOwnedByRequester(authOrder, { id: 'usr_authenticated_1' }, { email: 'customer@example.com' }),
+      true,
+      'Authenticated owner matching user_id must be allowed'
+    );
+
+    // 2. Different authenticated user -> rejected
+    assert.equal(
+      isOrderOwnedByRequester(authOrder, { id: 'usr_attacker_2' }, { email: 'customer@example.com' }),
+      false,
+      'Different authenticated user must be rejected even if customer email matches'
+    );
+
+    // 3. Guest caller attempting to claim order belonging to authenticated user -> rejected
+    assert.equal(
+      isOrderOwnedByRequester(authOrder, null, { email: 'customer@example.com' }),
+      false,
+      'Unauthenticated guest must NOT be permitted to claim an order owned by an authenticated account'
+    );
+
+    // 4. Guest caller matching guest order email -> allowed
+    assert.equal(
+      isOrderOwnedByRequester(guestOrder, null, { email: 'guest@example.com' }),
+      true,
+      'Guest caller with exact matching email must be allowed for guest order'
+    );
+
+    // 5. Normalization: untrimmed and mixed-case emails match safely
+    assert.equal(
+      isOrderOwnedByRequester(guestOrder, null, { email: '  GUEST@EXAMPLE.COM  ' }),
+      true,
+      'Email matching must be case-insensitive and whitespace-trimmed'
+    );
+
+    // 6. Cross-customer email mismatch -> rejected
+    assert.equal(
+      isOrderOwnedByRequester(guestOrder, null, { email: 'other@example.com' }),
+      false,
+      'Cross-customer lookup with different email must be rejected'
+    );
+
+    // 7. Null order -> rejected
+    assert.equal(isOrderOwnedByRequester(null, { id: 'usr_1' }, { email: 'test@example.com' }), false);
+  });
+
+  test('REGRESSION [P2]: toPlacedOrder formats projected database record without leaking internal columns', () => {
+    const rawDbRecord = {
+      id: 'PLV-LEAK-TEST',
+      order_number: 'PLV-LEAK-TEST',
+      date: '30 Oct 2026',
+      status: 'Confirmed',
+      items: [{ productId: 'saree-1', qty: 1 }],
+      subtotal: 5000,
+      discount_amount: 500,
+      shipping_fee: 100,
+      grand_total: 4600,
+      payment_method: 'upi',
+      customer: { email: 'priya@example.com', firstName: 'Priya' },
+      user_id: 'usr_123',
+      // Internal or unmodeled database columns that must NOT leak
+      internal_fraud_score: 0.02,
+      raw_gateway_payload: { token: 'secret_gateway_token' },
+      pg_lock_version: 4,
+      sys_tenant_id: 'tenant_palluvo_prod',
+    };
+
+    const placedOrder = toPlacedOrder(
+      rawDbRecord,
+      rawDbRecord.customer,
+      '30 Oct 2026',
+      [],
+      0,
+      0,
+      0,
+      0,
+      'upi'
+    );
+
+    // Standard properties exist
+    assert.equal(placedOrder.id, 'PLV-LEAK-TEST');
+    assert.equal(placedOrder.orderNumber, 'PLV-LEAK-TEST');
+    assert.equal(placedOrder.grandTotal, 4600);
+    assert.equal(placedOrder.paymentMethod, 'upi');
+
+    // Sensitive internal columns must not be copied onto PlacedOrder
+    assert.equal(placedOrder.internal_fraud_score, undefined);
+    assert.equal(placedOrder.raw_gateway_payload, undefined);
+    assert.equal(placedOrder.pg_lock_version, undefined);
+    assert.equal(placedOrder.sys_tenant_id, undefined);
+  });
+
+  test('REGRESSION [P3]: Payment ID matching uses exact equality (.eq) and rejects wildcard injection with "%" and "_"', async () => {
+    assert.ok(
+      !ORDER_SELECT_FIELDS.includes('*'),
+      'ORDER_SELECT_FIELDS must specify explicit safe columns and must not use "*"'
+    );
+    assert.ok(
+      ORDER_SELECT_FIELDS.includes('payment_id'),
+      'ORDER_SELECT_FIELDS must include indexed payment_id'
+    );
+
+    const calls = {
+      select: [],
+      eq: [],
+      like: [],
+      or: [],
+    };
+
+    const mockQueryBuilder = {
+      select: (fields) => {
+        calls.select.push(fields);
+        return mockQueryBuilder;
+      },
+      eq: (col, val) => {
+        calls.eq.push({ col, val });
+        return mockQueryBuilder;
+      },
+      like: (col, val) => {
+        calls.like.push({ col, val });
+        return mockQueryBuilder;
+      },
+      or: (condition) => {
+        calls.or.push(condition);
+        return mockQueryBuilder;
+      },
+      limit: () => mockQueryBuilder,
+      maybeSingle: async () => ({
+        data: {
+          id: 'PLV-WILDCARD-1',
+          order_number: 'PLV-WILDCARD-1',
+          payment_id: 'pay_test_%_special',
+          user_id: null,
+          customer: { email: 'priya@example.com' },
+        },
+        error: null,
+      }),
+    };
+
+    const mockSupabase = {
+      from: (table) => {
+        assert.equal(table, 'orders');
+        return mockQueryBuilder;
+      },
+    };
+
+    // Client provides a payment ID containing SQL LIKE wildcards '%' and '_'
+    const wildcardPaymentId = 'pay_test_%_special';
+    const recovered = await findOwnedExistingOrder({
+      supabase: mockSupabase,
+      paymentId: wildcardPaymentId,
+      user: null,
+      validatedCustomer: { email: 'priya@example.com' },
+    });
+
+    // 1. Must use exact .eq('payment_id', val)
+    assert.ok(
+      calls.eq.some((c) => c.col === 'payment_id' && c.val === wildcardPaymentId),
+      'Must match payment ID using exact equality .eq(payment_id, ...)'
+    );
+
+    // 2. Must NEVER use .like()
+    assert.equal(
+      calls.like.length,
+      0,
+      'Must NEVER invoke PostgREST .like() with client-supplied payment ID'
+    );
+
+    // 3. Must scope query with requester email predicate
+    assert.ok(
+      calls.eq.some((c) => c.col === 'customer->>email' && c.val === 'priya@example.com'),
+      'Must scope query to requesting customer email'
+    );
+
+    // 4. Must return the order when ownership passes
+    assert.ok(recovered !== null);
+    assert.equal(recovered.id, 'PLV-WILDCARD-1');
+  });
+
+  test('REGRESSION [P2]: findOwnedExistingOrder scopes queries with own-order predicate and rejects unowned orders', async () => {
+    // DB returns an order belonging to another customer
+    const mockSupabaseOtherCustomer = {
+      from: () => ({
+        select: () => ({
+          or: () => ({
+            eq: () => ({
+              limit: () => ({
+                maybeSingle: async () => ({
+                  data: {
+                    id: 'PLV-OTHER-1',
+                    order_number: 'PLV-OTHER-1',
+                    payment_id: 'pay_other_1',
+                    user_id: null,
+                    customer: { email: 'victim@example.com' },
+                  },
+                  error: null,
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    };
+
+    // Attacker requests order with victim's payment ID
+    const attackerResult = await findOwnedExistingOrder({
+      supabase: mockSupabaseOtherCustomer,
+      paymentId: 'pay_other_1',
+      user: null,
+      validatedCustomer: { email: 'attacker@evil.com' },
+    });
+
+    assert.equal(
+      attackerResult,
+      null,
+      'findOwnedExistingOrder must strictly return null when order does not belong to requester'
+    );
   });
 });
 

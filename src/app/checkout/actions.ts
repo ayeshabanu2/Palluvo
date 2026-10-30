@@ -30,6 +30,8 @@ import {
   validateCustomerDetails,
   validateCheckoutItems as validateCheckoutItemsBase,
   validateCouponCode,
+  findOwnedExistingOrder,
+  toPlacedOrder,
 } from './orderRateLimiter';
 
 export { CHECKOUT_FIELD_LIMITS };
@@ -384,56 +386,43 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
           if (verificationResult.duplicate) {
             try {
               const supabase = supabaseClient || (await createClient());
-              let existingDbOrder: any = null;
-
-              if (verificationResult.orderNumber) {
-                const { data } = await supabase
-                  .from('orders')
-                  .select('*')
-                  .or(`id.eq.${verificationResult.orderNumber},order_number.eq.${verificationResult.orderNumber}`)
-                  .limit(1)
-                  .maybeSingle();
-                existingDbOrder = data;
+              if (!user) {
+                const authData = await supabase.auth.getUser();
+                user = authData?.data?.user || null;
               }
 
-              if (!existingDbOrder && paymentVerification.paymentId) {
-                const { data } = await supabase
-                  .from('orders')
-                  .select('*')
-                  .like('payment_status', `%${paymentVerification.paymentId}%`)
-                  .limit(1)
-                  .maybeSingle();
-                existingDbOrder = data;
-              }
+              const existingDbOrder = await findOwnedExistingOrder({
+                supabase,
+                orderNumber: verificationResult.orderNumber,
+                paymentId: paymentVerification.paymentId,
+                user,
+                validatedCustomer,
+              });
 
               if (existingDbOrder) {
-                const recoveredOrder: PlacedOrder = {
-                  id: existingDbOrder.id,
-                  orderNumber: existingDbOrder.order_number || existingDbOrder.id,
-                  date:
-                    existingDbOrder.date ||
-                    (existingDbOrder.created_at
-                      ? new Date(existingDbOrder.created_at).toLocaleDateString('en-GB', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })
-                      : new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })),
-                  status: existingDbOrder.status || 'Confirmed',
-                  items: existingDbOrder.items || canonicalItems,
-                  subtotal: Number(existingDbOrder.subtotal) || trustedSubtotal,
-                  discountAmount: Number(existingDbOrder.discount_amount) || trustedDiscount,
-                  shippingFee: Number(existingDbOrder.shipping_fee) || trustedShipping,
-                  grandTotal: Number(existingDbOrder.grand_total) || trustedGrandTotal,
-                  paymentMethod: existingDbOrder.payment_method || paymentMethod,
-                  customer: existingDbOrder.customer || validatedCustomer,
-                };
+                const recoveredOrder: PlacedOrder = toPlacedOrder(
+                  existingDbOrder,
+                  validatedCustomer,
+                  new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+                  canonicalItems,
+                  trustedSubtotal,
+                  trustedDiscount,
+                  trustedShipping,
+                  trustedGrandTotal,
+                  paymentMethod
+                );
                 orderCreated = recoveredOrder;
                 return { success: true, order: recoveredOrder };
               }
             } catch (recoveryErr) {
               console.error('[Checkout] Error checking existing order for duplicate payment:', recoveryErr);
             }
+
+            return {
+              success: false,
+              error:
+                'Duplicate transaction detected. This payment transaction has already been consumed or claimed for another order.',
+            };
           }
 
           return {
@@ -483,27 +472,25 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
       // Check for existing order with this paymentId before creating a new one (idempotency guard)
       if (paymentVerification?.paymentId) {
-        const { data: existingPaymentOrders } = await supabase
-          .from('orders')
-          .select('*')
-          .like('payment_status', `%${paymentVerification.paymentId}%`)
-          .limit(1);
+        const existingPaymentOrder = await findOwnedExistingOrder({
+          supabase,
+          paymentId: paymentVerification.paymentId,
+          user,
+          validatedCustomer,
+        });
 
-        if (existingPaymentOrders && existingPaymentOrders.length > 0) {
-          const dbo = existingPaymentOrders[0];
-          const duplicateOrder: PlacedOrder = {
-            id: dbo.id,
-            orderNumber: dbo.order_number || dbo.id,
-            date: dbo.date || verifiedOrder.date,
-            status: dbo.status || 'Confirmed',
-            items: dbo.items || canonicalItems,
-            subtotal: Number(dbo.subtotal) || trustedSubtotal,
-            discountAmount: Number(dbo.discount_amount) || trustedDiscount,
-            shippingFee: Number(dbo.shipping_fee) || trustedShipping,
-            grandTotal: Number(dbo.grand_total) || trustedGrandTotal,
-            paymentMethod: dbo.payment_method || paymentMethod,
-            customer: dbo.customer || validatedCustomer,
-          };
+        if (existingPaymentOrder) {
+          const duplicateOrder: PlacedOrder = toPlacedOrder(
+            existingPaymentOrder,
+            validatedCustomer,
+            verifiedOrder.date,
+            canonicalItems,
+            trustedSubtotal,
+            trustedDiscount,
+            trustedShipping,
+            trustedGrandTotal,
+            paymentMethod
+          );
           orderCreated = duplicateOrder;
           return { success: true, order: duplicateOrder };
         }
@@ -568,47 +555,33 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
 
           if (!claimRes.success) {
             if (claimRes.duplicate) {
-              // Concurrent submission or already claimed: locate and return existing winner order
+              // Concurrent submission or already claimed: locate and return existing winner order scoped to requester
               let existingWinnerOrder: any = null;
               for (let attempt = 0; attempt < 3; attempt++) {
-                if (claimRes.orderNumber) {
-                  const { data } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .or(`id.eq.${claimRes.orderNumber},order_number.eq.${claimRes.orderNumber}`)
-                    .limit(1)
-                    .maybeSingle();
-                  existingWinnerOrder = data;
-                }
-
-                if (!existingWinnerOrder && paymentVerification.paymentId) {
-                  const { data } = await supabase
-                    .from('orders')
-                    .select('*')
-                    .like('payment_status', `%${paymentVerification.paymentId}%`)
-                    .limit(1)
-                    .maybeSingle();
-                  existingWinnerOrder = data;
-                }
+                existingWinnerOrder = await findOwnedExistingOrder({
+                  supabase,
+                  orderNumber: claimRes.orderNumber,
+                  paymentId: paymentVerification.paymentId,
+                  user,
+                  validatedCustomer,
+                });
 
                 if (existingWinnerOrder) break;
                 await new Promise((resolve) => setTimeout(resolve, 100));
               }
 
               if (existingWinnerOrder) {
-                const recoveredOrder: PlacedOrder = {
-                  id: existingWinnerOrder.id,
-                  orderNumber: existingWinnerOrder.order_number || existingWinnerOrder.id,
-                  date: existingWinnerOrder.date || verifiedOrder.date,
-                  status: existingWinnerOrder.status || 'Confirmed',
-                  items: existingWinnerOrder.items || canonicalItems,
-                  subtotal: Number(existingWinnerOrder.subtotal) || trustedSubtotal,
-                  discountAmount: Number(existingWinnerOrder.discount_amount) || trustedDiscount,
-                  shippingFee: Number(existingWinnerOrder.shipping_fee) || trustedShipping,
-                  grandTotal: Number(existingWinnerOrder.grand_total) || trustedGrandTotal,
-                  paymentMethod: existingWinnerOrder.payment_method || paymentMethod,
-                  customer: existingWinnerOrder.customer || validatedCustomer,
-                };
+                const recoveredOrder: PlacedOrder = toPlacedOrder(
+                  existingWinnerOrder,
+                  validatedCustomer,
+                  verifiedOrder.date,
+                  canonicalItems,
+                  trustedSubtotal,
+                  trustedDiscount,
+                  trustedShipping,
+                  trustedGrandTotal,
+                  paymentMethod
+                );
                 orderCreated = recoveredOrder;
                 return { success: true, order: recoveredOrder };
               }
@@ -630,23 +603,33 @@ export async function placeVerifiedOrder(input: PlaceOrderServerInput): Promise<
         }
       }
 
-      const { error: insertError } = await supabase.from('orders').insert([
-        {
-          id: orderNumber,
-          order_number: orderNumber,
-          user_id: user?.id || null,
-          items: canonicalItems,
-          subtotal: trustedSubtotal,
-          discount_amount: trustedDiscount,
-          shipping_fee: trustedShipping,
-          grand_total: trustedGrandTotal,
-          payment_method: paymentMethod,
-          payment_status: paymentStatus,
-          customer: verifiedOrder.customer,
-          status: orderStatus,
-          created_at: new Date().toISOString(),
-        },
-      ]);
+      const orderPayload: Record<string, any> = {
+        id: orderNumber,
+        order_number: orderNumber,
+        user_id: user?.id || null,
+        items: canonicalItems,
+        subtotal: trustedSubtotal,
+        discount_amount: trustedDiscount,
+        shipping_fee: trustedShipping,
+        grand_total: trustedGrandTotal,
+        payment_method: paymentMethod,
+        payment_status: paymentStatus,
+        payment_id: paymentVerification?.paymentId || null,
+        customer: verifiedOrder.customer,
+        status: orderStatus,
+        created_at: new Date().toISOString(),
+      };
+
+      let { error: insertError } = await supabase.from('orders').insert([orderPayload]);
+
+      // If insert failed because payment_id column does not exist yet in database schema, retry without it
+      if (insertError && (insertError.code === 'PGRST204' || insertError.message?.includes('payment_id'))) {
+        console.warn('[Checkout] orders table does not have payment_id column yet, retrying insertion without payment_id');
+        const fallbackPayload = { ...orderPayload };
+        delete fallbackPayload.payment_id;
+        const fallbackRes = await supabase.from('orders').insert([fallbackPayload]);
+        insertError = fallbackRes.error;
+      }
 
       if (insertError) {
         console.error('Supabase orders table insertion error:', insertError);

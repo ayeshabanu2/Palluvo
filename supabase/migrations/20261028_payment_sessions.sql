@@ -482,3 +482,22 @@ REVOKE ALL ON FUNCTION public.prune_expired_payment_data() FROM PUBLIC;
 REVOKE ALL ON FUNCTION public.prune_expired_payment_data() FROM anon;
 REVOKE ALL ON FUNCTION public.prune_expired_payment_data() FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.prune_expired_payment_data() TO service_role;
+
+-- Dedicated indexed payment_id on public.orders for exact-match idempotent reconciliation
+ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS payment_id TEXT;
+CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON public.orders (payment_id);
+
+-- Backfill existing orders where payment_id is unset and payment_status contains gateway payment id
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'payment_id'
+  ) THEN
+    UPDATE public.orders
+    SET payment_id = substring(payment_status FROM '\(([A-Za-z0-9_-]+):\s*([^)]+)\)')
+    WHERE payment_id IS NULL
+      AND payment_status ~ '\(([A-Za-z0-9_-]+):\s*([^)]+)\)';
+  END IF;
+END $$;
+
