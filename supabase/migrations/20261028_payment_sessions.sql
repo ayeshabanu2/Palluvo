@@ -487,7 +487,7 @@ GRANT EXECUTE ON FUNCTION public.prune_expired_payment_data() TO service_role;
 ALTER TABLE IF EXISTS public.orders ADD COLUMN IF NOT EXISTS payment_id TEXT;
 CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON public.orders (payment_id);
 
--- Backfill existing orders where payment_id is unset and payment_status contains gateway payment id
+-- Backfill existing orders where payment_id is unset (or previously corrupted with method name) and payment_status contains gateway payment id
 DO $$
 BEGIN
   IF EXISTS (
@@ -495,9 +495,9 @@ BEGIN
     WHERE table_schema = 'public' AND table_name = 'orders' AND column_name = 'payment_id'
   ) THEN
     UPDATE public.orders
-    SET payment_id = substring(payment_status FROM '\(([A-Za-z0-9_-]+):\s*([^)]+)\)')
-    WHERE payment_id IS NULL
-      AND payment_status ~ '\(([A-Za-z0-9_-]+):\s*([^)]+)\)';
+    SET payment_id = substring(payment_status FROM '\([A-Za-z0-9_-]+:\s*([^)]+)\)')
+    WHERE (payment_id IS NULL OR payment_id IN ('UPI', 'CARD'))
+      AND payment_status ~ '\([A-Za-z0-9_-]+:\s*([^)]+)\)';
   END IF;
 END $$;
 

@@ -1625,9 +1625,21 @@ export function toPlacedOrder(
 }
 
 /**
+ * Escapes and double-quotes a literal string value for safe interpolation into PostgREST filter strings (e.g. .or()).
+ * Enclosing values in double quotes prevents special characters (such as commas ',', colons ':', or parentheses)
+ * from being parsed as filter grammar tokens.
+ */
+export function escapePostgrestFilterValue(val: string): string {
+  if (typeof val !== 'string') return '""';
+  const escaped = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
+
+/**
  * Safely looks up an existing order by claimed order_number or exact payment_id,
  * strictly scoped to the requesting customer / authenticated user with projected fields only.
- * Avoids any unescaped LIKE pattern matching.
+ * Avoids unescaped LIKE pattern matching, double-quotes filter operands to prevent grammar injection,
+ * and checks query errors.
  */
 export async function findOwnedExistingOrder(params: {
   supabase: any;
@@ -1642,19 +1654,25 @@ export async function findOwnedExistingOrder(params: {
 
   // 1. First priority: match on the claimed order_number (authoritative candidate assigned by server)
   if (orderNumber) {
+    const escapedOrderNumber = escapePostgrestFilterValue(orderNumber);
     let orderNumQuery = supabase
       .from('orders')
       .select(ORDER_SELECT_FIELDS)
-      .or(`id.eq.${orderNumber},order_number.eq.${orderNumber}`);
+      .or(`id.eq.${escapedOrderNumber},order_number.eq.${escapedOrderNumber}`);
 
     // Scope query with own-order predicate
     if (user?.id) {
-      orderNumQuery = orderNumQuery.or(`user_id.eq.${user.id},customer->>email.eq.${normalizedEmail}`);
+      const escapedUserId = escapePostgrestFilterValue(user.id);
+      const escapedEmail = escapePostgrestFilterValue(normalizedEmail);
+      orderNumQuery = orderNumQuery.or(`user_id.eq.${escapedUserId},customer->>email.eq.${escapedEmail}`);
     } else {
       orderNumQuery = orderNumQuery.eq('customer->>email', normalizedEmail);
     }
 
-    const { data: orderData } = await orderNumQuery.limit(1).maybeSingle();
+    const { data: orderData, error: orderError } = await orderNumQuery.limit(1).maybeSingle();
+    if (orderError) {
+      console.error('[Checkout] PostgREST error querying owned existing order by order number:', orderError);
+    }
     if (orderData && isOrderOwnedByRequester(orderData, user, validatedCustomer)) {
       return orderData;
     }
@@ -1670,17 +1688,25 @@ export async function findOwnedExistingOrder(params: {
 
       // Scope query with own-order predicate
       if (user?.id) {
-        paymentQuery = paymentQuery.or(`user_id.eq.${user.id},customer->>email.eq.${normalizedEmail}`);
+        const escapedUserId = escapePostgrestFilterValue(user.id);
+        const escapedEmail = escapePostgrestFilterValue(normalizedEmail);
+        paymentQuery = paymentQuery.or(`user_id.eq.${escapedUserId},customer->>email.eq.${escapedEmail}`);
       } else {
         paymentQuery = paymentQuery.eq('customer->>email', normalizedEmail);
       }
 
-      const { data: paymentOrderData } = await paymentQuery.limit(1).maybeSingle();
+      const { data: paymentOrderData, error: paymentError } = await paymentQuery.limit(1).maybeSingle();
+      if (paymentError) {
+        // Suppress warning if payment_id column does not exist yet (migration rollout gap)
+        if (paymentError.code !== 'PGRST204' && !paymentError.message?.includes('payment_id')) {
+          console.error('[Checkout] PostgREST error querying owned existing order by payment ID:', paymentError);
+        }
+      }
       if (paymentOrderData && isOrderOwnedByRequester(paymentOrderData, user, validatedCustomer)) {
         return paymentOrderData;
       }
-    } catch {
-      // Ignore if payment_id column is not yet present on table
+    } catch (err) {
+      console.warn('[Checkout] Unexpected exception querying order by payment_id:', err);
     }
   }
 

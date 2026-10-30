@@ -30,6 +30,7 @@ import {
   toPlacedOrder,
   findOwnedExistingOrder,
   ORDER_SELECT_FIELDS,
+  escapePostgrestFilterValue,
 } from '../src/app/checkout/orderRateLimiter.ts';
 import {
   PAYMENT_SESSION_CONFIG,
@@ -2405,6 +2406,20 @@ describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2
     assert.match(sqlContent, /ALTER TABLE public\.payment_transactions ENABLE ROW LEVEL SECURITY/);
     assert.match(sqlContent, /ALTER TABLE IF EXISTS public\.orders ADD COLUMN IF NOT EXISTS payment_id TEXT/);
     assert.match(sqlContent, /CREATE INDEX IF NOT EXISTS idx_orders_payment_id ON public\.orders \(payment_id\)/);
+    assert.match(
+      sqlContent,
+      /SET payment_id = substring\(payment_status FROM '\\\(\[A-Za-z0-9_-\]\+:\\s\*\(\[\^\)\]\+\)\\\)'\)/,
+      'Migration backfill pattern must use a single capture group capturing payment ID'
+    );
+
+    // Verify regex extracts gateway payment ID, not method (UPI/CARD)
+    const backfillRegex = /\([A-Za-z0-9_-]+:\s*([^)]+)\)/;
+    const upiMatch = 'Verified & Captured (UPI: pay_sample_upi_12345)'.match(backfillRegex);
+    const cardMatch = 'Verified & Captured (CARD: pay_sample_card_67890)'.match(backfillRegex);
+    assert.ok(upiMatch, 'Regex must match UPI payment_status pattern');
+    assert.equal(upiMatch[1], 'pay_sample_upi_12345', 'Regex group 1 must extract the gateway payment ID, not method');
+    assert.ok(cardMatch, 'Regex must match CARD payment_status pattern');
+    assert.equal(cardMatch[1], 'pay_sample_card_67890', 'Regex group 1 must extract the gateway payment ID, not method');
   });
 
   test('REGRESSION [P2]: CrossProcessPaymentStore.withLock fails closed when lock cannot be acquired', async () => {
@@ -2833,6 +2848,118 @@ describe('Cross-Instance Payment Persistence & Order Commit Protection Tests [P2
       null,
       'findOwnedExistingOrder must strictly return null when order does not belong to requester'
     );
+  });
+
+  test('REGRESSION [P3]: escapePostgrestFilterValue properly double-quotes and escapes filter values', () => {
+    // 1. Standard string
+    assert.equal(escapePostgrestFilterValue('priya@example.com'), '"priya@example.com"');
+
+    // 2. String containing commas (PostgREST list separator)
+    assert.equal(
+      escapePostgrestFilterValue('a,order_number.eq.PLV-123@x.com'),
+      '"a,order_number.eq.PLV-123@x.com"'
+    );
+
+    // 3. String containing double quotes and backslashes
+    assert.equal(escapePostgrestFilterValue('hello"world\\test'), '"hello\\"world\\\\test"');
+
+    // 4. Non-string defensive fallback
+    assert.equal(escapePostgrestFilterValue(null), '""');
+  });
+
+  test('REGRESSION [P3]: findOwnedExistingOrder double-quotes operands inside .or() to prevent grammar injection', async () => {
+    const orCalls = [];
+    const mockSupabase = {
+      from: (table) => {
+        assert.equal(table, 'orders');
+        return {
+          select: () => ({
+            eq: () => ({
+              or: (orFilter) => {
+                orCalls.push(orFilter);
+                return {
+                  limit: () => ({
+                    maybeSingle: async () => ({
+                      data: {
+                        id: 'PLV-COMMAS-1',
+                        order_number: 'PLV-COMMAS-1',
+                        payment_id: 'pay_comma_test',
+                        user_id: 'usr_authenticated_1',
+                        customer: { email: 'a,order_number.eq.plv-123@x.com' },
+                      },
+                      error: null,
+                    }),
+                  }),
+                };
+              },
+            }),
+          }),
+        };
+      },
+    };
+
+    // Customer email containing a comma
+    const trickyEmail = 'a,order_number.eq.PLV-123@x.com';
+    const result = await findOwnedExistingOrder({
+      supabase: mockSupabase,
+      paymentId: 'pay_comma_test',
+      user: { id: 'usr_authenticated_1' },
+      validatedCustomer: { email: trickyEmail },
+    });
+
+    assert.ok(result !== null);
+    assert.equal(result.id, 'PLV-COMMAS-1');
+
+    // Ensure the .or() filter properly double-quotes the values
+    assert.ok(orCalls.length > 0, '.or() must be invoked');
+    assert.ok(
+      orCalls[0].includes('customer->>email.eq."a,order_number.eq.plv-123@x.com"'),
+      'Email with comma must be double-quoted in PostgREST .or() filter to prevent grammar injection'
+    );
+    assert.ok(
+      orCalls[0].includes('user_id.eq."usr_authenticated_1"'),
+      'user_id must be double-quoted in PostgREST .or() filter'
+    );
+  });
+
+  test('REGRESSION [P3]: findOwnedExistingOrder surfaces and logs PostgREST query errors', async () => {
+    const errorLog = [];
+    const origError = console.error;
+    console.error = (...args) => errorLog.push(args.join(' '));
+
+    try {
+      const mockSupabaseWithError = {
+        from: () => ({
+          select: () => ({
+            or: () => ({
+              eq: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({
+                    data: null,
+                    error: { code: 'PGRST100', message: 'Syntax error in filter expression' },
+                  }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      };
+
+      const result = await findOwnedExistingOrder({
+        supabase: mockSupabaseWithError,
+        orderNumber: 'PLV-ERR-1',
+        user: null,
+        validatedCustomer: { email: 'priya@example.com' },
+      });
+
+      assert.equal(result, null, 'Must fail closed to null when query errors');
+      assert.ok(
+        errorLog.some((log) => log.includes('PostgREST error querying owned existing order')),
+        'Must log PostgREST query error to console.error'
+      );
+    } finally {
+      console.error = origError;
+    }
   });
 });
 
