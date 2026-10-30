@@ -34,6 +34,10 @@ import {
   consumePaymentSession,
   CrossProcessPaymentStore,
   DatabasePaymentStore,
+  MisconfiguredPaymentStore,
+  createProductionPaymentStore,
+  isSinglePersistentHostConfigured,
+  isSharedPaymentStoreConfigured,
   getPaymentStore,
   setPaymentStore,
   pruneExpiredPaymentSessions,
@@ -1040,6 +1044,188 @@ describe('Production Fail-Closed Store Security Tests [P1]', () => {
 
     const store = createProductionOrderRateLimitStore();
     assert.equal(store instanceof MisconfiguredOrderRateLimitStore, true);
+  });
+});
+
+describe('Production Fail-Closed Payment Store Security Tests [P2]', () => {
+  const originalEnv = { ...process.env };
+
+  beforeEach(() => {
+    process.env = { ...originalEnv };
+    setPaymentStore(null);
+  });
+
+  afterEach(() => {
+    process.env = { ...originalEnv };
+    setPaymentStore(null);
+  });
+
+  test('MisconfiguredPaymentStore fails closed and denies session save and payment consumption', async () => {
+    const misconfigured = new MisconfiguredPaymentStore('Missing database credentials in production');
+    const saveRes = await misconfigured.saveSession({
+      sessionId: 'sess_test',
+      amount: 1999,
+      currency: 'INR',
+      sessionToken: 'token',
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 60000,
+      consumed: false,
+    });
+    assert.equal(saveRes, false);
+
+    const getRes = await misconfigured.getSession('sess_test');
+    assert.equal(getRes, null);
+
+    const isTx = await misconfigured.isTransactionProcessed('pay_test');
+    assert.equal(isTx, false);
+
+    const getTx = await misconfigured.getTransaction('pay_test');
+    assert.equal(getTx, null);
+
+    const consumeRes = await misconfigured.consumePayment({
+      sessionId: 'sess_test',
+      paymentId: 'pay_test',
+      orderNumber: 'PLV-001',
+      amount: 1999,
+    });
+    assert.equal(consumeRes.success, false);
+    assert.match(consumeRes.error, /Missing database credentials in production/);
+
+    const slotRes = await misconfigured.checkAndAcquireIpSlot('198.51.100.1');
+    assert.equal(slotRes.allowed, false);
+    assert.match(slotRes.error, /Missing database credentials in production/);
+  });
+
+  test('createProductionPaymentStore fails closed in production when service role key is missing', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-test.supabase.co';
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+    delete process.env.SINGLE_PERSISTENT_HOST;
+    delete process.env.PAYMENT_STORE_SINGLE_HOST;
+    delete process.env.ALLOW_FILE_PAYMENT_STORE;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof MisconfiguredPaymentStore, true);
+    assert.equal(store instanceof CrossProcessPaymentStore, false);
+    assert.equal(store instanceof DatabasePaymentStore, false);
+  });
+
+  test('createProductionPaymentStore fails closed in production when Supabase URL is missing', () => {
+    process.env.NODE_ENV = 'production';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+    delete process.env.SINGLE_PERSISTENT_HOST;
+    delete process.env.PAYMENT_STORE_SINGLE_HOST;
+    delete process.env.ALLOW_FILE_PAYMENT_STORE;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof MisconfiguredPaymentStore, true);
+    assert.equal(store instanceof CrossProcessPaymentStore, false);
+    assert.equal(store instanceof DatabasePaymentStore, false);
+  });
+
+  test('createProductionPaymentStore allows CrossProcessPaymentStore in production when SINGLE_PERSISTENT_HOST is configured', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.SINGLE_PERSISTENT_HOST = 'true';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof CrossProcessPaymentStore, true);
+    assert.equal(store instanceof MisconfiguredPaymentStore, false);
+  });
+
+  test('createProductionPaymentStore allows CrossProcessPaymentStore in production when PAYMENT_STORE_SINGLE_HOST is configured', () => {
+    process.env.NODE_ENV = 'production';
+    process.env.PAYMENT_STORE_SINGLE_HOST = 'true';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof CrossProcessPaymentStore, true);
+  });
+
+  test('createProductionPaymentStore allows CrossProcessPaymentStore in non-production offline dev', () => {
+    process.env.NODE_ENV = 'development';
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL;
+    delete process.env.SUPABASE_URL;
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+    delete process.env.SINGLE_PERSISTENT_HOST;
+    delete process.env.PAYMENT_STORE_SINGLE_HOST;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof CrossProcessPaymentStore, true);
+  });
+
+  test('createProductionPaymentStore fails closed in dev if Supabase is configured but service role key is missing', () => {
+    process.env.NODE_ENV = 'development';
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-test.supabase.co';
+    delete process.env.SUPABASE_SERVICE_ROLE_KEY;
+    delete process.env.SUPABASE_SECRET_KEY;
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof MisconfiguredPaymentStore, true);
+  });
+
+  test('createProductionPaymentStore creates DatabasePaymentStore when both Supabase URL and service role key are configured', () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://palluvo-test.supabase.co';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'service_role_secret_key_123';
+
+    const store = createProductionPaymentStore();
+    assert.equal(store instanceof DatabasePaymentStore, true);
+  });
+
+  test('createServerPaymentSession fails closed and returns null when store is MisconfiguredPaymentStore', () => {
+    setPaymentStore(new MisconfiguredPaymentStore('Missing service role key in production'));
+    process.env.PAYMENT_GATEWAY_SECRET = 'secret_1234567890abcdef';
+
+    const session = createServerPaymentSession(1999, 'INR', '198.51.100.1');
+    assert.equal(session, null);
+  });
+
+  test('verifyPaymentProviderServer fails closed when store is MisconfiguredPaymentStore', async () => {
+    setPaymentStore(new MisconfiguredPaymentStore('Missing service role key in production'));
+    process.env.PAYMENT_GATEWAY_SECRET = 'secret_1234567890abcdef';
+
+    const res = await verifyPaymentProviderServer({
+      paymentId: 'pay_fail_closed_1',
+      sessionId: 'sess_fail_closed_1',
+      signature: 'deadbeef',
+      amount: 1999,
+      currency: 'INR',
+    });
+    assert.equal(res.verified, false);
+    assert.match(res.error, /Payment verification unavailable/);
+  });
+
+  test('consumePaymentSession fails closed when store is MisconfiguredPaymentStore', async () => {
+    setPaymentStore(new MisconfiguredPaymentStore('Missing service role key in production'));
+
+    const res = await consumePaymentSession({
+      sessionId: 'sess_fail_closed_2',
+      paymentId: 'pay_fail_closed_2',
+      orderNumber: 'PLV-999000',
+      amount: 1999,
+      currency: 'INR',
+    });
+    assert.equal(res.success, false);
+    assert.match(res.error, /Payment store configuration error/);
+  });
+
+  test('isSharedPaymentStoreConfigured returns false when store is MisconfiguredPaymentStore', () => {
+    setPaymentStore(new MisconfiguredPaymentStore('Production requires Supabase'));
+    assert.equal(isSharedPaymentStoreConfigured(), false);
+
+    setPaymentStore(new CrossProcessPaymentStore());
+    assert.equal(isSharedPaymentStoreConfigured(), true);
   });
 });
 

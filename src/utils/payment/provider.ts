@@ -668,16 +668,111 @@ export function checkSupabaseServiceRoleConfigured(): boolean {
   return Boolean(key && !key.includes('placeholder'));
 }
 
+export class MisconfiguredPaymentStore implements PaymentStore {
+  readonly reason: string;
+
+  constructor(reason: string = 'Shared durable payment store is required in production environment.') {
+    this.reason = reason;
+  }
+
+  async saveSession(_session: SessionRecord): Promise<boolean> {
+    console.error(
+      `[PaymentStore] Configuration error: ${this.reason}. Failing closed to prevent inconsistent session state across instances.`
+    );
+    return false;
+  }
+
+  async getSession(_sessionId: string): Promise<SessionRecord | null> {
+    return null;
+  }
+
+  async isTransactionProcessed(_paymentId: string): Promise<boolean> {
+    return false;
+  }
+
+  async getTransaction(_paymentId: string): Promise<TransactionRecord | null> {
+    return null;
+  }
+
+  async consumePayment(_params: ConsumePaymentParams): Promise<ConsumePaymentResult> {
+    return {
+      success: false,
+      error: `Payment store service unavailable: ${this.reason}`,
+    };
+  }
+
+  async pruneExpired(_now?: number): Promise<number> {
+    return 0;
+  }
+
+  async clear(): Promise<void> {}
+
+  async getActiveSessionsCount(): Promise<number> {
+    return 0;
+  }
+
+  async getProcessedTransactionsCount(): Promise<number> {
+    return 0;
+  }
+
+  async checkAndAcquireIpSlot(
+    _clientIp: string,
+    _now?: number
+  ): Promise<{ allowed: boolean; retryAfter?: number; error?: string }> {
+    return {
+      allowed: false,
+      error: `Payment processing service is temporarily unavailable due to a server configuration issue: ${this.reason}`,
+    };
+  }
+
+  async getTrackedIpsCount(): Promise<number> {
+    return 0;
+  }
+}
+
+export function isSinglePersistentHostConfigured(): boolean {
+  return (
+    process.env.SINGLE_PERSISTENT_HOST === 'true' ||
+    process.env.PAYMENT_STORE_SINGLE_HOST === 'true' ||
+    process.env.ALLOW_FILE_PAYMENT_STORE === 'true'
+  );
+}
+
 export function createProductionPaymentStore(): PaymentStore {
   const isSupabase = checkSupabaseConfigured();
   const hasServiceRole = checkSupabaseServiceRoleConfigured();
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isSingleHost = isSinglePersistentHostConfigured();
 
-  if (isSupabase && hasServiceRole) {
+  if (isProduction) {
+    if (isSupabase && hasServiceRole) {
+      return new DatabasePaymentStore();
+    }
+    if (isSingleHost) {
+      return new CrossProcessPaymentStore();
+    }
+    return new MisconfiguredPaymentStore(
+      'Database RPC store (Supabase with service-role key) is required in production environment, but Supabase credentials or service-role key are missing. File-backed payment storage is restricted to development or single persistent host deployments.'
+    );
+  }
+
+  // Non-production (development / test)
+  if (isSupabase) {
+    if (!hasServiceRole) {
+      return new MisconfiguredPaymentStore(
+        'Supabase is configured in test/dev but service-role key is missing'
+      );
+    }
     return new DatabasePaymentStore();
   }
 
-  // Cross-process file-backed store for local dev, serverless worker isolation, and tests
+  // Local development / test fallback only when Supabase is completely unconfigured
   return new CrossProcessPaymentStore();
+}
+
+export function isSharedPaymentStoreConfigured(): boolean {
+  const store = getPaymentStore();
+  return !(store instanceof MisconfiguredPaymentStore);
 }
 
 let activePaymentStore: PaymentStore | null = null;
@@ -835,6 +930,14 @@ export function createServerPaymentSession(
     return null;
   }
 
+  const store = getPaymentStore();
+  if (store instanceof MisconfiguredPaymentStore) {
+    console.error(
+      `[PaymentProvider] createServerPaymentSession rejected: ${store.reason}`
+    );
+    return null;
+  }
+
   // 1. Purge expired and consumed records during allocation to reclaim space
   pruneExpiredPaymentSessions(now);
 
@@ -869,7 +972,6 @@ export function createServerPaymentSession(
   activeSessions.set(sessionId, sessionRecord);
 
   // Register in shared durable store (file-backed / database)
-  const store = getPaymentStore();
   const storePromise = store.saveSession(sessionRecord);
 
   const sessionResult: PaymentSession = {
@@ -926,6 +1028,14 @@ export function verifyPaymentProviderServer(
       return makeResult({
         verified: false,
         error: 'Payment gateway is not configured on the server. Required environment secrets are missing.',
+      });
+    }
+
+    const store = getPaymentStore();
+    if (store instanceof MisconfiguredPaymentStore) {
+      return makeResult({
+        verified: false,
+        error: `Payment verification unavailable: ${store.reason}`,
       });
     }
 
@@ -1154,6 +1264,12 @@ export async function consumePaymentSession(params: {
 }): Promise<ConsumePaymentResult> {
   const now = params.now || Date.now();
   const store = getPaymentStore();
+  if (store instanceof MisconfiguredPaymentStore) {
+    return {
+      success: false,
+      error: `Payment store configuration error: ${store.reason}`,
+    };
+  }
   const result = await store.consumePayment({
     ...params,
     now,

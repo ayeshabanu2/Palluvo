@@ -10,6 +10,8 @@ import {
   isPaymentGatewayConfigured,
   checkAndAcquirePaymentSessionSlot,
   PaymentSession,
+  getPaymentStore,
+  MisconfiguredPaymentStore,
 } from '@/utils/payment/provider';
 import { normalizeEmail } from '@/utils/format';
 import {
@@ -199,8 +201,33 @@ export async function initiatePaymentSession(
       calculateTrustedOrderTotals(itemsValidation.items, couponCode);
 
     const isConfigured = isPaymentGatewayConfigured();
-    const session = isConfigured ? await createServerPaymentSession(trustedGrandTotal, 'INR', clientIp) : undefined;
-    if (isConfigured && !session) {
+    if (!isConfigured) {
+      return {
+        success: true,
+        isGatewayConfigured: false,
+        subtotal: trustedSubtotal,
+        discountAmount: trustedDiscount,
+        shippingFee: trustedShipping,
+        grandTotal: trustedGrandTotal,
+      };
+    }
+
+    // Fail closed if payment store is misconfigured (e.g. production serverless without shared durable store)
+    const paymentStore = getPaymentStore();
+    if (paymentStore instanceof MisconfiguredPaymentStore) {
+      console.error(
+        `[Checkout] Payment session initiation rejected: ${paymentStore.reason}`
+      );
+      return {
+        success: false,
+        isGatewayConfigured: true,
+        error:
+          'Payment processing is temporarily unavailable due to a server configuration issue. A shared durable payment store is required in production.',
+      };
+    }
+
+    const session = await createServerPaymentSession(trustedGrandTotal, 'INR', clientIp);
+    if (!session) {
       return {
         success: false,
         isGatewayConfigured: true,
@@ -211,8 +238,8 @@ export async function initiatePaymentSession(
 
     return {
       success: true,
-      isGatewayConfigured: isConfigured,
-      session: session || undefined,
+      isGatewayConfigured: true,
+      session,
       subtotal: trustedSubtotal,
       discountAmount: trustedDiscount,
       shippingFee: trustedShipping,
